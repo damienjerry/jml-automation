@@ -190,7 +190,7 @@ export class HiBobAdapter implements HrisAdapter {
         ok: false,
         detail: `Employed people are readable, but reading inactive people returned HTTP ${everybody.status}.`,
         remediation:
-          'The service user must be allowed to read inactive people. Without them a leaver is simply missing from the snapshot, so nobody is ever offboarded.',
+          'The service user must be allowed to read inactive people. Without them a leaver is missing from the snapshot altogether, so nobody is ever offboarded.',
         docsAnchor,
       }
     }

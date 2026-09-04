@@ -49,7 +49,7 @@ export async function auditCommand(io: CliIo, opts: AuditCommandOptions): Promis
             (err instanceof Error ? err.message : String(err)) +
             '. On a fresh install nothing has been recorded yet. Otherwise the log is not where the ' +
             'configuration says it is, which on a container usually means the volume did not mount.',
-          { exitCode: 1, docsAnchor: 'docs/runbooks/verify-the-audit-log.md' },
+          { exitCode: 1, docsAnchor: 'docs/runbooks/incident-recovery.md#the-audit-log-fails-verification' },
         )
       })
       if (result.ok) {
@@ -65,7 +65,7 @@ export async function auditCommand(io: CliIo, opts: AuditCommandOptions): Promis
           result.checkedLines +
           ' good rows.\n' +
           'A break means a row was edited or removed. Keep the files as they are and read ' +
-          'docs/runbooks/verify-the-audit-log.md before doing anything else.\n',
+          'docs/runbooks/incident-recovery.md#the-audit-log-fails-verification before doing anything else.\n',
       )
       return 1
     }

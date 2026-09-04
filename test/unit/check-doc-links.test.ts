@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import {
   anchorsOf,
   checkPaths,
+  checkSourceDocRefs,
   linksOf,
   main,
   slug,
@@ -46,6 +47,21 @@ describe('the documentation in this repository', () => {
     // would have stopped them.
     const { problems } = checkPaths([]) as { problems: Problem[] }
     expect(problems).toEqual([])
+  })
+
+  it('names no documentation page from the code that does not exist', () => {
+    // Four did. `docsAnchor` strings are what the CLI prints as `see docs/...`
+    // when it refuses to do something, so they are read at the worst possible
+    // moment, and they are plain strings that the Markdown link walk above
+    // cannot see. A doctor row that sends the reader to a missing page is
+    // worse than one that says nothing.
+    const { problems } = checkSourceDocRefs() as { problems: Problem[] }
+    expect(problems).toEqual([])
+  })
+
+  it('reads the source under src/audit, which shares a name with the log directory', () => {
+    const { files } = checkSourceDocRefs() as { files: number }
+    expect(files).toBeGreaterThan(95)
   })
 })
 

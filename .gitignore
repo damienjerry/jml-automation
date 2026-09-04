@@ -3,6 +3,14 @@
 .env.*
 !.env.example
 *.local.json
+# Your own configuration. It holds references rather than values, but it also
+# holds your organisation name, domains and mailboxes, which is exactly what
+# the identifier gate exists to keep out of a public repository. The generated
+# example says both files are gitignored, so they are.
+/jml.config.yaml
+# Literal strings an operator never wants published. A committed denylist
+# would publish the very names it exists to block.
+tools/lint/denylist.local.txt
 .dev.vars
 credentials.json
 service-account*.json

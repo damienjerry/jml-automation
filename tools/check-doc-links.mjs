@@ -129,6 +129,60 @@ function checkFile(file, anchorCache) {
   return problems
 }
 
+/**
+ * Documentation paths named by the code, not by another document.
+ *
+ * Every refusal in this toolkit carries a `docsAnchor`, and the CLI prints it
+ * as `see docs/...`. Those strings are the ones an adopter reads at the worst
+ * moment, and nothing checked them: four pointed at pages that had never been
+ * written, so a failing doctor row sent the reader to a file that was not
+ * there. They are plain strings rather than Markdown links, so the link walk
+ * above cannot see them.
+ */
+const SOURCE_DIRS = ['src', 'bin', 'tools', 'n8n']
+const SOURCE_EXT = new Set(['.ts', '.mjs', '.js', '.json', '.ps1', '.sh'])
+
+/**
+ * `data` and `audit` in SKIP_DIRS are the runtime directories at the
+ * repository root. Matching them at every level would skip `src/audit`, which
+ * is real source, so this walk only skips build output and dependencies.
+ */
+const SKIP_SOURCE_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage'])
+
+function walkSource(dir, out = []) {
+  if (!existsSync(dir)) return out
+  for (const entry of readdirSync(dir)) {
+    if (SKIP_SOURCE_DIRS.has(entry)) continue
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) walkSource(full, out)
+    else if (SOURCE_EXT.has(extname(entry).toLowerCase())) out.push(full)
+  }
+  return out
+}
+
+export function checkSourceDocRefs(anchorCache = new Map()) {
+  const files = SOURCE_DIRS.flatMap((d) => walkSource(resolve(REPO, d)))
+  const problems = []
+  for (const file of files) {
+    const text = readFileSync(file, 'utf8')
+    for (const m of text.matchAll(/\bdocs\/[A-Za-z0-9._/-]+\.md(#[A-Za-z0-9._-]+)?/g)) {
+      const [pathPart, anchor] = m[0].split('#')
+      const target = resolve(REPO, pathPart)
+      if (!existsSync(target)) {
+        problems.push({ file: relative(REPO, file), link: m[0], why: `nothing at ${pathPart}` })
+        continue
+      }
+      if (anchor) {
+        if (!anchorCache.has(target)) anchorCache.set(target, anchorsOf(readFileSync(target, 'utf8')))
+        if (!anchorCache.get(target).has(anchor.toLowerCase())) {
+          problems.push({ file: relative(REPO, file), link: m[0], why: `no heading in ${pathPart} matches the anchor` })
+        }
+      }
+    }
+  }
+  return { files: files.length, problems }
+}
+
 export function checkPaths(targets) {
   const files = targets.length
     ? targets.flatMap((t) => (statSync(t).isDirectory() ? walk(resolve(t)) : [resolve(t)]))
@@ -142,7 +196,17 @@ export function main(argv = []) {
   const { files, problems } = checkPaths(argv)
   for (const p of problems) console.log(`BROKEN ${p.file}  ${p.link}: ${p.why}`)
   console.log(`\nchecked ${files} Markdown file(s): ${problems.length} broken link(s)`)
-  return problems.length > 0 ? 1 : 0
+
+  // Only on a whole-repository run: a subtree argument means somebody is
+  // checking their own edit, and the source references are not theirs.
+  let refProblems = []
+  if (argv.length === 0) {
+    const refs = checkSourceDocRefs()
+    refProblems = refs.problems
+    for (const p of refProblems) console.log(`BROKEN ${p.file}  ${p.link}: ${p.why}`)
+    console.log(`checked ${refs.files} source file(s) for documentation references: ${refProblems.length} broken`)
+  }
+  return problems.length + refProblems.length > 0 ? 1 : 0
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) process.exit(main(process.argv.slice(2)))

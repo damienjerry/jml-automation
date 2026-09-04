@@ -289,7 +289,7 @@ export function createGoogleAuth(
 
 /** Cache key. Never the scope alone: subjects share scopes. */
 export function tokenCacheKey(scope: string, subject: string | null): string {
-  return `${scope} ${subject ?? SELF_SUBJECT_CACHE_KEY}`
+  return `${scope}\u0000${subject ?? SELF_SUBJECT_CACHE_KEY}`
 }
 
 /** Which address a given kind of subject resolves to. */

@@ -229,7 +229,7 @@ export function dryRunFrom(body: Record<string, unknown>): boolean {
  * workflow cannot raise the day-0 limit on its own.
  */
 export function actorFrom(headers: Record<string, string | undefined>, fallback: string): Actor {
-  const raw = (headers['x-jml-actor'] ?? '').replace(/[ -]/g, ' ').trim().slice(0, 200)
+  const raw = (headers['x-jml-actor'] ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 200)
   if (raw === '') return { kind: 'system', id: fallback }
   if (raw.startsWith('human:')) {
     const id = raw.slice('human:'.length).trim()

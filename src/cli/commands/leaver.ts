@@ -44,7 +44,7 @@ async function load(deps: MarkDeps, hrisId: string): Promise<Person> {
   if (!person) {
     throw new CliError(`no person with HR id ${hrisId}. Names are not ids: use the id the HR system owns.`, {
       exitCode: 2,
-      docsAnchor: 'docs/runbooks/unpark-a-row.md',
+      docsAnchor: 'docs/runbooks/hold-and-release.md',
     })
   }
   return person

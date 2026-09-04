@@ -21,7 +21,7 @@ separate refusals stand in the way, and each names this file:
 | Refusal | What it means |
 | --- | --- |
 | `no_uninstall_trigger` | there is no command configured for this operating system |
-| `unproven_script_needs_canary` | the script is marked unproven and `--execute` was used without `--canaried <systemId>` |
+| `unproven_script_needs_canary` | the script is marked unproven and `--armed` was used without `--canaried-system-id` |
 
 A dry run is never refused for being unproven. Plan as much as you like.
 
@@ -98,11 +98,11 @@ the console, or delete it and make a new one.
 ## Step 3: dry run against one machine you own
 
 ```
-jml device preflight <systemId>
-jml device dispose <systemId> --disposition handover --acknowledge-fde-key-loss
+jml device preflight --system-id <systemId> --disposition handover
+jml device dispose --system-id <systemId> --disposition handover --acknowledge-fde-key-loss
 ```
 
-`dispose` is a dry run unless you pass `--execute`, so this changes nothing. It
+`dispose` is a dry run unless you pass `--armed`, so this changes nothing. It
 prints the exact machine, the exact association it would create, the agents the
 receipt must account for, every refusal and every warning. Read it. If it names
 a machine you did not expect, stop.
@@ -114,8 +114,8 @@ the record destroys an escrowed key, and an unknown is not a no.
 ## Step 4: execute on that one machine
 
 ```
-jml device dispose <systemId> --disposition handover --execute \
-  --canaried <systemId> --acknowledge-fde-key-loss
+jml device dispose --system-id <systemId> --disposition handover --armed \
+  --canaried-system-id <canary-systemId> --acknowledge-fde-key-loss
 ```
 
 Watch for these in the report, in this order:

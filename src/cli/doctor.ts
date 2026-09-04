@@ -87,7 +87,7 @@ export async function runDoctor(rt: Runtime, opts: DoctorOptions = {}): Promise<
   rows.push(await probeStateStore(rt))
 
   let storeCounts: VerifyReport['counts'] | null = null
-  const store = await probe('people store', 'docs/runbooks/migrate-a-store.md', async () => {
+  const store = await probe('people store', 'docs/runbooks/store-migration.md', async () => {
     const counts = (await verifyStore(rt.store)).counts
     storeCounts = counts
     return row(
@@ -95,7 +95,7 @@ export async function runDoctor(rt: Runtime, opts: DoctorOptions = {}): Promise<
       true,
       `${cfg.store.adapter}: ${counts.total} rows, ${counts.departed} tombstones, ` +
         `${counts.day0Selection} would start offboarding today`,
-      'docs/runbooks/migrate-a-store.md',
+      'docs/runbooks/store-migration.md',
     )
   })
   rows.push(store)
@@ -250,7 +250,7 @@ export async function assertServable(rt: Runtime): Promise<void> {
   } catch (err) {
     throw new CliError(
       `refusing to serve: the people store could not be counted: ${err instanceof Error ? err.message : String(err)}`,
-      { exitCode: 78, docsAnchor: 'docs/runbooks/migrate-a-store.md' },
+      { exitCode: 78, docsAnchor: 'docs/runbooks/store-migration.md' },
     )
   }
   const baseline = await rt.state.getCounter('people.departed')
@@ -259,7 +259,7 @@ export async function assertServable(rt: Runtime): Promise<void> {
       `refusing to serve: the tombstone count has fallen from ${baseline} to ${departed}. ` +
         `Tombstones are what stop a historic leaver being offboarded again, so nothing runs until somebody ` +
         `knows why they went.`,
-      { exitCode: 78, docsAnchor: 'docs/runbooks/migrate-a-store.md' },
+      { exitCode: 78, docsAnchor: 'docs/runbooks/store-migration.md' },
     )
   }
 }

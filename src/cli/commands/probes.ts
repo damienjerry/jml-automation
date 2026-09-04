@@ -79,7 +79,7 @@ export async function probe(
  */
 export async function probeAuditDirectory(rt: Runtime): Promise<DoctorRow> {
   const dir = rt.cfg.audit.jsonl.dir
-  const anchor = 'docs/runbooks/verify-the-audit-log.md'
+  const anchor = 'docs/runbooks/incident-recovery.md#the-audit-log-fails-verification'
   try {
     await mkdir(dir, { recursive: true })
     await access(dir, constants.W_OK)
@@ -179,7 +179,7 @@ export async function probeGoogleScopes(
 }
 
 export async function parkedRows(rt: Runtime, warnDays: number): Promise<{ row: DoctorRow; count: number; oldest: ParkedRow | null }> {
-  const anchor = 'docs/runbooks/unpark-a-row.md'
+  const anchor = 'docs/runbooks/hold-and-release.md'
   let people: Person[]
   try {
     people = await rt.store.list({ parked: true })

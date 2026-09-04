@@ -62,7 +62,7 @@ export interface ScopeUse {
 /**
  * The scope table.
  *
- * Read the `subject` column before granting anything: five of these are
+ * Read the `subject` column before granting anything: six of these are
  * delegated to a person, and two are refused under delegation in practice and
  * only work with the service account acting as itself against a resource that
  * has been shared with it.

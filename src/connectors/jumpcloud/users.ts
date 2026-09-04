@@ -157,7 +157,7 @@ export class JumpCloudUsers implements IdentityConnector {
         ok: false,
         detail: `the directory read answered ${res.status} on ${this.client.baseUrl}`,
         remediation: 'Check the API key. A key belonging to a deleted admin answers 401 on every path.',
-        docsAnchor: 'credentials#jumpcloud',
+        docsAnchor: 'docs/credentials.md#jumpcloud',
       }
     }
     return {
@@ -165,7 +165,7 @@ export class JumpCloudUsers implements IdentityConnector {
       detail: `the directory read answered ${res.status} on ${this.client.baseUrl}`,
       remediation:
         'Some organisations answer only on the console host. A 404 on every path is the host being wrong, not the key.',
-      docsAnchor: 'credentials#jumpcloud',
+      docsAnchor: 'docs/credentials.md#jumpcloud',
     }
   }
 

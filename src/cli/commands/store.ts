@@ -143,7 +143,7 @@ async function backup(io: CliIo, storeFile: string | null, stateFile: string, to
     throw new CliError(
       'this configuration does not use the local SQLite people store, so there is no file to copy. ' +
         'Back the remote store up where it lives.',
-      { exitCode: 2, docsAnchor: 'docs/runbooks/migrate-a-store.md' },
+      { exitCode: 2, docsAnchor: 'docs/runbooks/store-migration.md' },
     )
   }
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')

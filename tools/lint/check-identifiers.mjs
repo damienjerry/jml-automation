@@ -180,6 +180,17 @@ function isBinary(text) {
   return text.includes('\u0000')
 }
 
+/**
+ * Files this scan could not read.
+ *
+ * Reported rather than dropped. A skipped file used to be counted in the
+ * "scanned N files" line, so two source files sat outside the secret scan for
+ * as long as they carried a stray control character, and the report said they
+ * had been checked. A number that counts what it did not read is worse than a
+ * smaller number.
+ */
+const skipped = []
+
 function scan(files, denylist) {
   const findings = []
   const denyRules = denylist.map((word) => ({
@@ -200,7 +211,10 @@ function scan(files, denylist) {
     } catch {
       continue
     }
-    if (isBinary(text)) continue
+    if (isBinary(text)) {
+      skipped.push(rel)
+      continue
+    }
 
     text.split('\n').forEach((raw, i) => {
       if (/identifier-lint:\s*ignore/.test(raw)) return
@@ -283,7 +297,16 @@ for (const f of [...errors, ...warns]) {
 const denyNote = denylist.length
   ? ` with ${denylist.length} local denylist entries`
   : ' (no local denylist present)'
-console.log(`\nscanned ${files.length} files${denyNote}: ${errors.length} error(s), ${warns.length} warning(s)`)
+console.log(
+  `\nscanned ${files.length - skipped.length} files${denyNote}: ${errors.length} error(s), ${warns.length} warning(s)`,
+)
+if (skipped.length) {
+  console.log(
+    `\nSKIPPED ${skipped.length} file(s) holding a NUL byte, which this scan cannot read and grep silently ignores:`,
+  )
+  for (const rel of skipped) console.log(`  ${rel}`)
+  console.log('Write control characters as escapes so the file can be scanned.')
+}
 
 if (errors.length) {
   console.log('\nEvery identifier must be an approved placeholder, for example')

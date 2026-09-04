@@ -26,7 +26,7 @@
  */
 
 import { randomBytes } from 'node:crypto'
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { generateArtefacts, writeArtefacts } from '../../config/generate.ts'
 import { CliError, type CliIo } from './context.ts'
@@ -93,6 +93,11 @@ export async function initCommand(io: CliIo, opts: { dir?: string; force?: boole
   const dir = opts.dir ?? io.cwd
   const configPath = join(dir, CONFIG_FILE)
   const envPath = join(dir, ENV_FILE)
+
+  // A --dir nobody has created yet is the ordinary case: a rehearsal
+  // configuration goes in a new directory. Without this the command failed
+  // with a bare ENOENT naming a file the caller never asked to open.
+  if (opts.dir) await mkdir(dir, { recursive: true })
 
   const configExists = await exists(configPath)
   const envExists = await exists(envPath)
