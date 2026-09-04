@@ -1,0 +1,9 @@
+# Literal strings this operator never wants published, one per line.
+#
+# Copy to denylist.local.txt (gitignored) and add your own organisation's
+# names, domains and tenant ids. Keeping it out of git is deliberate: a
+# committed denylist would publish the very names it exists to block.
+#
+# acme-corp
+# acmecorp.com
+# acme.internal

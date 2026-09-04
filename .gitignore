@@ -1,0 +1,40 @@
+# Secrets and local config — never commit
+.env
+.env.*
+!.env.example
+*.local.json
+.dev.vars
+credentials.json
+service-account*.json
+*.pem
+*.key
+op_env
+.op_env
+
+# Local state
+*.sqlite
+*.sqlite3
+*.db
+data/
+audit/*.jsonl
+!audit/.gitkeep
+
+# Build and deps
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Terraform (never ship state or tfvars)
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+.terraform/

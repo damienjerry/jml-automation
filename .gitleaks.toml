@@ -1,0 +1,44 @@
+# gitleaks config for jml-toolkit.
+# The public repo must contain no credential of any kind. This extends the
+# default rule set with the vendor key shapes this toolkit touches.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "jumpcloud-api-key"
+description = "JumpCloud API key"
+regex = '''jca_[A-Za-z0-9]{20,}'''
+tags = ["jumpcloud"]
+
+[[rules]]
+id = "slack-webhook-url"
+description = "Slack incoming webhook URL"
+regex = '''https://hooks\.slack\.com/services/T[A-Za-z0-9]{6,}/B[A-Za-z0-9]{6,}/[A-Za-z0-9]{16,}'''
+tags = ["slack"]
+
+[[rules]]
+id = "notion-integration-token"
+description = "Notion internal integration token"
+regex = '''(secret_[A-Za-z0-9]{40,}|ntn_[A-Za-z0-9]{40,})'''
+tags = ["notion"]
+
+[[rules]]
+id = "healthchecks-ping-url"
+description = "Healthchecks.io ping URL (bearer-by-URL)"
+regex = '''https://hc-ping\.com/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+tags = ["healthchecks"]
+
+[[rules]]
+id = "google-sa-private-key"
+description = "Google service account private key material"
+regex = '''"private_key"\s*:\s*"-----BEGIN'''
+tags = ["google"]
+
+[allowlist]
+description = "Documentation placeholders are intentional"
+regexes = [
+  '''jane\.doe@example\.com''',
+  '''\$\{[A-Z0-9_]+\}''',
+  '''<[a-z-]+>''',
+]
+paths = ['''\.gitleaks\.toml$''']

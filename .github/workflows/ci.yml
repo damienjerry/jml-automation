@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # This job is the reason the repository can be public. It runs before anything
+  # else and blocks any commit that carries a credential or a real organisation
+  # identifier, so hand-sanitising is never the last line of defence.
+  disclosure-gate:
+    name: Secret and identifier gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans history, not just the working tree
+
+      - name: Scan history for credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Scan working tree for organisation identifiers
+        run: node tools/lint/check-identifiers.mjs
+
+  build:
+    name: Typecheck, lint and test
+    runs-on: ubuntu-latest
+    needs: disclosure-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+  # Every workflow file the toolkit ships must be importable and free of the
+  # instance-specific metadata n8n writes into an export (credential ids, node
+  # uuids, staticData holding real people).
+  workflows:
+    name: Validate n8n workflow bundle
+    runs-on: ubuntu-latest
+    needs: disclosure-gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Validate exports
+        run: npm run validate:workflows
