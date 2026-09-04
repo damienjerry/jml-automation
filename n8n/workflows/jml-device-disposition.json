@@ -1,0 +1,456 @@
+{
+  "name": "jml-device-disposition",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "jml-on-error",
+    "executionTimeout": 5400,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "nodes": [
+    {
+      "name": "Device disposition request",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 0],
+      "notes": "Authenticated, because this form can remove a device record. The pattern it replaces was an open webhook that deleted device records for anyone who knew the URL.",
+      "parameters": {
+        "authentication": "basicAuth",
+        "formTitle": "Decide what happens to a leaver's device",
+        "formDescription": "Clears the day 7 device gate. return_to_pool unbinds the leaver and leaves the machine enrolled and managed, which is the only fully provable option. Leave Dry run on yes to read the preflight and the refusals first. Reassigning to a named person is jml device dispose on the command line, because the API route does not yet carry a new owner.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "System id",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Disposition",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  { "option": "return_to_pool" },
+                  { "option": "handover" },
+                  { "option": "retain_unmanaged" }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Acknowledge disk-encryption key loss",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [{ "option": "no" }, { "option": "yes" }]
+              }
+            },
+            {
+              "fieldLabel": "System id the uninstall script was proven on",
+              "fieldType": "text",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Dry run",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [{ "option": "yes" }, { "option": "no" }]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "name": "JML Form Access"
+        }
+      }
+    },
+    {
+      "name": "Start the disposition",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "notes": "A ten minute timeout even though the answer is immediate. Every request in this workflow carries it, so a later edit cannot leave one short and turn a slow success into a reported failure.",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JML_API_URL }}/v1/devices/disposition",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-JML-Actor",
+              "value": "=n8n:{{ $workflow.name }}#{{ $execution.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "systemId",
+              "value": "={{ $json['System id'] }}"
+            },
+            {
+              "name": "disposition",
+              "value": "={{ $json.Disposition }}"
+            },
+            {
+              "name": "acknowledgeFdeKeyLoss",
+              "value": "={{ $json['Acknowledge disk-encryption key loss'] === 'yes' }}"
+            },
+            {
+              "name": "canariedSystemId",
+              "value": "={{ $json['System id the uninstall script was proven on'] }}"
+            },
+            {
+              "name": "dryRun",
+              "value": "={{ $json['Dry run'] !== 'no' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 600000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "JML Toolkit API"
+        }
+      }
+    },
+    {
+      "name": "Disposition accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 0],
+      "notes": "The sidecar refuses what it cannot prove: no configured uninstall trigger for this operating system, a group-bound command, a pre-existing association, the wrong owner, a missing key acknowledgement, or an unproven script with no canary. Each refusal arrives here as a non-202.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "accepted-202",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 202,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the disposition was refused",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [660, -200],
+      "parameters": {
+        "errorMessage": "=The disposition was refused (HTTP {{ $json.statusCode }}). {{ $json.body ? JSON.stringify($json.body).slice(0, 300) : 'no body' }}"
+      }
+    },
+    {
+      "name": "Wait for the device",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [660, 0],
+      "notes": "A minute between polls. A handover waits for a command receipt and then for the agent to stop reporting, so this is the one route that can legitimately take half an hour.",
+      "parameters": {
+        "amount": 60,
+        "unit": "seconds"
+      }
+    },
+    {
+      "name": "Poll the disposition",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.JML_API_URL }}/v1/runs/{{ $('Start the disposition').item.json.body.runId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-JML-Actor",
+              "value": "=n8n:{{ $workflow.name }}#{{ $execution.id }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 600000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "JML Toolkit API"
+        }
+      }
+    },
+    {
+      "name": "Disposition finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1100, 0],
+      "notes": "Thirty polls of a minute. The sidecar has its own receipt timeout, so this bound only stops the workflow outliving it.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "terminal-status",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 202,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "poll-budget-spent",
+              "leftValue": "={{ $runIndex }}",
+              "rightValue": 30,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Summarise the disposition",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1320, 0],
+      "notes": "leftEnrolled true means nothing was deleted and the day 7 gate is still closed. That is the honest outcome of an incomplete receipt, and it has to be legible in the message rather than inferred from its absence.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sum-ok",
+              "name": "ok",
+              "type": "boolean",
+              "value": "={{ $json.ok }}"
+            },
+            {
+              "id": "sum-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.runId }}"
+            },
+            {
+              "id": "sum-outcome",
+              "name": "outcome",
+              "type": "string",
+              "value": "={{ $json.report ? $json.report.disposition + ' on ' + $json.report.displayName + ': ' + $json.report.final + ', dryRun=' + $json.report.dryRun + ', recordDeleted=' + $json.report.recordDeleted + ', leftEnrolled=' + $json.report.leftEnrolled : 'no report: the disposition did not reach a terminal state' }}"
+            },
+            {
+              "id": "sum-gate",
+              "name": "gateAfter",
+              "type": "string",
+              "value": "={{ $json.report ? (($json.report.gateAfter.clears ? 'day 7 gate clear' : 'day 7 gate BLOCKED') + ' (' + $json.report.gateAfter.reason + ': ' + $json.report.gateAfter.detail + ')') : 'gate not evaluated' }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      }
+    },
+    {
+      "name": "Post the disposition report",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [1540, 0],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "authentication": "accessToken",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.SLACK_JML_CHANNEL_ID }}"
+        },
+        "text": "=Device disposition {{ $json.ok ? 'ok' : 'FAILED' }} by n8n:{{ $workflow.name }}#{{ $execution.id }} (run {{ $json.runId }})\n{{ $json.outcome }}\n{{ $json.gateAfter }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "name": "JML Slack Alerts"
+        }
+      }
+    },
+    {
+      "name": "Slack accepted the post?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1760, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "slack-ok-true",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the report was not delivered",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [1980, -200],
+      "parameters": {
+        "errorMessage": "=A device was acted on and the report was not delivered: {{ JSON.stringify($json).slice(0, 400) }}"
+      }
+    },
+    {
+      "name": "Disposition reported ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1980, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "report-ok-true",
+              "leftValue": "={{ $('Summarise the disposition').item.json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the disposition did not complete",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [2200, -200],
+      "parameters": {
+        "errorMessage": "=The disposition did not complete. Read the report before retrying: if an association is still attached it is reported as an association leak, and it must be removed before the machine takes somebody else's command."
+      }
+    },
+    {
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2200, 0],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Device disposition request": {
+      "main": [[{ "node": "Start the disposition", "type": "main", "index": 0 }]]
+    },
+    "Start the disposition": {
+      "main": [[{ "node": "Disposition accepted?", "type": "main", "index": 0 }]]
+    },
+    "Disposition accepted?": {
+      "main": [
+        [{ "node": "Wait for the device", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the disposition was refused", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait for the device": {
+      "main": [[{ "node": "Poll the disposition", "type": "main", "index": 0 }]]
+    },
+    "Poll the disposition": {
+      "main": [[{ "node": "Disposition finished?", "type": "main", "index": 0 }]]
+    },
+    "Disposition finished?": {
+      "main": [
+        [{ "node": "Summarise the disposition", "type": "main", "index": 0 }],
+        [{ "node": "Wait for the device", "type": "main", "index": 0 }]
+      ]
+    },
+    "Summarise the disposition": {
+      "main": [[{ "node": "Post the disposition report", "type": "main", "index": 0 }]]
+    },
+    "Post the disposition report": {
+      "main": [[{ "node": "Slack accepted the post?", "type": "main", "index": 0 }]]
+    },
+    "Slack accepted the post?": {
+      "main": [
+        [{ "node": "Disposition reported ok?", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the report was not delivered", "type": "main", "index": 0 }]
+      ]
+    },
+    "Disposition reported ok?": {
+      "main": [
+        [{ "node": "Done", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the disposition did not complete", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

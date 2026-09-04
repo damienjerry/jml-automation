@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { FixtureHrisAdapter, readFixtureFile, validateFixture } from '../../src/hris/fixture.ts'
 import { HrisImplausible, HrisIncomplete } from '../../src/hris/types.ts'
 
-const DEMO = 'test/fixtures/hris/demo.json'
+const DEMO = 'src/cli/fixtures/demo.json'
 
 /** A one-off fixture on disk, for shapes not worth committing. */
 async function writeTemp(content: unknown): Promise<string> {

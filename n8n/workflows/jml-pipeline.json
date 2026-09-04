@@ -1,0 +1,511 @@
+{
+  "name": "jml-pipeline",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "jml-on-error",
+    "executionTimeout": 3600,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "nodes": [
+    {
+      "name": "Every day at 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "notes": "One schedule for the whole lifecycle. The sidecar runs sync, then detect, then the leaver engine, inside one lease. The estate this replaces had five schedules whose ordering existed only in a comment.",
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Run options",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 0],
+      "notes": "Dry run unless JML_DRY_RUN is exactly the string false. An unset or misspelt variable therefore changes nothing on a real tenant. The sidecar defaults the same way, so both ends fail safe.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "opt-dry-run",
+              "name": "dryRun",
+              "type": "boolean",
+              "value": "={{ $env.JML_DRY_RUN !== 'false' }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      }
+    },
+    {
+      "name": "Start the run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "notes": "202 with a runId, or 409 when a run of this kind is already in flight. Fields are sent as key/value pairs: a raw JSON body does not start with = so n8n never evaluates the expressions inside it and ships their characters instead.",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JML_API_URL }}/v1/runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-JML-Actor",
+              "value": "=n8n:{{ $workflow.name }}#{{ $execution.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "dryRun",
+              "value": "={{ $json.dryRun }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "JML Toolkit API"
+        }
+      }
+    },
+    {
+      "name": "Run accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [660, 0],
+      "notes": "The status code is read explicitly because the request is configured never to error, so nothing here has to guess from an empty body.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "accepted-202",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 202,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Already running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [880, -200],
+      "notes": "A concurrent run is a skip, not a failure. A schedule that overlaps itself is normal operation, and turning an overlap red teaches people to ignore red runs.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "in-progress-409",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 409,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Skip: a run was already in flight",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1100, -200],
+      "parameters": {}
+    },
+    {
+      "name": "Stop: the API refused the run",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [1100, -380],
+      "parameters": {
+        "errorMessage": "=The toolkit API did not accept the run (HTTP {{ $json.statusCode }}). A 401 is the bearer token, a 400 names the field, and anything else belongs in the sidecar logs."
+      }
+    },
+    {
+      "name": "Wait for the engine",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [880, 0],
+      "notes": "The run is asynchronous on purpose. The device paths hold an association for two minutes, wait up to ten for a receipt and confirm silence for ten more, which is longer than any HTTP node will wait.",
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      }
+    },
+    {
+      "name": "Poll the run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0],
+      "notes": "202 while the run is in flight, 200 with the report when it is terminal, 409 when the run took its lease and found somebody else holding it.",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.JML_API_URL }}/v1/runs/{{ $('Start the run').item.json.body.runId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-JML-Actor",
+              "value": "=n8n:{{ $workflow.name }}#{{ $execution.id }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "JML Toolkit API"
+        }
+      }
+    },
+    {
+      "name": "Run finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1320, 0],
+      "notes": "The poll is bounded by $runIndex so a stuck run cannot loop for ever. Giving up still reaches the assertion at the end, which fails the execution rather than reporting silence as success.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "terminal-status",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 202,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "poll-budget-spent",
+              "leftValue": "={{ $runIndex }}",
+              "rightValue": 40,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Lease held elsewhere?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1540, 0],
+      "notes": "The other kind of overlap: another process held the pipeline lease, so this run did nothing. Also a skip.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "lease-held-409",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 409,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Skip: another process held the lease",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1760, -200],
+      "parameters": {}
+    },
+    {
+      "name": "Summarise the run",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1760, 0],
+      "notes": "Flattens the report into the few fields the message needs, so the chat node and the assertion after it read short expressions. A run that failed before finishing has no report, which is said in words rather than printed as undefined.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sum-ok",
+              "name": "ok",
+              "type": "boolean",
+              "value": "={{ $json.ok }}"
+            },
+            {
+              "id": "sum-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.runId }}"
+            },
+            {
+              "id": "sum-dry-run",
+              "name": "dryRun",
+              "type": "string",
+              "value": "={{ $json.report ? $json.report.dryRun : 'unknown' }}"
+            },
+            {
+              "id": "sum-counts",
+              "name": "counts",
+              "type": "string",
+              "value": "={{ $json.report ? 'day0=' + $json.report.counts.day0 + ' day6=' + $json.report.counts.day6 + ' day7=' + $json.report.counts.day7 + ' blocked=' + $json.report.counts.blocked + ' parked=' + $json.report.counts.parked + ' failedLegs=' + $json.report.counts.failedLegs : 'no report: the run did not reach a terminal state' }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      }
+    },
+    {
+      "name": "Post the run summary",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [1980, 0],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "notes": "Errors continue to the next node so delivery is judged in exactly one place. The channel comes from the environment: a channel id pasted into a shipped workflow posts one organisation's leaver names into another organisation's channel.",
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "authentication": "accessToken",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.SLACK_JML_CHANNEL_ID }}"
+        },
+        "text": "=jml-pipeline {{ $json.ok ? 'ok' : 'FAILED' }} (run {{ $json.runId }}, dryRun={{ $json.dryRun }})\n{{ $json.counts }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "name": "JML Slack Alerts"
+        }
+      }
+    },
+    {
+      "name": "Slack accepted the post?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2200, 0],
+      "notes": "The chat API answers 200 with the failure in the body. Three workflows in the estate this replaces lost every post they made to a channel their bot had never joined, and each execution stayed green.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "slack-ok-true",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the summary was not delivered",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [2420, -200],
+      "parameters": {
+        "errorMessage": "=The run summary was not delivered: {{ JSON.stringify($json).slice(0, 400) }}"
+      }
+    },
+    {
+      "name": "Run reported ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2420, 0],
+      "notes": "Read from the summary node by name. After the chat node $json is the chat response, whose own ok field means something else entirely.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "report-ok-true",
+              "leftValue": "={{ $('Summarise the run').item.json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the run reported a failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [2640, -200],
+      "parameters": {
+        "errorMessage": "=The run reported a failure. Read the report for the failing leg: run {{ $('Summarise the run').item.json.runId }}"
+      }
+    },
+    {
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2640, 0],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Every day at 07:00": {
+      "main": [[{ "node": "Run options", "type": "main", "index": 0 }]]
+    },
+    "Run options": {
+      "main": [[{ "node": "Start the run", "type": "main", "index": 0 }]]
+    },
+    "Start the run": {
+      "main": [[{ "node": "Run accepted?", "type": "main", "index": 0 }]]
+    },
+    "Run accepted?": {
+      "main": [
+        [{ "node": "Wait for the engine", "type": "main", "index": 0 }],
+        [{ "node": "Already running?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Already running?": {
+      "main": [
+        [{ "node": "Skip: a run was already in flight", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the API refused the run", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait for the engine": {
+      "main": [[{ "node": "Poll the run", "type": "main", "index": 0 }]]
+    },
+    "Poll the run": {
+      "main": [[{ "node": "Run finished?", "type": "main", "index": 0 }]]
+    },
+    "Run finished?": {
+      "main": [
+        [{ "node": "Lease held elsewhere?", "type": "main", "index": 0 }],
+        [{ "node": "Wait for the engine", "type": "main", "index": 0 }]
+      ]
+    },
+    "Lease held elsewhere?": {
+      "main": [
+        [{ "node": "Skip: another process held the lease", "type": "main", "index": 0 }],
+        [{ "node": "Summarise the run", "type": "main", "index": 0 }]
+      ]
+    },
+    "Summarise the run": {
+      "main": [[{ "node": "Post the run summary", "type": "main", "index": 0 }]]
+    },
+    "Post the run summary": {
+      "main": [[{ "node": "Slack accepted the post?", "type": "main", "index": 0 }]]
+    },
+    "Slack accepted the post?": {
+      "main": [
+        [{ "node": "Run reported ok?", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the summary was not delivered", "type": "main", "index": 0 }]
+      ]
+    },
+    "Run reported ok?": {
+      "main": [
+        [{ "node": "Done", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the run reported a failure", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

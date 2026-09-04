@@ -281,6 +281,7 @@ export interface DepartedInvariant {
 export async function checkDepartedInvariant(
   people: PeopleStore,
   state: StateStore,
+  opts: { dryRun?: boolean } = {},
 ): Promise<DepartedInvariant> {
   const current = await people.countExact({ status: ['departed'] })
   const previous = await state.getCounter(DEPARTED_COUNTER)
@@ -296,6 +297,13 @@ export async function checkDepartedInvariant(
     }
   }
 
-  await state.setCounter(DEPARTED_COUNTER, current)
+  // A rehearsal reads the counter and leaves it alone. The claim made about
+  // dry run is that it writes nothing, and a caller spying on the state store
+  // to check that claim should not find this. Skipping it costs nothing: the
+  // armed run raises the baseline afterwards, and a null baseline never
+  // aborts. Raising it here was harmless in direction, since the write only
+  // ever goes upwards, but "harmless in direction" is a worse answer to "does
+  // a dry run write" than "no".
+  if (opts.dryRun !== true) await state.setCounter(DEPARTED_COUNTER, current)
   return { ok: true, previous, current }
 }

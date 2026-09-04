@@ -1,0 +1,77 @@
+# Stock n8n, and this toolkit beside it.
+#
+# The split is the point. Every vendor credential, the configuration, the
+# people store and the audit log live in the `jml` service. n8n holds one
+# secret belonging to this toolkit, the bearer token, plus whatever credential
+# it needs for its own error notifications. So an n8n workflow export cannot
+# carry your Google service-account key, because n8n never had it.
+#
+# You can check that claim rather than take it: `docker compose config` prints
+# the resolved environment of both services, and the n8n service below names no
+# vendor variable at all.
+#
+# The jml service publishes NO port. It is reachable as http://jml:8787 on the
+# private network and from nowhere else. Publishing it would put an endpoint
+# that can delete accounts on your host interface, behind one bearer token.
+
+name: jml-toolkit
+
+services:
+  jml:
+    build: .
+    image: jml-toolkit:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      JML_CONFIG: /app/config/jml.config.yaml
+      JML_SERVER_BIND: 0.0.0.0:8787
+    volumes:
+      # The people store and the toolkit's own bookkeeping.
+      - ./data:/app/data
+      # The audit log: append-only, hash-chained, one file per day. Back this
+      # up with your ordinary file backup and run `jml audit verify` on the copy.
+      - ./audit:/app/audit
+      # Read-only: nothing in the toolkit ever rewrites its own configuration.
+      - ./jml.config.yaml:/app/config/jml.config.yaml:ro
+    networks:
+      - jml
+    # Deliberately no `ports:`. See the note at the top of this file.
+
+  n8n:
+    # Pinned to an exact version. An automation tool that upgrades itself
+    # underneath a working schedule is how a schedule silently stops firing.
+    image: n8nio/n8n:1.123.77
+    restart: unless-stopped
+    depends_on:
+      - jml
+    environment:
+      # The only toolkit secret n8n holds. The workflows send it as
+      # `Authorization: Bearer` through one Header Auth credential.
+      JML_API_TOKEN: ${JML_API_TOKEN:?set JML_API_TOKEN in .env, or run `jml init` to generate one}
+      # By service name on the private network, so no host port is involved.
+      JML_API_URL: http://jml:8787
+      GENERIC_TIMEZONE: ${ORG_TIMEZONE:-Europe/London}
+      TZ: ${ORG_TIMEZONE:-Europe/London}
+      # Executions are the record of what was asked for and when. Keeping only
+      # errors is how nobody can tell afterwards whether a run happened.
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+      N8N_DIAGNOSTICS_ENABLED: 'false'
+    ports:
+      # The editor, on the host, for a person. Put it behind your own proxy and
+      # authentication before exposing it beyond this machine.
+      - '127.0.0.1:5678:5678'
+    volumes:
+      - n8n-data:/home/node/.n8n
+      # The workflow bundle, read-only, so `jml n8n import` has something to
+      # read and a running editor cannot quietly rewrite the shipped files.
+      - ./n8n/workflows:/workflows:ro
+    networks:
+      - jml
+
+networks:
+  jml:
+    driver: bridge
+
+volumes:
+  n8n-data:

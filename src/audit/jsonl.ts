@@ -42,6 +42,23 @@ export interface JsonlAuditSinkOptions {
   redact?: RedactFn
   /** Off only for tests that write thousands of rows. */
   fsync?: boolean
+  /**
+   * Replace every address in a row with a salted hash of it.
+   *
+   * On by default in the shipped configuration, and it was previously not
+   * implemented at all: the key existed, the documentation said addresses were
+   * stored as a salted hash, and the sink wrote them in clear. An audit log is
+   * append-only and kept for years, so a quiet failure here builds a permanent
+   * directory of everybody who has ever left, complete with their addresses,
+   * in a file whose whole point is that nothing can be removed from it.
+   *
+   * Needs `salt`. Without one the hashes are a rainbow table of the address
+   * format, so the sink refuses to start rather than offering a hash that is
+   * reversible by guessing a name.
+   */
+  minimisePii?: boolean
+  /** Required when `minimisePii` is on. */
+  salt?: string | null
 }
 
 /**
@@ -101,6 +118,38 @@ function hashRow(row: AuditEvent): string {
   return sha256(canonicalJson(withoutHash))
 }
 
+/**
+ * Every address in a string, replaced by a salted hash of it.
+ *
+ * Deterministic, so an operator who needs the rows for one person hashes that
+ * person's address with their own salt and greps for the result. Truncated to
+ * 16 hex characters: long enough that two addresses will not collide in any
+ * real estate, short enough that a row stays readable.
+ *
+ * Only addresses. Display names and HR ids are left alone, because that is
+ * what the configuration key promises and quietly doing more would make the
+ * log useless for the thing it exists for, which is answering what happened to
+ * which row.
+ */
+const ADDRESS = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
+
+export function hashAddress(address: string, salt: string): string {
+  return 'sha256:' + sha256(salt + '\u0000' + address.trim().toLowerCase()).slice(0, 16)
+}
+
+function minimiseAddresses(value: unknown, salt: string): unknown {
+  if (typeof value === 'string') return value.replace(ADDRESS, (found) => hashAddress(found, salt))
+  if (Array.isArray(value)) return value.map((item) => minimiseAddresses(item, salt))
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [key, inner] of Object.entries(value as Record<string, unknown>)) {
+      out[key] = minimiseAddresses(inner, salt)
+    }
+    return out
+  }
+  return value
+}
+
 export interface AuditVerifyResult {
   ok: boolean
   checkedLines: number
@@ -116,6 +165,8 @@ export class JsonlAuditSink implements AuditSink {
   private readonly today: () => string
   private readonly redact: RedactFn
   private readonly doFsync: boolean
+  private readonly minimisePii: boolean
+  private readonly salt: string
   private handle: FileHandle | null = null
   private handlePath: string | null = null
   private prevHash = GENESIS_HASH
@@ -131,6 +182,14 @@ export class JsonlAuditSink implements AuditSink {
     // that call site does not know it is holding a secret.
     this.redact = options.redact ?? ((detail) => redactDeep(detail))
     this.doFsync = options.fsync ?? true
+    this.minimisePii = options.minimisePii ?? false
+    this.salt = options.salt ?? ''
+    if (this.minimisePii && this.salt === '') {
+      // Refused here rather than degraded to writing addresses in clear. The
+      // configuration schema asks for the same thing, and this is the check
+      // that holds when a caller builds a sink directly.
+      throw new Error('an audit sink with minimisePii needs a salt: an unsalted hash of an address is reversible by guessing a name')
+    }
   }
 
   /** The file today's rows are appended to. */
@@ -173,9 +232,13 @@ export class JsonlAuditSink implements AuditSink {
       }
       // A hash or a previous hash supplied by the caller is discarded: the
       // chain is the sink's to compute, or it proves nothing.
-      const row: AuditEvent = { ...event, prevHash: this.prevHash }
+      let row: AuditEvent = { ...event, prevHash: this.prevHash }
       delete row.hash
       if (row.detail) row.detail = this.redact(row.detail)
+      // Minimisation runs AFTER redaction and BEFORE the hash, so the chain
+      // covers exactly the bytes on disk. Hashing the row first would make
+      // every minimised line fail verification.
+      if (this.minimisePii) row = minimiseAddresses(row, this.salt) as AuditEvent
       hash = hashRow(row)
       row.hash = hash
       const handle = this.handle

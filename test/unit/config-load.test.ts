@@ -9,7 +9,7 @@ function minimalDocument(overrides: Record<string, unknown> = {}): Record<string
     version: 1,
     org: { name: 'Example Organisation', primaryDomain: 'example.com', timezone: 'Europe/London', itTeamSignature: 'IT Team' },
     mail: { senderMailbox: 'it-noreply@example.com' },
-    hris: { adapter: 'fixture', minPlausibleHeadcount: 5, fixture: { path: './test/fixtures/hris/demo.json' } },
+    hris: { adapter: 'fixture', minPlausibleHeadcount: 5, fixture: { path: './src/cli/fixtures/demo.json' } },
     store: { adapter: 'memory' },
     identity: { jumpcloud: { apiKey: 'env:JUMPCLOUD_API_KEY' } },
     google: { serviceAccountJson: 'env:GOOGLE_SERVICE_ACCOUNT_JSON', adminEmail: 'admin@example.com' },

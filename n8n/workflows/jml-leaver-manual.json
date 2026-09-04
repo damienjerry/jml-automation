@@ -1,0 +1,461 @@
+{
+  "name": "jml-leaver-manual",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "jml-on-error",
+    "executionTimeout": 3600,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "nodes": [
+    {
+      "name": "Leaver run request",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [0, 0],
+      "notes": "A form rather than a webhook, and an authenticated one. A form is reachable by anyone who can reach n8n, and this one suspends accounts, so it is never left open.",
+      "parameters": {
+        "authentication": "basicAuth",
+        "formTitle": "Run the leaver engine for one person",
+        "formDescription": "Runs day 0, day 6 and day 7 for a single leaver, in that order, and only the phases that person is due. Leave Dry run on yes to see the plan without touching an account.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Work email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Dry run",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [{ "option": "yes" }, { "option": "no" }]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "name": "JML Form Access"
+        }
+      }
+    },
+    {
+      "name": "Start the leaver run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "notes": "The sidecar matches the address against primary and alias addresses, and an address matching more than one person is parked as ambiguous rather than resolved to the first hit.",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JML_API_URL }}/v1/leavers/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-JML-Actor",
+              "value": "=n8n:{{ $workflow.name }}#{{ $execution.id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $json['Work email'] }}"
+            },
+            {
+              "name": "dryRun",
+              "value": "={{ $json['Dry run'] !== 'no' }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "JML Toolkit API"
+        }
+      }
+    },
+    {
+      "name": "Run accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "accepted-202",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 202,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the API refused the request",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [660, -200],
+      "parameters": {
+        "errorMessage": "=The toolkit API refused the leaver run (HTTP {{ $json.statusCode }}). A 409 means a run is already in flight, so submit the form again once it has finished."
+      }
+    },
+    {
+      "name": "Wait for the engine",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [660, 0],
+      "parameters": {
+        "amount": 20,
+        "unit": "seconds"
+      }
+    },
+    {
+      "name": "Poll the run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.JML_API_URL }}/v1/runs/{{ $('Start the leaver run').item.json.body.runId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-JML-Actor",
+              "value": "=n8n:{{ $workflow.name }}#{{ $execution.id }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "JML Toolkit API"
+        }
+      }
+    },
+    {
+      "name": "Run finished?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1100, 0],
+      "notes": "Bounded by $runIndex. Giving up still reaches the assertions, so a run that never returns is reported as a failure rather than as nothing.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "terminal-status",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 202,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "poll-budget-spent",
+              "leftValue": "={{ $runIndex }}",
+              "rightValue": 60,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Lease held elsewhere?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1320, 0],
+      "notes": "A scheduled run held the lease, so this one did nothing at all. Nothing has happened to the person, and submitting the form again is the whole remedy.",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "lease-held-409",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 409,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Skip: a scheduled run held the lease",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1540, -200],
+      "parameters": {}
+    },
+    {
+      "name": "Summarise the run",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1540, 0],
+      "notes": "Flattens the report so the message and the assertion read short expressions.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sum-ok",
+              "name": "ok",
+              "type": "boolean",
+              "value": "={{ $json.ok }}"
+            },
+            {
+              "id": "sum-run-id",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.runId }}"
+            },
+            {
+              "id": "sum-dry-run",
+              "name": "dryRun",
+              "type": "string",
+              "value": "={{ $json.report ? $json.report.dryRun : 'unknown' }}"
+            },
+            {
+              "id": "sum-counts",
+              "name": "counts",
+              "type": "string",
+              "value": "={{ $json.report ? 'day0=' + $json.report.counts.day0 + ' day6=' + $json.report.counts.day6 + ' day7=' + $json.report.counts.day7 + ' blocked=' + $json.report.counts.blocked + ' parked=' + $json.report.counts.parked + ' failedLegs=' + $json.report.counts.failedLegs : 'no report: the run did not reach a terminal state' }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      }
+    },
+    {
+      "name": "Post what was done",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [1760, 0],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "notes": "A manual run is announced as well as audited, so a leaver processed out of band is not invisible to the rest of the team.",
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "authentication": "accessToken",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.SLACK_JML_CHANNEL_ID }}"
+        },
+        "text": "=Manual leaver run by n8n:{{ $workflow.name }}#{{ $execution.id }}: {{ $json.ok ? 'ok' : 'FAILED' }} (run {{ $json.runId }}, dryRun={{ $json.dryRun }})\n{{ $json.counts }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "name": "JML Slack Alerts"
+        }
+      }
+    },
+    {
+      "name": "Slack accepted the post?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1980, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "slack-ok-true",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the record was not delivered",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [2200, -200],
+      "parameters": {
+        "errorMessage": "=The manual run happened but was not announced: {{ JSON.stringify($json).slice(0, 400) }}"
+      }
+    },
+    {
+      "name": "Run reported ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2200, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "report-ok-true",
+              "leftValue": "={{ $('Summarise the run').item.json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the leaver run reported a failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [2420, -200],
+      "parameters": {
+        "errorMessage": "=The leaver run reported a failure. Read the report for the failing leg: run {{ $('Summarise the run').item.json.runId }}"
+      }
+    },
+    {
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2420, 0],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Leaver run request": {
+      "main": [[{ "node": "Start the leaver run", "type": "main", "index": 0 }]]
+    },
+    "Start the leaver run": {
+      "main": [[{ "node": "Run accepted?", "type": "main", "index": 0 }]]
+    },
+    "Run accepted?": {
+      "main": [
+        [{ "node": "Wait for the engine", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the API refused the request", "type": "main", "index": 0 }]
+      ]
+    },
+    "Wait for the engine": {
+      "main": [[{ "node": "Poll the run", "type": "main", "index": 0 }]]
+    },
+    "Poll the run": {
+      "main": [[{ "node": "Run finished?", "type": "main", "index": 0 }]]
+    },
+    "Run finished?": {
+      "main": [
+        [{ "node": "Lease held elsewhere?", "type": "main", "index": 0 }],
+        [{ "node": "Wait for the engine", "type": "main", "index": 0 }]
+      ]
+    },
+    "Lease held elsewhere?": {
+      "main": [
+        [{ "node": "Skip: a scheduled run held the lease", "type": "main", "index": 0 }],
+        [{ "node": "Summarise the run", "type": "main", "index": 0 }]
+      ]
+    },
+    "Summarise the run": {
+      "main": [[{ "node": "Post what was done", "type": "main", "index": 0 }]]
+    },
+    "Post what was done": {
+      "main": [[{ "node": "Slack accepted the post?", "type": "main", "index": 0 }]]
+    },
+    "Slack accepted the post?": {
+      "main": [
+        [{ "node": "Run reported ok?", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the record was not delivered", "type": "main", "index": 0 }]
+      ]
+    },
+    "Run reported ok?": {
+      "main": [
+        [{ "node": "Done", "type": "main", "index": 0 }],
+        [{ "node": "Stop: the leaver run reported a failure", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}

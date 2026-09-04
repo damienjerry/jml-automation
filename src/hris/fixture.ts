@@ -128,7 +128,7 @@ export class FixtureHrisAdapter implements HrisAdapter {
   }
 }
 
-const EXAMPLE_PATH = 'test/fixtures/hris/demo.json'
+const EXAMPLE_PATH = './src/cli/fixtures/demo.json'
 
 /**
  * Read and validate a fixture file.

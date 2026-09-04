@@ -308,7 +308,7 @@ function placeholderFor(field: Field): string {
     case 'hris.minPlausibleHeadcount':
       return '25'
     case 'hris.fixture.path':
-      return './test/fixtures/hris/demo.json'
+      return './src/cli/fixtures/demo.json'
     case 'store.adapter':
       return 'sqlite'
     default:

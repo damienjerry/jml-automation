@@ -1,0 +1,533 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the offline demo > produces exactly this output 1`] = `
+"
+jml demo: a joiner/mover/leaver lifecycle with no credentials and no network.
+
+HR system      the shipped demo fixture (7 people, 3 employed)
+people store   in memory, empty at the start
+providers      the shipped fakes; every call is recorded, nothing leaves this process
+clock          pinned to 2026-01-15, then moved forward
+one laptop     sys-demo-laptop bound to Robin Ellis, to show the deletion gate
+
+The fixture explains what each person is there to demonstrate:
+  The demo company. Seven people, each one there to make a different rule visible.
+  Every date is written around demoToday, so pin the clock to that date when replaying it.
+  
+  p-1001  employed, nothing to do. Also the manager the leavers report to, so the
+          Drive transfer has somewhere to go.
+  p-1002  starts after demoToday, so the sync derives 'hired' and no access work runs.
+  p-1003  left on demoToday. This is the day-0 case: suspend, auto-reply, licence.
+  p-1004  left six days before demoToday, so the transfer phase is due. In a demo the
+          store already holds suspendedAt for this person; the HR system only ever
+          shows the leaving date.
+  p-1005  left three days before demoToday and was renamed on the way out, so the HR
+          system now shows a plus-addressed mailbox. This is the person a role-change
+          branch once treated as brand new, which let them inherit a colleague's
+          account ids. The id is unchanged, so the sync must treat the new address as
+          an alias of the same person.
+  p-1006  left long before the lookback window. Parked for a human, never offboarded
+          automatically: a historic leaver is what a pruned tombstone looks like.
+  p-1007  employed, no work mailbox. Stays in the snapshot with an empty address,
+          because removing them here would look exactly like somebody leaving.
+
+=== The day before anybody left  (2026-01-14) ===
+The HR system says everybody is employed. The sync creates a row for each of them,
+and derives hired rather than active for anybody whose start date is still ahead.
+Nothing else happens: there is nobody to offboard.
+
+
+--- notification (run.summary) would be sent to IT ---
+subject: Lifecycle: 0 leaver(s), 1 to review, 0 joining
+
+Lifecycle detection for 2026-01-14
+
+- Leavers the engine will start offboarding: 0
+- Terminated rows nothing will touch: 1
+- Joiners: 0
+
+For review, no automatic action:
+
+- Robin Ellis (p-1003): Still employed and carrying a leaving date of 2026-01-15, in 1 day(s). Nothing happens until the HR system drops them from the employed set.
+--- end notification ---
+
+--- notification (run.summary) would be sent to IT ---
+subject: pipeline run ok
+
+pipeline run demo-before: ok
+
+- Mode: armed
+- Started: 2026-01-14T09:00:00.000Z
+- Finished: 2026-01-14T09:00:00.000Z
+
+Counts:
+
+- Suspended today: 0
+- Transfers: 0
+- Deletions: 0
+- Blocked: 0
+... 6 more line(s)
+--- end notification ---
+run demo-before  pipeline  armed  ok=true
+  counts: detect.potentialLeaver=1 hrisEmployed=7 hrisPeople=7 sync.created=6 sync.scanned=7 sync.skipped_no_email=1
+audit rows written this step: 3
+
+  people store:
+    p-1001  active      Jane Doe        
+    p-1002  hired       John Doe        
+    p-1003  active      Robin Ellis     
+    p-1004  active      Sam Rivera      
+    p-1005  active      Kit Marlowe     
+    p-1006  active      Lee Nakamura    
+
+=== Day 0  (2026-01-15) ===
+The HR read, the sync, the detector and the leaver engine, in one run and in that order.
+Anybody whose leaving date has passed is suspended, told to their manager, and marked.
+
+
+--- notification (run.summary) would be sent to IT ---
+subject: Lifecycle: 3 leaver(s), 1 to review, 0 joining
+
+Lifecycle detection for 2026-01-15
+
+- Leavers the engine will start offboarding: 3
+- Terminated rows nothing will touch: 1
+- Joiners: 0
+
+Leaving today:
+
+- Robin Ellis (p-1003): Left on 2026-01-15. The engine will start offboarding on this run.
+- Sam Rivera (p-1004): Left on 2026-01-09. The engine will start offboarding on this run.
+- Kit Marlowe (p-1005): Left on 2026-01-12. The engine will start offboarding on this run.
+
+... 3 more line(s)
+--- end notification ---
+
+--- notification (leaver.day0) would be sent to jane.doe@example.com ---
+subject: Robin Ellis has left Example Organisation
+
+jane.doe@example.com,
+
+Robin Ellis has left Example Organisation, so their IT access was suspended today,
+2026-01-15.
+
+What has been done:
+
+- suspend_idp: identity provider account suspended, read back
+- set_autoreply: auto-reply set on the mailbox
+- revoke_licence: revoked 1 licence(s): example-standard
+
+What happens next:
+... 12 more line(s)
+--- end notification ---
+
+--- notification (leaver.day0) would be sent to IT ---
+subject: Day 0: Robin Ellis
+
+Day 0 offboarding: Robin Ellis (robin.ellis@example.com)
+
+- HR id: p-1003
+- Leaving date held by the HR system: 2026-01-15
+- Suspended at: 2026-01-15
+- Line manager: jane.doe@example.com
+
+Steps:
+
+- suspend_idp: identity provider account suspended, read back
+- set_autoreply: auto-reply set on the mailbox
+- revoke_licence: revoked 1 licence(s): example-standard
+... 8 more line(s)
+--- end notification ---
+
+--- notification (leaver.day0) would be sent to jane.doe@example.com ---
+subject: Sam Rivera has left Example Organisation
+
+jane.doe@example.com,
+
+Sam Rivera has left Example Organisation, so their IT access was suspended today,
+2026-01-15.
+
+What has been done:
+
+- suspend_idp: identity provider account suspended, read back
+- set_autoreply: auto-reply set on the mailbox
+- revoke_licence: revoked 1 licence(s): example-standard
+
+What happens next:
+... 12 more line(s)
+--- end notification ---
+
+--- notification (leaver.day0) would be sent to IT ---
+subject: Day 0: Sam Rivera
+
+Day 0 offboarding: Sam Rivera (sam.rivera@example.com)
+
+- HR id: p-1004
+- Leaving date held by the HR system: 2026-01-09
+- Suspended at: 2026-01-15
+- Line manager: jane.doe@example.com
+
+Steps:
+
+- suspend_idp: identity provider account suspended, read back
+- set_autoreply: auto-reply set on the mailbox
+- revoke_licence: revoked 1 licence(s): example-standard
+... 8 more line(s)
+--- end notification ---
+
+--- notification (leaver.day0) would be sent to jane.doe@example.com ---
+subject: Kit Marlowe has left Example Organisation
+
+jane.doe@example.com,
+
+Kit Marlowe has left Example Organisation, so their IT access was suspended today,
+2026-01-15.
+
+What has been done:
+
+- suspend_idp: identity provider account suspended, read back
+- set_autoreply: auto-reply set on the mailbox
+- revoke_licence: revoked 1 licence(s): example-standard
+
+What happens next:
+... 12 more line(s)
+--- end notification ---
+
+--- notification (leaver.day0) would be sent to IT ---
+subject: Day 0: Kit Marlowe
+
+Day 0 offboarding: Kit Marlowe (kit.marlowe+exit@example.com)
+
+- HR id: p-1005
+- Leaving date held by the HR system: 2026-01-12
+- Suspended at: 2026-01-15
+- Line manager: jane.doe@example.com
+
+Steps:
+
+- suspend_idp: identity provider account suspended, read back
+- set_autoreply: auto-reply set on the mailbox
+- revoke_licence: revoked 1 licence(s): example-standard
+... 8 more line(s)
+--- end notification ---
+
+--- notification (run.summary) would be sent to IT ---
+subject: pipeline run ok
+
+pipeline run demo-day0: ok
+
+- Mode: armed
+- Started: 2026-01-15T09:00:00.000Z
+- Finished: 2026-01-15T09:00:00.000Z
+
+Counts:
+
+- Suspended today: 3
+- Transfers: 0
+- Deletions: 0
+- Blocked: 0
+... 6 more line(s)
+--- end notification ---
+run demo-day0  pipeline  armed  ok=true
+  counts: day0=3 detect.actionable=3 detect.leaver=3 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 selectedDay0=3 sync.scanned=7 sync.skipped_no_email=1 sync.status_changed=4 sync.unchanged=2
+  Robin Ellis     day0    terminated -> offboarding
+      revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
+      identity provider account suspended, read back
+      auto-reply set on the mailbox
+      revoked 1 licence(s): example-standard
+  Sam Rivera      day0    terminated -> offboarding
+      revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
+      identity provider account suspended, read back
+      auto-reply set on the mailbox
+      revoked 1 licence(s): example-standard
+  Kit Marlowe     day0    terminated -> offboarding
+      revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
+      identity provider account suspended, read back
+      auto-reply set on the mailbox
+      revoked 1 licence(s): example-standard
+audit rows written this step: 41
+
+  people store:
+    p-1001  active      Jane Doe        
+    p-1002  hired       John Doe        
+    p-1003  offboarding Robin Ellis     suspendedAt=2026-01-15
+    p-1004  offboarding Sam Rivera      suspendedAt=2026-01-15
+    p-1005  offboarding Kit Marlowe     suspendedAt=2026-01-15
+    p-1006  terminated  Lee Nakamura    parked=termination_older_than_lookback
+
+=== The hand-over day  (2026-01-21) ===
+Nothing new has left. The people suspended on day 0 have reached the hand-over day,
+so their files go to their manager and their mailbox is suspended.
+
+
+--- notification (run.summary) would be sent to IT ---
+subject: Lifecycle: 0 leaver(s), 1 to review, 1 joining
+
+Lifecycle detection for 2026-01-21
+
+- Leavers the engine will start offboarding: 0
+- Terminated rows nothing will touch: 1
+- Joiners: 1
+
+For review, no automatic action:
+
+- Lee Nakamura (p-1006): Terminated and parked as termination_older_than_lookback, so nothing automatic will touch it until somebody clears the reason.
+
+Joining (recorded only; joiner automation is a later phase):
+
+... 1 more line(s)
+--- end notification ---
+
+--- notification (leaver.day6) would be sent to IT ---
+subject: Day 6 hand-over: Robin Ellis
+
+Day 6 offboarding: Robin Ellis (robin.ellis@example.com)
+
+- Drive transfer: files handed to jane.doe@example.com, confirmed complete by the provider
+- Files handed to: jane.doe@example.com
+- Google account: Google account suspended, read back
+
+Deletion is due 2026-01-22.
+
+The transfer is recorded as complete only when the provider reports the job
+finished. Until then deletion stays blocked, because deleting the account first
+destroys the files the transfer was meant to move.
+
+--- end notification ---
+
+--- notification (leaver.day6) would be sent to IT ---
+subject: Day 6 hand-over: Sam Rivera
+
+Day 6 offboarding: Sam Rivera (sam.rivera@example.com)
+
+- Drive transfer: files handed to jane.doe@example.com, confirmed complete by the provider
+- Files handed to: jane.doe@example.com
+- Google account: Google account suspended, read back
+
+Deletion is due 2026-01-22.
+
+The transfer is recorded as complete only when the provider reports the job
+finished. Until then deletion stays blocked, because deleting the account first
+destroys the files the transfer was meant to move.
+
+--- end notification ---
+
+--- notification (leaver.day6) would be sent to IT ---
+subject: Day 6 hand-over: Kit Marlowe
+
+Day 6 offboarding: Kit Marlowe (kit.marlowe+exit@example.com)
+
+- Drive transfer: files handed to jane.doe@example.com, confirmed complete by the provider
+- Files handed to: jane.doe@example.com
+- Google account: Google account suspended, read back
+
+Deletion is due 2026-01-22.
+
+The transfer is recorded as complete only when the provider reports the job
+finished. Until then deletion stays blocked, because deleting the account first
+destroys the files the transfer was meant to move.
+
+--- end notification ---
+
+--- notification (run.summary) would be sent to IT ---
+subject: pipeline run ok
+
+pipeline run demo-transfer: ok
+
+- Mode: armed
+- Started: 2026-01-21T09:00:00.000Z
+- Finished: 2026-01-21T09:00:00.000Z
+
+Counts:
+
+- Suspended today: 0
+- Transfers: 3
+- Deletions: 0
+- Blocked: 0
+... 6 more line(s)
+--- end notification ---
+run demo-transfer  pipeline  armed  ok=true
+  counts: day6=3 detect.joiner=1 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 sync.preserved=3 sync.scanned=7 sync.skipped_no_email=1 sync.unchanged=3
+  Robin Ellis     day6    offboarding -> offboarding
+      suspend_google=done(verified) transfer_drive=done(verified)
+      files handed to jane.doe@example.com, confirmed complete by the provider
+      Google account suspended, read back
+  Sam Rivera      day6    offboarding -> offboarding
+      suspend_google=done(verified) transfer_drive=done(verified)
+      files handed to jane.doe@example.com, confirmed complete by the provider
+      Google account suspended, read back
+  Kit Marlowe     day6    offboarding -> offboarding
+      suspend_google=done(verified) transfer_drive=done(verified)
+      files handed to jane.doe@example.com, confirmed complete by the provider
+      Google account suspended, read back
+audit rows written this step: 21
+
+  people store:
+    p-1001  active      Jane Doe        
+    p-1002  hired       John Doe        
+    p-1003  offboarding Robin Ellis     suspendedAt=2026-01-15 transferred
+    p-1004  offboarding Sam Rivera      suspendedAt=2026-01-15 transferred
+    p-1005  offboarding Kit Marlowe     suspendedAt=2026-01-15 transferred
+    p-1006  terminated  Lee Nakamura    parked=termination_older_than_lookback
+
+=== The deletion day  (2026-01-22) ===
+Accounts are deleted, but only where the gate opens: a confirmed hand-over, no laptop
+still bound to the person, and no identity a live colleague claims.
+
+
+--- notification (leaver.blocked) would be sent to IT ---
+subject: Deletion blocked (devices_bound): Robin Ellis
+
+Deletion blocked: Robin Ellis (robin.ellis@example.com)
+
+Reason: devices_bound
+
+- Demo field laptop, windows, serial DEMOSERIAL1
+
+Nothing has been deleted. The row stays in offboarding and the deletion is
+attempted again on the next run once the reason clears.
+
+This note is sent when the blocking set CHANGES, and re-raised once a week.
+Silence therefore means the same blockage, not a resolved one. See docs/runbooks/clear-a-blocked-deletion.md.
+
+--- end notification ---
+
+--- notification (leaver.day7) would be sent to IT ---
+subject: Day 7 complete: Sam Rivera
+
+Day 7 offboarding complete: Sam Rivera (sam.rivera@example.com)
+
+- Identity provider account: identity provider account deleted, confirmed gone
+- Google account: Google account deleted, confirmed gone
+- Devices bound at the moment of deletion: none
+- Files were handed to: jane.doe@example.com
+
+This person is now recorded as departed. That row is a tombstone and is never
+removed: it is what stops a later HR sync seeing an old leaver as a new one and
+starting the whole sequence again.
+
+--- end notification ---
+
+--- notification (leaver.day7) would be sent to IT ---
+subject: Day 7 complete: Kit Marlowe
+
+Day 7 offboarding complete: Kit Marlowe (kit.marlowe+exit@example.com)
+
+- Identity provider account: identity provider account deleted, confirmed gone
+- Google account: Google account deleted, confirmed gone
+- Devices bound at the moment of deletion: none
+- Files were handed to: jane.doe@example.com
+
+This person is now recorded as departed. That row is a tombstone and is never
+removed: it is what stops a later HR sync seeing an old leaver as a new one and
+starting the whole sequence again.
+
+--- end notification ---
+
+--- notification (run.summary) would be sent to IT ---
+subject: pipeline run ok
+
+pipeline run demo-delete: ok
+
+- Mode: armed
+- Started: 2026-01-22T09:00:00.000Z
+- Finished: 2026-01-22T09:00:00.000Z
+
+Counts:
+
+- Suspended today: 0
+- Transfers: 0
+- Deletions: 2
+- Blocked: 1
+... 6 more line(s)
+--- end notification ---
+run demo-delete  pipeline  armed  ok=true
+  counts: blocked=1 day7=2 detect.joiner=1 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 sync.preserved=3 sync.scanned=7 sync.skipped_no_email=1 sync.unchanged=3
+  Robin Ellis     blocked offboarding -> offboarding  blocked: devices_bound
+      1 device(s) are still bound to this person:
+- Demo field laptop, windows, serial DEMOSERIAL1
+  Sam Rivera      day7    offboarding -> departed
+      delete_google=done(verified) delete_idp=done(verified)
+      identity provider account deleted, confirmed gone
+      Google account deleted, confirmed gone
+  Kit Marlowe     day7    offboarding -> departed
+      delete_google=done(verified) delete_idp=done(verified)
+      identity provider account deleted, confirmed gone
+      Google account deleted, confirmed gone
+audit rows written this step: 19
+
+  people store:
+    p-1001  active      Jane Doe        
+    p-1002  hired       John Doe        
+    p-1003  offboarding Robin Ellis     suspendedAt=2026-01-15 transferred blocked=devices_bound
+    p-1004  departed    Sam Rivera      suspendedAt=2026-01-15 transferred
+    p-1005  departed    Kit Marlowe     suspendedAt=2026-01-15 transferred
+    p-1006  terminated  Lee Nakamura    parked=termination_older_than_lookback
+
+=== The laptop comes back ===
+One deletion was refused because a machine is still bound to the leaver. In a real
+estate this is where \`jml device dispose --disposition return_to_pool\` runs, which
+unbinds the machine only after an uninstall receipt. The demo unbinds it directly:
+the fake providers have no command channel to fire a script down.
+
+unbind sys-demo-laptop from Robin Ellis: ok=true verified=true
+
+=== The deletion day, again  (2026-01-22) ===
+Same day, same run, nothing else changed. The gate reads the provider live rather than
+trusting what it recorded last time, so the deletion now proceeds.
+
+
+--- notification (leaver.day7) would be sent to IT ---
+subject: Day 7 complete: Robin Ellis
+
+Day 7 offboarding complete: Robin Ellis (robin.ellis@example.com)
+
+- Identity provider account: identity provider account deleted, confirmed gone
+- Google account: Google account deleted, confirmed gone
+- Devices bound at the moment of deletion: none
+- Files were handed to: jane.doe@example.com
+
+This person is now recorded as departed. That row is a tombstone and is never
+removed: it is what stops a later HR sync seeing an old leaver as a new one and
+starting the whole sequence again.
+
+--- end notification ---
+
+--- notification (run.summary) would be sent to IT ---
+subject: pipeline run ok
+
+pipeline run demo-delete-2: ok
+
+- Mode: armed
+- Started: 2026-01-22T09:00:00.000Z
+- Finished: 2026-01-22T09:00:00.000Z
+
+Counts:
+
+- Suspended today: 0
+- Transfers: 0
+- Deletions: 1
+- Blocked: 0
+... 6 more line(s)
+--- end notification ---
+run demo-delete-2  pipeline  armed  ok=true
+  counts: day7=1 detect.joiner=1 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 sync.preserved=3 sync.scanned=7 sync.skipped_no_email=1 sync.unchanged=3
+  Robin Ellis     day7    offboarding -> departed
+      delete_google=done(verified) delete_idp=done(verified)
+      identity provider account deleted, confirmed gone
+      Google account deleted, confirmed gone
+audit rows written this step: 10
+
+  people store:
+    p-1001  active      Jane Doe        
+    p-1002  hired       John Doe        
+    p-1003  departed    Robin Ellis     suspendedAt=2026-01-15 transferred
+    p-1004  departed    Sam Rivera      suspendedAt=2026-01-15 transferred
+    p-1005  departed    Kit Marlowe     suspendedAt=2026-01-15 transferred
+    p-1006  terminated  Lee Nakamura    parked=termination_older_than_lookback
+
+The demo finished with every run ok.
+Nothing left this process: no network call, no credential, no file written.
+
+"
+`;

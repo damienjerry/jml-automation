@@ -20,7 +20,7 @@
 
 import { readFile } from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
-import { ConfigSchema, type JmlConfig } from './schema.ts'
+import { ConfigSchema, SECRET_MESSAGE, type JmlConfig } from './schema.ts'
 import {
   createSecretRegistry,
   resolveSecret,
@@ -154,14 +154,37 @@ export async function loadConfig(opts: LoadOptions = {}): Promise<LoadedConfig> 
 }
 
 /**
+ * Fields whose value is a message template, not configuration.
+ *
+ * The auto-reply subject and body are rendered per person with their own
+ * placeholder set (displayName, orgName, managerName, managerEmail), and that
+ * set uses the same `${name}` spelling as an environment reference. Expanding
+ * them here made a freshly generated configuration unloadable: `jml init`
+ * writes the documented default, and the very next command refused it because
+ * `displayName` is not an environment variable. Worse than the error is the
+ * repair somebody reaches for first, which is to set displayName in the
+ * environment, freezing one leaver's name into every future auto-reply.
+ *
+ * These paths are therefore left verbatim for the renderer. A credential can
+ * never hide behind this exemption: neither path is a secret field, both are
+ * asserted against SECRET_PATHS by a test, and the schema refuses a literal
+ * credential in a secret field anyway.
+ */
+export const TEMPLATE_PATHS: readonly string[] = ['leaver.autoReply.subject', 'leaver.autoReply.bodyHtml']
+
+/**
  * `${NAME}` in any string becomes the value of that environment variable.
  *
  * An unset name is an error rather than an empty string. The alternative
  * silently produced a config where, for example, a domain was blank, and a
  * blank domain matches nothing rather than failing.
+ *
+ * The exception is TEMPLATE_PATHS, where `${name}` belongs to the message
+ * renderer rather than to the environment.
  */
 export function expandEnvReferences(value: unknown, env: NodeJS.ProcessEnv, path: string[] = []): unknown {
   if (typeof value === 'string') {
+    if (TEMPLATE_PATHS.includes(path.join('.'))) return value
     return value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_match, name: string) => {
       const found = env[name]
       if (found === undefined) {
@@ -235,15 +258,20 @@ function readPath(root: unknown, path: string): unknown {
 /**
  * Turn one schema issue into something an operator can act on.
  *
- * A failure on a secret field gets its own wording, because the schema's
- * message describes a pattern and the operator needs to be told what they
- * actually did: they wrote a credential into a file that gets backed up,
- * pasted and eventually committed. The message deliberately does not echo the
- * offending value, so an error about a misplaced credential does not become a
- * second copy of it.
+ * A PATTERN failure on a secret field gets its own wording, because the
+ * schema's message describes a regular expression and the operator needs to be
+ * told what they actually did: they wrote a credential into a file that gets
+ * backed up, pasted and eventually committed. The message deliberately does
+ * not echo the offending value, so an error about a misplaced credential does
+ * not become a second copy of it.
+ *
+ * Only the pattern failure is rewritten. Rewriting every issue on a secret
+ * path replaced unrelated advice with an accusation: a missing audit salt was
+ * reported as a pasted credential, which sends the reader hunting for a leak
+ * that is not there while hiding the one sentence that would have fixed it.
  */
 function describeIssue(path: string, message: string): ConfigIssue {
-  if (SECRET_PATHS.includes(path)) {
+  if (SECRET_PATHS.includes(path) && message === SECRET_MESSAGE) {
     return {
       path,
       message:

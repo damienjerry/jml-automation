@@ -31,7 +31,8 @@ function meta(env: string, prose: string): string {
   return env + '|' + prose
 }
 
-const SECRET_MESSAGE =
+/** Exported so the loader can tell a pattern failure from any other issue on a secret field. */
+export const SECRET_MESSAGE =
   'a secret value must never appear in configuration: use env:NAME, file:/path or op://<vault>/<item>/<field>'
 
 /** A field holding a reference to a credential, never the credential itself. */

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "provenOnHardware": false,
+  "why": "Neither script has ever been executed on a real machine. In the automation these were ported from, the equivalent scripts were written, deployed as device commands and never run on anything, so the service names, uninstall strings, launchd labels and paths were inferred rather than observed. The toolkit refuses a handover on any platform whose script is marked provenOnHardware: false unless the operator names the machine they canaried it on, and it says so in the refusal.",
+  "receiptProtocol": "AGENTS_REMOVED <name>=<yes|no|absent> ... on the last line, always exit 0",
+  "canaryRunbook": "docs/runbooks/canary-a-device-script.md",
+  "scripts": [
+    {
+      "os": "windows",
+      "file": "uninstall-agents.windows.ps1",
+      "receiptProtocol": "AGENTS_REMOVED",
+      "provenOnHardware": false,
+      "canaryRunbook": "docs/runbooks/canary-a-device-script.md",
+      "placeholders": ["__AGENTS_JSON__", "__SELF_UNINSTALL_JSON__"]
+    },
+    {
+      "os": "darwin",
+      "file": "uninstall-agents.macos.sh",
+      "receiptProtocol": "AGENTS_REMOVED",
+      "provenOnHardware": false,
+      "canaryRunbook": "docs/runbooks/canary-a-device-script.md",
+      "placeholders": ["__AGENT_SPEC__", "__SELF_UNINSTALL_SPEC__"]
+    }
+  ],
+  "linux": "No Linux script ships. A handover on a Linux machine is refused rather than being sent the Windows script, which is what an earlier version did.",
+  "afterYourCanary": "Set provenOnHardware to true for the platform you proved, in your own fork, and record the machine and the date in your change. Do not set it in a pull request to this repository: it is a statement about your fleet, not about the code."
+}

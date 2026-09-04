@@ -80,7 +80,7 @@ hris:
   # Required when adapter is fixture.
   fixture:
     # JSON file holding the snapshot.
-    path: ./test/fixtures/hris/demo.json
+    path: ./src/cli/fixtures/demo.json
 
 # Where person records live.
 store:

@@ -70,7 +70,7 @@ describe('the headcount floor', () => {
   })
 
   it('applies to a hand-written snapshot too', async () => {
-    const fixture = new FixtureHrisAdapter({ path: 'test/fixtures/hris/demo.json', minPlausibleHeadcount: 100 })
+    const fixture = new FixtureHrisAdapter({ path: 'src/cli/fixtures/demo.json', minPlausibleHeadcount: 100 })
 
     await expect(fixture.fetchAll()).rejects.toBeInstanceOf(HrisImplausible)
   })
