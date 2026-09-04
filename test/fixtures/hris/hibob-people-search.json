@@ -1,0 +1,92 @@
+{
+  "_readme": [
+    "Recorded shape of POST /v1/people/search with a field list and no humanReadable.",
+    "The records are placeholders, but the awkward shapes are the real ones:",
+    "  r-2002  leaving date only in the employment table, and that table comes back",
+    "          as a single-element list rather than an object.",
+    "  r-2003  numeric id and no email at all.",
+    "  r-2004  renamed on the way out, so the address carries a plus tag.",
+    "  r-2005  internal leaving date present but empty, so the fallback has to run."
+  ],
+  "employees": [
+    {
+      "id": "r-2001",
+      "email": "Jane.Doe@example.com",
+      "displayName": "Jane Doe",
+      "firstName": "Jane",
+      "surname": "Doe",
+      "work": {
+        "department": "Technology",
+        "title": "IT Manager",
+        "site": "Head Office",
+        "startDate": "2019-05-06",
+        "reportsTo": null
+      },
+      "internal": { "terminationDate": null },
+      "employment": { "terminationDate": null }
+    },
+    {
+      "id": "r-2002",
+      "email": "sam.rivera@example.com",
+      "displayName": "Sam Rivera",
+      "firstName": "Sam",
+      "surname": "Rivera",
+      "work": {
+        "department": "Finance",
+        "title": "Finance Assistant",
+        "site": "Head Office",
+        "startDate": "2022-07-18",
+        "reportsTo": { "email": "Jane.Doe@example.com", "displayName": "Jane Doe" }
+      },
+      "internal": { "terminationDate": null },
+      "employment": [{ "terminationDate": "2026-01-09" }]
+    },
+    {
+      "id": 2003,
+      "displayName": null,
+      "firstName": "Morgan",
+      "surname": "Vale",
+      "work": {
+        "department": "Operations",
+        "title": "Depot Operative",
+        "site": "Northern Depot",
+        "startDate": "2025-10-06",
+        "reportsTo": { "email": "jane.doe@example.com", "displayName": "Jane Doe" }
+      },
+      "internal": {},
+      "employment": {}
+    },
+    {
+      "id": "r-2004",
+      "email": "kit.marlowe+exit@example.com",
+      "displayName": "Kit Marlowe",
+      "firstName": "Kit",
+      "surname": "Marlowe",
+      "work": {
+        "department": "Commercial",
+        "title": "Account Manager",
+        "site": "Northern Depot",
+        "startDate": "2021-09-13",
+        "reportsTo": { "email": "jane.doe@example.com", "displayName": "Jane Doe" }
+      },
+      "internal": { "terminationDate": "2026-01-12" },
+      "employment": { "terminationDate": "2026-01-12" }
+    },
+    {
+      "id": "r-2005",
+      "email": "lee.nakamura@example.com",
+      "displayName": "Lee Nakamura",
+      "firstName": "Lee",
+      "surname": "Nakamura",
+      "work": {
+        "department": "Commercial",
+        "title": "Field Sales",
+        "site": "Northern Depot",
+        "startDate": "2020-02-24",
+        "reportsTo": { "email": "jane.doe@example.com", "displayName": "Jane Doe" }
+      },
+      "internal": { "terminationDate": "   " },
+      "employment": { "terminationDate": "2025-08-29T00:00:00.000Z" }
+    }
+  ]
+}

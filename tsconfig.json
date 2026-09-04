@@ -15,7 +15,14 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    // Sources import each other with an explicit .ts extension, which is what
+    // Node's own type stripping requires, so `node --experimental-strip-types`
+    // can run a source file directly (the generator does). These two options
+    // let tsc accept that specifier and rewrite it to .js on the way out, so
+    // the build output is still ordinary ESM.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src/**/*.ts"]
 }

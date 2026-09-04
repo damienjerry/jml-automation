@@ -1,0 +1,14 @@
+{
+  // tsconfig.json is the BUILD config: rootDir is src, so it deliberately
+  // compiles only what ships. That means it never looks at the tests, and a
+  // test written against a signature that has since changed keeps passing at
+  // run time while the type error goes unseen. This config typechecks the
+  // tests against the real sources so interface drift between a package and
+  // its tests fails the gate instead of surviving a merge.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

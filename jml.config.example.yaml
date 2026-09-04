@@ -1,0 +1,240 @@
+# GENERATED FILE. Edit src/config/schema.ts and run `npm run generate`.
+#
+# Copy to jml.config.yaml and edit. Both files are gitignored.
+# Every string may use ${ENV_VAR}; every secret MUST be a reference
+# (env:NAME, file:/path or op://<vault>/<item>/<field>), never a value.
+
+
+# Config format version. Bumped only for a breaking change.
+version: 1
+
+org:
+  # Organisation name, used in notifications and the leaver auto-reply.
+  name: "Example Organisation"
+  # The domain a canonical address is expressed in.
+  primaryDomain: example.com
+  # Comma-separated domains that route to the same mailboxes. Two systems keyed on different domains for one person is how identity joins silently diverge.
+  aliasDomains: []
+  # IANA zone. ALL date-only arithmetic happens in it; never in UTC.
+  timezone: Europe/London
+  # Sign-off line on notifications sent to a person.
+  itTeamSignature: "IT Team"
+
+# dry-run plans and reports without touching a provider. It is the default, and the demo runs in it.
+mode: dry-run
+
+# Which actions may really happen. An action absent from this list records not_armed rather than running, so arming happens one action at a time.
+armedActions: []
+
+mail:
+  # The mailbox outbound mail is sent AS. Delegated authority is granted for this address specifically.
+  senderMailbox: it-noreply@example.com
+  # Addresses blind-copied on every notification.
+  bcc: []
+  # Tell the leaver's manager on day 0 that offboarding has started.
+  managerOnDay0: true
+
+hris:
+  # Which HR system to read.
+  adapter: fixture
+  # REQUIRED, no default. A snapshot smaller than this aborts the run. A truncated read looks exactly like a company where everybody left, and the cost of that mistake is suspending the whole staff, so an adopter states their own floor rather than inheriting a guess.
+  minPlausibleHeadcount: 25
+  # Regular expressions matching the address an HR system renames a leaver to. A match means the address is an alias on the same person, never a new identity.
+  exitRenamePatterns: ["\\+(exit|leaver)@"]
+  # Required when adapter is hibob.
+  hibob:
+    # HR API base URL.
+    baseUrl: "https://api.hibob.com/v1"
+    # Service user id, as a secret reference.
+    serviceUserId: env:HIBOB_SERVICE_USER_ID
+    # Service user token, as a secret reference.
+    serviceToken: env:HIBOB_SERVICE_TOKEN
+    # Page size for the paged read.
+    pageSize: 200
+    # Where each field lives in the HR payload.
+    fields:
+      # Path to the stable HR id.
+      id: root.id
+      # Path to the work email address.
+      email: root.email
+      # Path to the display name.
+      displayName: root.displayName
+      # Path to the first name.
+      firstName: root.firstName
+      # Path to the surname.
+      lastName: root.surname
+      # Path to the department.
+      department: work.department
+      # Path to the job title.
+      jobTitle: work.title
+      # Path to the work site.
+      site: work.site
+      # Path to the start date.
+      startDate: work.startDate
+      # Path to the manager's email address.
+      managerEmail: work.reportsTo.email
+      # Path to the manager's name.
+      managerName: work.reportsTo.displayName
+      # ORDERED fallbacks. HR systems hold the leaving date in different places depending on how the tenant is configured, and reading only the first one makes a leaver look like they have no date at all.
+      terminationDate: [internal.terminationDate, employment.terminationDate]
+  # Required when adapter is fixture.
+  fixture:
+    # JSON file holding the snapshot.
+    path: ./test/fixtures/hris/demo.json
+
+# Where person records live.
+store:
+  # Local SQLite: the default people store.
+  adapter: sqlite
+  # Database file.
+  path: ./data/jml.sqlite
+
+identity:
+  jumpcloud:
+    # Some tenants answer only on the console host and return 404 on the other one for every request, valid key or not.
+    baseUrl: "https://console.jumpcloud.com/api"
+    # Organisation API key, as a secret reference.
+    apiKey: env:JUMPCLOUD_API_KEY
+    # Spares account a returned device is rebound to. Null disables the rebind.
+    poolUserEmail: null
+
+google:
+  # The whole service account key file, as a secret reference. `file:/path/to/key.json` is the usual form.
+  serviceAccountJson: env:GOOGLE_SERVICE_ACCOUNT_JSON
+  # The admin this service account impersonates for directory, licensing and transfer calls.
+  adminEmail: admin@example.com
+  # List by customer, never by one domain: a per-domain list silently misses every account on an alias domain.
+  customer: my_customer
+  # Products searched when revoking a licence.
+  licenceProductIds: [Google-Apps]
+  driveTransfer:
+    # What is handed over. The application id is resolved at run time, never hard-coded.
+    applications: [drive]
+    # Which files move.
+    privacyLevels: [PRIVATE, SHARED]
+    # Used when no manager resolves. Null parks the row for a person to decide.
+    fallbackRecipient: null
+    # How long one run waits before leaving the transfer to be re-polled by the next run.
+    pollTimeoutMinutes: 30
+
+leaver:
+  # A leaving date older than this parks the row instead of acting on it. This is the backstop against a stale record being treated as a fresh departure.
+  terminationLookbackDays: 60
+  # Circuit breaker. More day-0 candidates than this aborts the WHOLE run rather than processing the first few, because a sudden crowd of leavers is a data fault far more often than a redundancy round.
+  maxDay0PerRun: 5
+  # After this many failures a leg parks the row for a person.
+  maxAttemptsPerLeg: 6
+  # Days after suspension that files are handed over.
+  transferDay: 6
+  # Days after suspension that accounts are deleted.
+  deleteDay: 7
+  # `all`, or a list of SKU ids to revoke.
+  revokeLicences: all
+  # False stops at suspension so the mailbox can be archived by hand.
+  deleteGoogleUser: true
+  # Require a human acknowledgement before any deletion.
+  requireOperatorAck: false
+  # Refuse deletion until the file handover is confirmed complete.
+  requireTransferBeforeDelete: true
+  autoReply:
+    # Placeholders: displayName, orgName, managerName, managerEmail.
+    subject: "${displayName} has left ${orgName}"
+    # Same placeholders as the subject.
+    bodyHtml: "<p>${displayName} no longer works at ${orgName}.</p><p>Please contact ${managerName} at ${managerEmail}.</p>"
+  deviceGate:
+    # NOT overridable. Membership of a group that grants access to a machine is not custody of it, so only a direct binding blocks a deletion.
+    directBindingsOnly: true
+    # NOT overridable. A gate that cannot be read blocks. Reading an error as "no devices" is how an account gets deleted while the machine is still out there.
+    failClosed: true
+
+devices:
+  # What happens to a device when nobody says otherwise.
+  dispositionDefault: return_to_pool
+  uninstallTriggers:
+    # Command trigger name. Null refuses handover on this platform.
+    windows: null
+    # Command trigger name. Null refuses handover on this platform.
+    darwin: null
+    # Command trigger name. Null refuses handover on this platform.
+    linux: null
+  # The agents a handover removes, and the receipt keys the script must report back.
+  agents: []
+  # Last contact must be frozen this long before a device record is deleted, so the removal is confirmed by silence rather than by an exit code.
+  agentQuietMinutes: 10
+  # Preflight warns when a device has not been heard from for this long.
+  staleContactWarnMin: 60
+  # NOT overridable. A trigger fires on every association the command holds, so a group-attached uninstaller strips the whole fleet.
+  forbidGroupBoundCommands: true
+  # Irreversible. Requires an explicit acknowledgement at the call site as well.
+  purgeTelemetryHistory: false
+  receipt:
+    # How long to hold the association after firing. A short hold loses the work on any device that was not connected at that instant.
+    holdMs: 120000
+    # Result polling interval.
+    pollMs: 15000
+    # Give up waiting for a receipt. Never read a timeout as success.
+    timeoutMs: 600000
+  fleet:
+    # Optional host-inventory API. Null disables the adapter.
+    url: null
+    # Optional host-inventory token.
+    token: null
+
+notify:
+  # Where notifications go. Console is the default so the first run needs no credential.
+  adapters: [console]
+  # A standing problem is re-raised once on this weekday. Once, not on every run of that weekday: a weekday test is true for all of it.
+  weeklyReraiseDay: monday
+  slack:
+    # Bot token, as a secret reference.
+    botToken: null
+    # Channel the IT summary is posted to.
+    itChannelId: null
+  email:
+    # Mailbox the IT summary is sent to.
+    itMailbox: null
+
+audit:
+  # Store addresses as a salted hash. An audit log is kept for years and does not need to be a staff directory.
+  minimisePii: true
+  # Hash salt. Required when minimisePii is true.
+  salt: null
+  jsonl:
+    # Directory for the append-only log files.
+    dir: ./audit
+  loki:
+    # Also push audit rows to a log aggregator.
+    enabled: false
+    # Push endpoint.
+    url: null
+    # Authorization header value, as a secret reference.
+    authHeader: null
+
+liveness:
+  # Dead-man ping URL. The URL is itself the credential, so it is a secret reference. Pinged only after a notification is proven delivered.
+  healthchecksPingUrl: null
+
+legs:
+  # Reserved. The interface exists; nothing runs.
+  azure: false
+  # Reserved. The interface exists; nothing runs.
+  slackScim: false
+  # Reserved for a later phase.
+  saasChecklist: false
+
+server:
+  # Where the sidecar listens. Not published to the host in the shipped compose file.
+  bind: "0.0.0.0:8787"
+  # Bearer token for the sidecar. At least 32 bytes; compared in constant time.
+  token: env:JML_API_TOKEN
+
+# Other store adapters, one at a time, replacing the store block above:
+#   store.adapter: notion
+#   store.token: env:NOTION_API_KEY
+#   store.peopleDatabaseId: ""
+#   store.properties: {}
+#   store.statusValues: {}
+#   store.adapter: sheets
+#   store.spreadsheetId: ""
+#   store.tab: People
+#   store.adapter: memory

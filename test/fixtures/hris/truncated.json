@@ -1,0 +1,17 @@
+{
+  "_readme": [
+    "A read that stopped early. The flag is what a real short read has to look like,",
+    "so the pipeline can be tested against a snapshot it must refuse to act on."
+  ],
+  "complete": false,
+  "activeIds": ["p-1001"],
+  "people": [
+    {
+      "hrisId": "p-1001",
+      "primaryEmail": "jane.doe@example.com",
+      "displayName": "Jane Doe",
+      "startDate": "2019-05-06",
+      "terminationDate": null
+    }
+  ]
+}

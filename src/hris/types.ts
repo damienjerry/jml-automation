@@ -55,11 +55,10 @@ export class HrisIncomplete extends Error {
  */
 export class HrisImplausible extends Error {
   readonly code = 'hris_implausible'
-  constructor(
-    message: string,
-    readonly detail: { received: number; floor: number },
-  ) {
+  readonly detail: { received: number; floor: number }
+  constructor(message: string, detail: { received: number; floor: number }) {
     super(message)
+    this.detail = detail
   }
 }
 

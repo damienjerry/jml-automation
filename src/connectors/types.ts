@@ -25,11 +25,10 @@ export interface ProviderUser {
 /** More than one account matched a lookup. Never guess; park the row. */
 export class AmbiguousMatch extends Error {
   readonly code = 'ambiguous_provider_match'
-  constructor(
-    message: string,
-    readonly matches: { id: string; email: string }[],
-  ) {
+  readonly matches: { id: string; email: string }[]
+  constructor(message: string, matches: { id: string; email: string }[]) {
     super(message)
+    this.matches = matches
   }
 }
 

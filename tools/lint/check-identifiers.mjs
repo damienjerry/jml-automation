@@ -27,6 +27,20 @@ const SKIP_DIRS = new Set([
   '.git', 'node_modules', 'dist', 'build', 'coverage', '.terraform', 'data',
 ])
 
+/**
+ * Dependency lockfiles are written by the package manager, not by an author.
+ * Their contents come from the public registry and include third-party
+ * maintainer email addresses, which cannot be redacted without breaking
+ * `npm ci`. Scanning them for identifier shapes therefore produces failures
+ * nobody can act on, in a file nobody edits, which is how a gate becomes
+ * something people learn to skip.
+ *
+ * They are not simply ignored. The one way a lockfile CAN expose an
+ * organisation is by resolving packages through a private registry, so that
+ * is checked directly in `auditLockfile` below.
+ */
+const VENDOR_LOCKFILES = new Set(['package-lock.json', 'npm-shrinkwrap.json', 'yarn.lock', 'pnpm-lock.yaml'])
+
 /** Binary-ish extensions the scanner cannot usefully read. */
 const SKIP_EXT = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.pdf', '.zip', '.gz',
@@ -179,6 +193,7 @@ function scan(files, denylist) {
     const rel = relative(REPO, file)
     if (rel === 'tools/lint/check-identifiers.mjs') continue // this file defines the patterns
     if (basename(rel).startsWith('denylist.local')) continue
+    if (VENDOR_LOCKFILES.has(basename(rel))) continue // audited separately, see auditLockfile
     let text
     try {
       text = readFileSync(file, 'utf8')
@@ -211,13 +226,52 @@ function scan(files, denylist) {
   return findings
 }
 
+/**
+ * A lockfile must resolve every package from a public registry.
+ *
+ * A private registry host in a lockfile names the organisation that published
+ * through it, and it also means a clean clone cannot install: whoever tries
+ * gets an authentication failure against a host they have never heard of.
+ */
+const PUBLIC_REGISTRIES = [/^https:\/\/registry\.npmjs\.org\//, /^https:\/\/registry\.yarnpkg\.com\//]
+
+function auditLockfile(file) {
+  const rel = relative(REPO, file)
+  let text
+  try {
+    text = readFileSync(file, 'utf8')
+  } catch {
+    return []
+  }
+  const findings = []
+  for (const [i, raw] of text.split('\n').entries()) {
+    for (const m of raw.matchAll(/"resolved":\s*"([^"]+)"/g)) {
+      const url = m[1]
+      if (!url.startsWith('http')) continue // a file: or link: target is local
+      if (PUBLIC_REGISTRIES.some((re) => re.test(url))) continue
+      findings.push({
+        file: rel,
+        line: i + 1,
+        rule: 'private-registry',
+        severity: 'error',
+        describe: 'package resolved from a host that is not a public registry',
+        preview: new URL(url).host,
+      })
+    }
+  }
+  return findings
+}
+
 const targets = process.argv.slice(2)
 const files = targets.length
   ? targets.flatMap((t) => (statSync(t).isDirectory() ? walk(t) : [t]))
   : walk(REPO)
 
 const denylist = localDenylist()
-const findings = scan(files, denylist)
+const findings = [
+  ...scan(files, denylist),
+  ...files.filter((f) => VENDOR_LOCKFILES.has(basename(f))).flatMap(auditLockfile),
+]
 const errors = findings.filter((f) => f.severity === 'error')
 const warns = findings.filter((f) => f.severity === 'warn')
 

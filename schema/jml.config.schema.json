@@ -1,0 +1,987 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jml-toolkit/schema/jml.config.schema.json",
+  "title": "jml-toolkit configuration",
+  "description": "GENERATED FILE. Edit src/config/schema.ts and run `npm run generate`.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "Config format version. Bumped only for a breaking change."
+    },
+    "org": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Organisation name, used in notifications and the leaver auto-reply."
+        },
+        "primaryDomain": {
+          "type": "string",
+          "description": "The domain a canonical address is expressed in."
+        },
+        "aliasDomains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Comma-separated domains that route to the same mailboxes. Two systems keyed on different domains for one person is how identity joins silently diverge.",
+          "default": []
+        },
+        "timezone": {
+          "type": "string",
+          "description": "IANA zone. ALL date-only arithmetic happens in it; never in UTC."
+        },
+        "itTeamSignature": {
+          "type": "string",
+          "description": "Sign-off line on notifications sent to a person."
+        }
+      },
+      "required": [
+        "name",
+        "primaryDomain",
+        "timezone",
+        "itTeamSignature"
+      ],
+      "additionalProperties": false
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "dry-run",
+        "armed"
+      ],
+      "description": "dry-run plans and reports without touching a provider. It is the default, and the demo runs in it.",
+      "default": "dry-run"
+    },
+    "armedActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "suspend",
+          "autoreply",
+          "licence",
+          "transfer",
+          "google_suspend",
+          "delete",
+          "device_unbind",
+          "device_handover"
+        ]
+      },
+      "description": "Which actions may really happen. An action absent from this list records not_armed rather than running, so arming happens one action at a time.",
+      "default": []
+    },
+    "mail": {
+      "type": "object",
+      "properties": {
+        "senderMailbox": {
+          "type": "string",
+          "format": "email",
+          "description": "The mailbox outbound mail is sent AS. Delegated authority is granted for this address specifically."
+        },
+        "bcc": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "description": "Addresses blind-copied on every notification.",
+          "default": []
+        },
+        "managerOnDay0": {
+          "type": "boolean",
+          "description": "Tell the leaver's manager on day 0 that offboarding has started.",
+          "default": true
+        }
+      },
+      "required": [
+        "senderMailbox"
+      ],
+      "additionalProperties": false
+    },
+    "hris": {
+      "type": "object",
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "enum": [
+            "hibob",
+            "fixture"
+          ],
+          "description": "Which HR system to read."
+        },
+        "minPlausibleHeadcount": {
+          "type": "integer",
+          "description": "REQUIRED, no default. A snapshot smaller than this aborts the run. A truncated read looks exactly like a company where everybody left, and the cost of that mistake is suspending the whole staff, so an adopter states their own floor rather than inheriting a guess."
+        },
+        "exitRenamePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Regular expressions matching the address an HR system renames a leaver to. A match means the address is an alias on the same person, never a new identity.",
+          "default": [
+            "\\+(exit|leaver)@"
+          ]
+        },
+        "hibob": {
+          "type": "object",
+          "properties": {
+            "baseUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "HR API base URL.",
+              "default": "https://api.hibob.com/v1"
+            },
+            "serviceUserId": {
+              "type": "string",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Service user id, as a secret reference."
+            },
+            "serviceToken": {
+              "type": "string",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Service user token, as a secret reference."
+            },
+            "pageSize": {
+              "type": "integer",
+              "description": "Page size for the paged read.",
+              "default": 200
+            },
+            "fields": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Path to the stable HR id.",
+                  "default": "root.id"
+                },
+                "email": {
+                  "type": "string",
+                  "description": "Path to the work email address.",
+                  "default": "root.email"
+                },
+                "displayName": {
+                  "type": "string",
+                  "description": "Path to the display name.",
+                  "default": "root.displayName"
+                },
+                "firstName": {
+                  "type": "string",
+                  "description": "Path to the first name.",
+                  "default": "root.firstName"
+                },
+                "lastName": {
+                  "type": "string",
+                  "description": "Path to the surname.",
+                  "default": "root.surname"
+                },
+                "department": {
+                  "type": "string",
+                  "description": "Path to the department.",
+                  "default": "work.department"
+                },
+                "jobTitle": {
+                  "type": "string",
+                  "description": "Path to the job title.",
+                  "default": "work.title"
+                },
+                "site": {
+                  "type": "string",
+                  "description": "Path to the work site.",
+                  "default": "work.site"
+                },
+                "startDate": {
+                  "type": "string",
+                  "description": "Path to the start date.",
+                  "default": "work.startDate"
+                },
+                "managerEmail": {
+                  "type": "string",
+                  "description": "Path to the manager's email address.",
+                  "default": "work.reportsTo.email"
+                },
+                "managerName": {
+                  "type": "string",
+                  "description": "Path to the manager's name.",
+                  "default": "work.reportsTo.displayName"
+                },
+                "terminationDate": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "ORDERED fallbacks. HR systems hold the leaving date in different places depending on how the tenant is configured, and reading only the first one makes a leaver look like they have no date at all.",
+                  "default": [
+                    "internal.terminationDate",
+                    "employment.terminationDate"
+                  ]
+                }
+              },
+              "required": [],
+              "additionalProperties": false,
+              "description": "Where each field lives in the HR payload.",
+              "default": {}
+            }
+          },
+          "required": [
+            "serviceUserId",
+            "serviceToken"
+          ],
+          "additionalProperties": false,
+          "description": "Required when adapter is hibob."
+        },
+        "fixture": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "JSON file holding the snapshot."
+            }
+          },
+          "required": [
+            "path"
+          ],
+          "additionalProperties": false,
+          "description": "Required when adapter is fixture."
+        }
+      },
+      "required": [
+        "adapter",
+        "minPlausibleHeadcount"
+      ],
+      "additionalProperties": false
+    },
+    "store": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "adapter": {
+              "const": "sqlite",
+              "description": "Local SQLite: the default people store."
+            },
+            "path": {
+              "type": "string",
+              "description": "Database file.",
+              "default": "./data/jml.sqlite"
+            }
+          },
+          "required": [
+            "adapter"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "adapter": {
+              "const": "notion",
+              "description": "One Notion database as the people store."
+            },
+            "token": {
+              "type": "string",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Internal integration token, as a secret reference."
+            },
+            "peopleDatabaseId": {
+              "type": "string",
+              "description": "Database id holding one row per person."
+            },
+            "properties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Map from this toolkit’s field names to your property names.",
+              "default": {}
+            },
+            "statusValues": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "Map from lifecycle status to your select options.",
+              "default": {}
+            }
+          },
+          "required": [
+            "adapter",
+            "token",
+            "peopleDatabaseId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "adapter": {
+              "const": "sheets",
+              "description": "A spreadsheet as the people store."
+            },
+            "spreadsheetId": {
+              "type": "string",
+              "description": "Spreadsheet id."
+            },
+            "tab": {
+              "type": "string",
+              "description": "Worksheet name.",
+              "default": "People"
+            }
+          },
+          "required": [
+            "adapter",
+            "spreadsheetId"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "adapter": {
+              "const": "memory",
+              "description": "In-memory store for the demo and for dry-run rehearsal. Nothing persists."
+            }
+          },
+          "required": [
+            "adapter"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Where person records live."
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "jumpcloud": {
+          "type": "object",
+          "properties": {
+            "baseUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "Some tenants answer only on the console host and return 404 on the other one for every request, valid key or not.",
+              "default": "https://console.jumpcloud.com/api"
+            },
+            "apiKey": {
+              "type": "string",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Organisation API key, as a secret reference."
+            },
+            "poolUserEmail": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "email",
+              "description": "Spares account a returned device is rebound to. Null disables the rebind.",
+              "default": null
+            }
+          },
+          "required": [
+            "apiKey"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "jumpcloud"
+      ],
+      "additionalProperties": false
+    },
+    "google": {
+      "type": "object",
+      "properties": {
+        "serviceAccountJson": {
+          "type": "string",
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "description": "The whole service account key file, as a secret reference. `file:/path/to/key.json` is the usual form."
+        },
+        "adminEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "The admin this service account impersonates for directory, licensing and transfer calls."
+        },
+        "customer": {
+          "const": "my_customer",
+          "description": "List by customer, never by one domain: a per-domain list silently misses every account on an alias domain.",
+          "default": "my_customer"
+        },
+        "licenceProductIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Products searched when revoking a licence.",
+          "default": [
+            "Google-Apps"
+          ]
+        },
+        "driveTransfer": {
+          "type": "object",
+          "properties": {
+            "applications": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "drive",
+                  "calendar"
+                ]
+              },
+              "description": "What is handed over. The application id is resolved at run time, never hard-coded.",
+              "default": [
+                "drive"
+              ]
+            },
+            "privacyLevels": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PRIVATE",
+                  "SHARED"
+                ]
+              },
+              "description": "Which files move.",
+              "default": [
+                "PRIVATE",
+                "SHARED"
+              ]
+            },
+            "fallbackRecipient": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "email",
+              "description": "Used when no manager resolves. Null parks the row for a person to decide.",
+              "default": null
+            },
+            "pollTimeoutMinutes": {
+              "type": "integer",
+              "description": "How long one run waits before leaving the transfer to be re-polled by the next run.",
+              "default": 30
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        }
+      },
+      "required": [
+        "serviceAccountJson",
+        "adminEmail"
+      ],
+      "additionalProperties": false
+    },
+    "leaver": {
+      "type": "object",
+      "properties": {
+        "terminationLookbackDays": {
+          "type": "integer",
+          "description": "A leaving date older than this parks the row instead of acting on it. This is the backstop against a stale record being treated as a fresh departure.",
+          "default": 60
+        },
+        "maxDay0PerRun": {
+          "type": "integer",
+          "description": "Circuit breaker. More day-0 candidates than this aborts the WHOLE run rather than processing the first few, because a sudden crowd of leavers is a data fault far more often than a redundancy round.",
+          "default": 5
+        },
+        "maxAttemptsPerLeg": {
+          "type": "integer",
+          "description": "After this many failures a leg parks the row for a person.",
+          "default": 6
+        },
+        "transferDay": {
+          "type": "integer",
+          "description": "Days after suspension that files are handed over.",
+          "default": 6
+        },
+        "deleteDay": {
+          "type": "integer",
+          "description": "Days after suspension that accounts are deleted.",
+          "default": 7
+        },
+        "revokeLicences": {
+          "anyOf": [
+            {
+              "const": "all"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "`all`, or a list of SKU ids to revoke.",
+          "default": "all"
+        },
+        "deleteGoogleUser": {
+          "type": "boolean",
+          "description": "False stops at suspension so the mailbox can be archived by hand.",
+          "default": true
+        },
+        "requireOperatorAck": {
+          "type": "boolean",
+          "description": "Require a human acknowledgement before any deletion.",
+          "default": false
+        },
+        "requireTransferBeforeDelete": {
+          "type": "boolean",
+          "description": "Refuse deletion until the file handover is confirmed complete.",
+          "default": true
+        },
+        "autoReply": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string",
+              "description": "Placeholders: displayName, orgName, managerName, managerEmail.",
+              "default": "${displayName} has left ${orgName}"
+            },
+            "bodyHtml": {
+              "type": "string",
+              "description": "Same placeholders as the subject.",
+              "default": "<p>${displayName} no longer works at ${orgName}.</p><p>Please contact ${managerName} at ${managerEmail}.</p>"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        },
+        "deviceGate": {
+          "type": "object",
+          "properties": {
+            "directBindingsOnly": {
+              "const": true,
+              "description": "NOT overridable. Membership of a group that grants access to a machine is not custody of it, so only a direct binding blocks a deletion.",
+              "default": true
+            },
+            "failClosed": {
+              "const": true,
+              "description": "NOT overridable. A gate that cannot be read blocks. Reading an error as \"no devices\" is how an account gets deleted while the machine is still out there.",
+              "default": true
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
+    "devices": {
+      "type": "object",
+      "properties": {
+        "dispositionDefault": {
+          "type": "string",
+          "enum": [
+            "return_to_pool",
+            "reassign",
+            "handover",
+            "retain_unmanaged"
+          ],
+          "description": "What happens to a device when nobody says otherwise.",
+          "default": "return_to_pool"
+        },
+        "uninstallTriggers": {
+          "type": "object",
+          "properties": {
+            "windows": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Command trigger name. Null refuses handover on this platform.",
+              "default": null
+            },
+            "darwin": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Command trigger name. Null refuses handover on this platform.",
+              "default": null
+            },
+            "linux": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Command trigger name. Null refuses handover on this platform.",
+              "default": null
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Agent name, echoed in the removal receipt."
+              },
+              "windows": {
+                "type": "object",
+                "properties": {
+                  "services": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Service names to stop and remove.",
+                    "default": []
+                  },
+                  "uninstallDisplayNames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Exact uninstall display names. Anchored, never a substring match.",
+                    "default": []
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Leftover paths to remove.",
+                    "default": []
+                  }
+                },
+                "required": [],
+                "additionalProperties": false,
+                "default": {}
+              },
+              "darwin": {
+                "type": "object",
+                "properties": {
+                  "launchdLabels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "launchd labels to bootout.",
+                    "default": []
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Leftover paths to remove.",
+                    "default": []
+                  }
+                },
+                "required": [],
+                "additionalProperties": false,
+                "default": {}
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "description": "The agents a handover removes, and the receipt keys the script must report back.",
+          "default": []
+        },
+        "agentQuietMinutes": {
+          "type": "integer",
+          "description": "Last contact must be frozen this long before a device record is deleted, so the removal is confirmed by silence rather than by an exit code.",
+          "default": 10
+        },
+        "staleContactWarnMin": {
+          "type": "integer",
+          "description": "Preflight warns when a device has not been heard from for this long.",
+          "default": 60
+        },
+        "forbidGroupBoundCommands": {
+          "const": true,
+          "description": "NOT overridable. A trigger fires on every association the command holds, so a group-attached uninstaller strips the whole fleet.",
+          "default": true
+        },
+        "purgeTelemetryHistory": {
+          "type": "boolean",
+          "description": "Irreversible. Requires an explicit acknowledgement at the call site as well.",
+          "default": false
+        },
+        "receipt": {
+          "type": "object",
+          "properties": {
+            "holdMs": {
+              "type": "integer",
+              "description": "How long to hold the association after firing. A short hold loses the work on any device that was not connected at that instant.",
+              "default": 120000
+            },
+            "pollMs": {
+              "type": "integer",
+              "description": "Result polling interval.",
+              "default": 15000
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "description": "Give up waiting for a receipt. Never read a timeout as success.",
+              "default": 600000
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        },
+        "fleet": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri",
+              "description": "Optional host-inventory API. Null disables the adapter.",
+              "default": null
+            },
+            "token": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Optional host-inventory token.",
+              "default": null
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
+    "notify": {
+      "type": "object",
+      "properties": {
+        "adapters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "slack",
+              "email",
+              "console"
+            ]
+          },
+          "description": "Where notifications go. Console is the default so the first run needs no credential.",
+          "default": [
+            "console"
+          ]
+        },
+        "weeklyReraiseDay": {
+          "type": "string",
+          "enum": [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "none"
+          ],
+          "description": "A standing problem is re-raised once on this weekday. Once, not on every run of that weekday: a weekday test is true for all of it.",
+          "default": "monday"
+        },
+        "slack": {
+          "type": "object",
+          "properties": {
+            "botToken": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Bot token, as a secret reference.",
+              "default": null
+            },
+            "itChannelId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Channel the IT summary is posted to.",
+              "default": null
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        },
+        "email": {
+          "type": "object",
+          "properties": {
+            "itMailbox": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "email",
+              "description": "Mailbox the IT summary is sent to.",
+              "default": null
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
+    "audit": {
+      "type": "object",
+      "properties": {
+        "minimisePii": {
+          "type": "boolean",
+          "description": "Store addresses as a salted hash. An audit log is kept for years and does not need to be a staff directory.",
+          "default": true
+        },
+        "salt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "description": "Hash salt. Required when minimisePii is true.",
+          "default": null
+        },
+        "jsonl": {
+          "type": "object",
+          "properties": {
+            "dir": {
+              "type": "string",
+              "description": "Directory for the append-only log files.",
+              "default": "./audit"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        },
+        "loki": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Also push audit rows to a log aggregator.",
+              "default": false
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uri",
+              "description": "Push endpoint.",
+              "default": null
+            },
+            "authHeader": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Authorization header value, as a secret reference.",
+              "default": null
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
+    "liveness": {
+      "type": "object",
+      "properties": {
+        "healthchecksPingUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "description": "Dead-man ping URL. The URL is itself the credential, so it is a secret reference. Pinged only after a notification is proven delivered.",
+          "default": null
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
+    "legs": {
+      "type": "object",
+      "properties": {
+        "azure": {
+          "const": false,
+          "description": "Reserved. The interface exists; nothing runs.",
+          "default": false
+        },
+        "slackScim": {
+          "const": false,
+          "description": "Reserved. The interface exists; nothing runs.",
+          "default": false
+        },
+        "saasChecklist": {
+          "const": false,
+          "description": "Reserved for a later phase.",
+          "default": false
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
+    "server": {
+      "type": "object",
+      "properties": {
+        "bind": {
+          "type": "string",
+          "description": "Where the sidecar listens. Not published to the host in the shipped compose file.",
+          "default": "0.0.0.0:8787"
+        },
+        "token": {
+          "type": "string",
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "description": "Bearer token for the sidecar. At least 32 bytes; compared in constant time."
+        }
+      },
+      "required": [
+        "token"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "org",
+    "mail",
+    "hris",
+    "store",
+    "identity",
+    "google",
+    "server"
+  ],
+  "additionalProperties": false
+}
