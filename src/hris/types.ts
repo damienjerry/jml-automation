@@ -19,6 +19,15 @@ export interface HrisPerson {
   jobTitle?: string | null
   site?: string | null
   managerEmail?: string | null
+  /**
+   * The manager's name as the HR system renders it.
+   *
+   * Carried separately from the address because a notification addressed to a
+   * person reads better with their name, and because the two can disagree: the
+   * HR system may know a manager by name while holding no usable address for
+   * them.
+   */
+  managerName?: string | null
   /** ISO date. Never a locale-formatted string: see HrisAdapter. */
   startDate?: string | null
   terminationDate?: string | null
@@ -39,6 +48,15 @@ export interface HrisSnapshot {
   fetchedAt: string
   /** True when every page was read. A partial snapshot must abort the sync. */
   complete: boolean
+  /**
+   * Oddities in individual records that did not justify abandoning the whole
+   * snapshot: a missing address, an unparseable optional field.
+   *
+   * Without somewhere to put these, an adapter has only two options for a bad
+   * record, and both are wrong: drop it silently, or abort the run for
+   * everybody. Anything that would change an identity or a date still aborts.
+   */
+  warnings?: string[]
 }
 
 /** Thrown when the snapshot cannot be trusted. Both abort with zero writes. */

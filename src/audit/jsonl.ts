@@ -19,7 +19,7 @@ import { mkdir, open, readdir, readFile } from 'node:fs/promises'
 import type { FileHandle } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { redactDeep } from '../config/redact.ts'
-import type { AuditEvent, AuditSink } from './types.ts'
+import type { AuditEvent, AuditRef, AuditSink } from './types.ts'
 
 /** Applied to `detail` before it is written. */
 export type RedactFn = (detail: Record<string, unknown>) => Record<string, unknown>
@@ -119,6 +119,7 @@ export class JsonlAuditSink implements AuditSink {
   private handle: FileHandle | null = null
   private handlePath: string | null = null
   private prevHash = GENESIS_HASH
+  private seq = 0
   /** Serialises appends. See `append`. */
   private queue: Promise<void> = Promise.resolve()
 
@@ -145,7 +146,7 @@ export class JsonlAuditSink implements AuditSink {
    * claiming the same predecessor, which breaks the chain for every later
    * reader and looks exactly like tampering.
    */
-  async append(event: AuditEvent): Promise<void> {
+  async append(event: AuditEvent): Promise<AuditRef> {
     const mine = this.queue.then(
       () => this.appendNow(event),
       () => this.appendNow(event),
@@ -157,7 +158,7 @@ export class JsonlAuditSink implements AuditSink {
     return mine
   }
 
-  private async appendNow(event: AuditEvent): Promise<void> {
+  private async appendNow(event: AuditEvent): Promise<AuditRef> {
     const path = this.currentFile()
     let hash: string
     try {
@@ -187,6 +188,11 @@ export class JsonlAuditSink implements AuditSink {
       throw new AuditUnavailableError(`could not append to the audit log at ${path}`, err)
     }
     this.prevHash = hash
+    // The sequence number is per process, not per file: it exists so an
+    // outcome row can cite the intent row it completes within the same run.
+    // The hash chain, not this counter, is what makes the file verifiable.
+    this.seq += 1
+    return { seq: this.seq, hash }
   }
 
   /** Walk every daily file in date order and report the first broken link. */

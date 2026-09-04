@@ -109,6 +109,15 @@ export interface CommandReceipt {
   output: string | null
   /** False when no result arrived inside the timeout. Never read as success. */
   received: boolean
+  /**
+   * Problems that did not stop the command but must reach a person, chiefly a
+   * detach that could not be proven. A device left attached to a command gets
+   * swept up by the next unrelated run of it, which is how a laptop was once
+   * restarted daily for eleven days by a job that had nothing to do with it.
+   * Reported rather than thrown, so a caller handling several devices records
+   * the leak and still finishes the others.
+   */
+  warnings?: string[]
 }
 
 export interface GoogleWorkspaceConnector {
@@ -122,7 +131,7 @@ export interface GoogleWorkspaceConnector {
   transferDrive(fromEmail: string, toEmail: string): Promise<Outcome & { transferId?: string }>
   getTransferStatus(transferId: string): Promise<{ state: string; done: boolean }>
   setVacationResponder(email: string, subject: string, body: string): Promise<Outcome>
-  sendMail(opts: { to: string[]; subject: string; body: string }): Promise<Outcome>
+  sendMail(opts: { to: string[]; bcc?: string[]; subject: string; body: string }): Promise<Outcome>
   testConnection(): Promise<ConnectionCheck>
   /** Reports per-scope authorisation, so `jml doctor` can name the missing one. */
   probeScopes(): Promise<{ scope: string; ok: boolean }[]>

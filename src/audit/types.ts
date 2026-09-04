@@ -31,12 +31,28 @@ export interface AuditEvent {
   /** Hash of the previous line, making the file tamper-evident. */
   prevHash?: string
   hash?: string
+  /** On an outcome row, the sequence number of the intent row it completes. */
+  intentSeq?: number
+}
+
+/** Where a written row landed, so a later row can refer back to it. */
+export interface AuditRef {
+  /** Monotonic within a sink. An outcome row cites the intent row it completes. */
+  seq: number
+  hash?: string
 }
 
 export interface AuditSink {
   readonly name: string
-  /** Throws when the row cannot be persisted; the caller must not proceed. */
-  append(event: AuditEvent): Promise<void>
+  /**
+   * Throws when the row cannot be persisted; the caller must not proceed.
+   *
+   * Returns a reference to the written row. An outcome row carries the intent
+   * row's sequence number in `intentSeq`, so the pair can be read back
+   * together. Correlating on run id, action and subject instead almost works,
+   * and stops working precisely when a step is retried within one run.
+   */
+  append(event: AuditEvent): Promise<AuditRef>
   /** Walks the chain and reports the first line that does not verify. */
   verify?(): Promise<{ ok: boolean; checkedLines: number; firstBadLine?: number }>
   close?(): Promise<void>

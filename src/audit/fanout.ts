@@ -12,7 +12,7 @@
  * that never ran, which is worse than a missing row: it is a false record.
  */
 
-import type { AuditEvent, AuditSink } from './types.ts'
+import type { AuditEvent, AuditRef, AuditSink } from './types.ts'
 
 export interface FanoutAuditSinkOptions {
   /** Failure here throws, and the caller must not proceed. */
@@ -42,8 +42,10 @@ export class FanoutAuditSink implements AuditSink {
     return [...this.failures]
   }
 
-  async append(event: AuditEvent): Promise<void> {
-    await this.primary.append(event)
+  async append(event: AuditEvent): Promise<AuditRef> {
+    // The primary decides the sequence number. A secondary sink that fails is
+    // a warning, never a reason to withhold a row the primary already accepted.
+    const ref = await this.primary.append(event)
     for (const sink of this.secondary) {
       try {
         await sink.append(event)
@@ -52,6 +54,7 @@ export class FanoutAuditSink implements AuditSink {
         this.failures.push(`audit sink ${sink.name} did not accept a row: ${message}`)
       }
     }
+    return ref
   }
 
   /** Only the primary is verifiable; a remote sink cannot prove its own chain. */

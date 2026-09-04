@@ -108,6 +108,7 @@ describe('the audit fanout', () => {
       name,
       append: async (e) => {
         rows.push(e)
+        return { seq: rows.length }
       },
     }
   }
@@ -176,13 +177,13 @@ describe('the audit fanout', () => {
   it('verifies through the primary and reports when the primary cannot verify', async () => {
     const verify = vi.fn(async () => ({ ok: true, checkedLines: 7 }))
     const withVerify = createFanoutAuditSink({
-      primary: { name: 'jsonl', append: async () => {}, verify },
+      primary: { name: 'jsonl', append: async () => ({ seq: 1 }), verify },
     })
     await expect(withVerify.verify()).resolves.toEqual({ ok: true, checkedLines: 7 })
     expect(verify).toHaveBeenCalledOnce()
 
     const withoutVerify = createFanoutAuditSink({
-      primary: { name: 'memory', append: async () => {} },
+      primary: { name: 'memory', append: async () => ({ seq: 1 }) },
     })
     // "Nothing to check" must not read the same as "checked and sound".
     await expect(withoutVerify.verify()).resolves.toMatchObject({ ok: false, checkedLines: 0 })
@@ -192,7 +193,7 @@ describe('the audit fanout', () => {
     const closed: string[] = []
     const closing = (name: string): AuditSink => ({
       name,
-      append: async () => {},
+      append: async () => ({ seq: 1 }),
       close: async () => {
         closed.push(name)
       },

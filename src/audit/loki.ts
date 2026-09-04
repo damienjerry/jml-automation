@@ -29,7 +29,7 @@ import type { HttpClient } from '../core/http.ts'
 export type HttpPoster = Pick<HttpClient, 'post'>
 import { redact, redactDeep } from '../config/redact.ts'
 import type { SecretHandle } from '../config/secrets.ts'
-import type { AuditEvent, AuditSink } from './types.ts'
+import type { AuditEvent, AuditRef, AuditSink } from './types.ts'
 import { canonicalJson, type RedactFn } from './jsonl.ts'
 
 export type LokiAuth =
@@ -74,6 +74,7 @@ export class LokiAuditSink implements AuditSink {
   private readonly timeoutMs: number
   private readonly redact: RedactFn
   private readonly now: () => number
+  private pushed = 0
   private lastMillis = 0
   private withinMillis = 0
 
@@ -87,7 +88,7 @@ export class LokiAuditSink implements AuditSink {
     this.now = options.now ?? (() => Date.now())
   }
 
-  async append(event: AuditEvent): Promise<void> {
+  async append(event: AuditEvent): Promise<AuditRef> {
     const row: AuditEvent = { ...event }
     if (row.detail) row.detail = this.redact(row.detail)
     const payload = {
@@ -124,6 +125,11 @@ export class LokiAuditSink implements AuditSink {
       // somebody will paste into a ticket.
       throw new LokiPushError(`Loki push failed with status ${status}: ${this.scrub(body)}`, status)
     }
+    // A remote sink cannot number rows: it has no chain and no ordering it can
+    // prove. The primary sink owns the sequence, so this reports its own count
+    // only, and nothing should cite it as an intent reference.
+    this.pushed += 1
+    return { seq: this.pushed }
   }
 
   /**
