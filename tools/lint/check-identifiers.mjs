@@ -80,7 +80,12 @@ const RULES = [
     id: 'slack-object-id',
     severity: 'error',
     describe: 'Slack team, channel, user, bot or app id',
-    regex: /\b(?:C0[A-Z0-9]{8,}|U0[A-Z0-9]{8,}|B0[A-Z0-9]{8,}|A0[A-Z0-9]{8,}|T[A-Z0-9]{8,})\b/g,
+    regex: /\b(?:[CUBA]0[A-Z0-9]{8,}|T[A-Z0-9]{8,})\b/g,
+    // Slack ids are base-encoded counters and always carry at least one digit.
+    // Without this, any long SCREAMING_CASE identifier starting with T matches
+    // (TRANSITIONS was the first casualty). A shape rule that fires on ordinary
+    // code gets switched off by whoever it annoys, which is worse than a gap.
+    ignore: (m) => !/\d/.test(m),
   },
   {
     id: 'private-ip',

@@ -1,0 +1,56 @@
+{
+  "name": "jml-toolkit",
+  "version": "0.1.0",
+  "description": "HRIS-driven joiner/mover/leaver automation for JumpCloud and Google Workspace: provision on hire, suspend, transfer and delete on the leaving date.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "bin": {
+    "jml": "bin/jml.mjs"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./core": "./dist/core/types.js",
+    "./store/*": "./dist/store/*.js",
+    "./connectors/*": "./dist/connectors/*.js",
+    "./engine": "./dist/engine/pipeline.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "n8n/workflows",
+    "n8n/README.md",
+    "schema",
+    "jml.config.example.yaml",
+    "LICENSE",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:contract": "JML_CONTRACT=1 vitest run test/contract",
+    "generate": "node --experimental-strip-types src/config/generate.ts",
+    "check:generated": "node tools/check-generated.mjs",
+    "validate:workflows": "node n8n/validate.mjs",
+    "identifiers": "node tools/lint/check-identifiers.mjs",
+    "docs:links": "node tools/check-doc-links.mjs",
+    "gate": "npm run identifiers && npm run check:generated && npm run validate:workflows && npm run typecheck && npm run lint && npm test"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^2.1.8"
+  }
+}
