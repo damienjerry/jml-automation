@@ -76,6 +76,14 @@ export interface CliIo {
   err(text: string): void
   env: NodeJS.ProcessEnv
   cwd: string
+  /**
+   * True when the command was asked for `--json`. stdout then carries the
+   * report and nothing else, so anything that would otherwise print there,
+   * the console notifier above all, goes to stderr instead. The first run
+   * against a real tenant produced a JSON file with a notification on top,
+   * and nothing could parse it.
+   */
+  jsonOutput?: boolean
 }
 
 /** The provider surface, present only when a command asked for it. */
@@ -309,7 +317,7 @@ function buildNotifier(
 
   for (const adapter of cfg.notify.adapters) {
     if (adapter === 'console') {
-      it.push(createConsoleNotifier({ write: (text) => io.out(text) }))
+      it.push(createConsoleNotifier({ write: (text) => (io.jsonOutput ? io.err(text) : io.out(text)) }))
       continue
     }
     if (adapter === 'slack') {

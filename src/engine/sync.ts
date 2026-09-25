@@ -34,6 +34,8 @@ import { nullLogger } from '../core/logger.ts'
 import type { Logger } from '../core/logger.ts'
 import type { Actor, LifecycleStatus, Person, ReviewReason } from '../core/types.ts'
 import { leaveDateOf } from '../hris/leave-date.ts'
+import { deriveHrisStatus, ISO_DATE } from '../hris/status.ts'
+import type { HrisDerivedStatus } from '../hris/status.ts'
 import { HrisImplausible, HrisIncomplete } from '../hris/types.ts'
 import type { HrisPerson, HrisSnapshot } from '../hris/types.ts'
 import type { PeopleStore } from '../store/types.ts'
@@ -42,8 +44,9 @@ import type { AuditSink } from '../audit/types.ts'
 import { renderNotification } from '../notify/fanout.ts'
 import type { Notifier } from '../notify/types.ts'
 
-/** The three statuses an HR snapshot can imply on its own. */
-export type HrisDerivedStatus = 'hired' | 'active' | 'terminated'
+/** Re-exported: the derivation moved to the HR layer so the bootstrap shares it. */
+export { deriveHrisStatus }
+export type { HrisDerivedStatus }
 
 /** What the sync did with one HR record. */
 export type SyncAction =
@@ -126,32 +129,6 @@ export interface SyncOptions {
   notifier?: Notifier
   source?: string
   clock?: Clock
-}
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
-
-/**
- * The status an HR record implies, on its own.
- *
- * Employment comes from the snapshot's employed set, never from a status word
- * on the record: a lifecycle label means different things in different HR
- * systems, and absence from the employed list is the one signal that travels.
- */
-export function deriveHrisStatus(
-  record: HrisPerson,
-  activeIds: ReadonlySet<string>,
-  today: IsoDate,
-): HrisDerivedStatus {
-  const start = record.startDate
-  if (start && ISO_DATE.test(start) && start > today) return 'hired'
-  if (!activeIds.has(record.hrisId)) return 'terminated'
-  // Still on the employed list, but past the day they were last in. HR
-  // systems keep somebody employed until the contract ends; access should not
-  // wait for that. Offboarding starts the day AFTER the leave date, so on the
-  // day itself the person is still active and can hand over.
-  const leave = leaveDateOf(record)
-  if (leave !== null && today > leave) return 'terminated'
-  return 'active'
 }
 
 /** True when a leaving date is missing, unparseable, or older than the lookback. */

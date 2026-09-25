@@ -17,6 +17,7 @@
  */
 
 import { SystemClock, type Clock } from '../core/clock.ts'
+import { deriveHrisStatus } from '../hris/status.ts'
 import { HrisIncomplete, type HrisSnapshot } from '../hris/types.ts'
 import type { Person } from '../core/types.ts'
 import type { PeopleStore, PersonFilter, StateStore } from './types.ts'
@@ -65,6 +66,12 @@ export interface BootstrapReport {
   /** Rows that already existed, whose status was left exactly as it was. */
   alreadyPresent: number
   skippedActive: number
+  /**
+   * People whose start date is still ahead. HR systems keep them off the
+   * employed list until their first day, so without this they read as
+   * historic leavers and are tombstoned before they arrive.
+   */
+  skippedHired: number
   /** Inactive people carrying no address, which cannot be tombstoned. */
   skippedNoEmail: number
   day0SelectionAfter: number
@@ -112,11 +119,18 @@ export async function bootstrapTombstones(options: BootstrapOptions): Promise<Bo
   let tombstoned = 0
   let alreadyPresent = 0
   let skippedActive = 0
+  let skippedHired = 0
   let skippedNoEmail = 0
 
   for (const record of snapshot.all) {
     if (snapshot.activeIds.has(record.hrisId)) {
       skippedActive += 1
+      continue
+    }
+    // The same rule the sync applies, so the two cannot disagree about who
+    // has left. A future starter is off the employed list and is not a leaver.
+    if (deriveHrisStatus(record, snapshot.activeIds, today) === 'hired') {
+      skippedHired += 1
       continue
     }
     inactive += 1
@@ -193,6 +207,7 @@ export async function bootstrapTombstones(options: BootstrapOptions): Promise<Bo
     tombstoned,
     alreadyPresent,
     skippedActive,
+    skippedHired,
     skippedNoEmail,
     day0SelectionAfter,
     departedAfter,

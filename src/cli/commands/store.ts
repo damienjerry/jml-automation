@@ -113,6 +113,7 @@ function renderBootstrap(report: BootstrapReport): string {
     'tombstoned       ' + report.tombstoned,
     'already present  ' + report.alreadyPresent + '   (left exactly as they were, whatever their status)',
     'skipped: employed ' + report.skippedActive,
+    'skipped: not started yet ' + report.skippedHired,
     'skipped: no email ' + report.skippedNoEmail,
     '',
     'tombstones after   ' + report.departedAfter,

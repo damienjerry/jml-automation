@@ -152,6 +152,8 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     err: options.err ?? ((text) => process.stderr.write(text)),
     env: options.env ?? process.env,
     cwd: options.cwd ?? process.cwd(),
+    // A global boolean flag, so it can never be the value of another option.
+    jsonOutput: argv.includes('--json'),
   }
   const code = await dispatch(io, argv)
   if (options.setProcessExitCode !== false) process.exitCode = code
