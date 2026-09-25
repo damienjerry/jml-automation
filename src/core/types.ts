@@ -141,6 +141,8 @@ export interface Person {
   managerEmail?: string | null
   startDate?: string | null
   terminationDate?: string | null
+  /** Last day physically in, when the HR system holds one. See HrisPerson. */
+  lastWorkingDay?: string | null
   /** Frozen by a human. Excluded from every automatic selection. */
   hold: boolean
   holdReason?: string | null

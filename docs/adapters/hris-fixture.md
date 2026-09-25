@@ -121,9 +121,13 @@ everything else is optional and may be `null`. A person with no work mailbox
 keeps an empty address rather than being dropped, because dropping them here
 would look exactly like somebody leaving.
 
-Dates are ISO, never locale-formatted. `terminationDate` is the leaving date the
-HR system holds; the day-0 selection is derived from it and from
-`leaver.terminationLookbackDays`.
+Dates are ISO, never locale-formatted. `terminationDate` is the contract end the
+HR system holds and `lastWorkingDay` is the last day the person is in. Where both
+are present the earlier one decides, and offboarding starts the day after it: a
+person whose last shift is on the Wednesday should not keep a working laptop until
+the contract ends on the Friday. A date before `startDate` is treated as an
+earlier stint and ignored. The day-0 selection is derived from that leaving date
+and from `leaver.terminationLookbackDays`.
 
 ## What it refuses
 

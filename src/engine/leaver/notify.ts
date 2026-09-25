@@ -21,6 +21,7 @@
  * TypeScript, where it can be tested.
  */
 
+import { leaveDateOf } from '../../hris/leave-date.ts'
 import { addDays } from '../../core/clock.ts'
 import { createChangeGate, type ReraiseDay } from '../../core/gate.ts'
 import { renderNotification } from '../../notify/fanout.ts'
@@ -62,7 +63,7 @@ function personFields(person: Person): PersonFields {
     personName: orElse(person.displayName, person.primaryEmail),
     personEmail: orElse(person.primaryEmail, 'no address recorded'),
     hrisId: person.hrisId,
-    terminationDate: orElse(person.terminationDate, 'not recorded'),
+    terminationDate: orElse(leaveDateOf(person), 'not recorded'),
   }
 }
 

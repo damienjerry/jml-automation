@@ -164,7 +164,15 @@ export async function runDemo(opts: DemoOptions = {}): Promise<DemoResult> {
     fetchAll: async () => {
       const snapshot = await fixtureAdapter.fetchAll()
       if (!nobodyHasLeftYet.value) return snapshot
-      return { ...snapshot, activeIds: new Set(snapshot.all.map((person) => person.hrisId)) }
+      // The day before, the HR system has recorded nobody as leaving: everybody
+      // is employed and no leaving date is held yet. Presenting the dates a day
+      // early would make the sync derive terminated for anyone whose date had
+      // passed, and rightly refuse to create them.
+      return {
+        ...snapshot,
+        activeIds: new Set(snapshot.all.map((person) => person.hrisId)),
+        all: snapshot.all.map((person) => ({ ...person, terminationDate: null, lastWorkingDay: null })),
+      }
     },
   }
 

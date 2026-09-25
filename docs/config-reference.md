@@ -73,6 +73,7 @@ not exist.
 | `hris.hibob.fields.managerEmail` | - | string | `work.reportsTo.email` | - | Path to the manager's email address. |
 | `hris.hibob.fields.managerName` | - | string | `work.reportsTo.displayName` | - | Path to the manager's name. |
 | `hris.hibob.fields.terminationDate` | - | string[] | `[internal.terminationDate, employment.terminationDate]` | - | ORDERED fallbacks. HR systems hold the leaving date in different places depending on how the tenant is configured, and reading only the first one makes a leaver look like they have no date at all. |
+| `hris.hibob.fields.lastWorkingDay` | - | string | `employee.lastDayOfWork` | - | Path to the last day the person is physically in. Where it is earlier than the termination date it decides the offboarding day, because access should stop when the person does, not when the contract ends. Blank disables it. |
 | `hris.fixture.path` | `HRIS_FIXTURE_PATH` | string | **required** | - | JSON file holding the snapshot. |
 | `store.adapter` (sqlite) | `STORE_ADAPTER` | literal "sqlite" | **required** | - | Local SQLite: the default people store. |
 | `store.path` (sqlite) | `STORE_SQLITE_PATH` | string | `./data/jml.sqlite` | - | Database file. |

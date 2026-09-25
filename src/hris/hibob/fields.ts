@@ -40,6 +40,13 @@ export interface HiBobFieldMap {
    * all for some people. The order is config, not a rule of the product.
    */
   terminationDate: string[]
+  /**
+   * The last day in. A single path; blank disables the read and the
+   * termination date decides on its own. HiBob holds this separately from the
+   * termination date, and a tenant that fills in both usually means them to
+   * differ.
+   */
+  lastWorkingDay: string
 }
 
 export type HiBobFieldOverrides = Partial<HiBobFieldMap>
@@ -57,6 +64,7 @@ export const DEFAULT_HIBOB_FIELDS: HiBobFieldMap = {
   managerEmail: 'work.reportsTo.email',
   managerName: 'work.reportsTo.displayName',
   terminationDate: ['internal.terminationDate', 'employment.terminationDate'],
+  lastWorkingDay: 'employee.lastDayOfWork',
 }
 
 export function resolveFieldMap(overrides?: HiBobFieldOverrides): HiBobFieldMap {
@@ -91,6 +99,7 @@ export function requestFields(map: HiBobFieldMap): string[] {
     map.managerEmail,
     map.managerName,
     ...map.terminationDate,
+    map.lastWorkingDay,
   ]
   return [...new Set(paths.filter((p) => p.trim().length > 0))]
 }
@@ -228,6 +237,9 @@ export function readPerson(record: unknown, map: HiBobFieldMap): HrisPerson {
     managerEmail: readEmail(record, map.managerEmail),
     startDate: toIsoDate(readPath(record, map.startDate), map.startDate, hrisId),
     terminationDate,
+    lastWorkingDay: map.lastWorkingDay.trim()
+      ? toIsoDate(readPath(record, map.lastWorkingDay), map.lastWorkingDay, hrisId)
+      : null,
   }
 }
 

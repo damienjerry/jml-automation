@@ -57,6 +57,7 @@ export const HRIS_OWNED_FIELDS = [
   'managerEmail',
   'startDate',
   'terminationDate',
+  'lastWorkingDay',
   'source',
 ] as const satisfies readonly (keyof Person)[]
 

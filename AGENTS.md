@@ -36,7 +36,7 @@ what the documentation claims.
    lifecycle status is assigned. Every edge carries the reason it exists, and
    the comments name the failure each rule prevents. `departed` has no
    outgoing edge, deliberately.
-3. [test/regression/](test/regression/). Sixty-eight files, each named for the
+3. [test/regression/](test/regression/). Sixty-nine files, each named for the
    failure it prevents, each with a header explaining the incident and why it
    was not noticed at the time. [docs/incidents.md](docs/incidents.md) is the
    same material as prose, grouped, with a link to every one of those files.

@@ -38,20 +38,6 @@ Nothing else happens: there is nobody to offboard.
 
 
 --- notification (run.summary) would be sent to IT ---
-subject: Lifecycle: 0 leaver(s), 1 to review, 0 joining
-
-Lifecycle detection for 2026-01-14
-
-- Leavers the engine will start offboarding: 0
-- Terminated rows nothing will touch: 1
-- Joiners: 0
-
-For review, no automatic action:
-
-- Robin Ellis (p-1003): Still employed and carrying a leaving date of 2026-01-15, in 1 day(s). Nothing happens until the HR system drops them from the employed set.
---- end notification ---
-
---- notification (run.summary) would be sent to IT ---
 subject: pipeline run ok
 
 pipeline run demo-before: ok
@@ -69,7 +55,7 @@ Counts:
 ... 6 more line(s)
 --- end notification ---
 run demo-before  pipeline  armed  ok=true
-  counts: detect.potentialLeaver=1 hrisEmployed=7 hrisPeople=7 sync.created=6 sync.scanned=7 sync.skipped_no_email=1
+  counts: hrisEmployed=7 hrisPeople=7 sync.created=6 sync.scanned=7 sync.skipped_no_email=1
 audit rows written this step: 3
 
   people store:

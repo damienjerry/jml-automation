@@ -16,6 +16,7 @@
  * cannot act on, so the reason is required rather than optional.
  */
 
+import { leaveDateOf, leaveDateSource } from '../../hris/leave-date.ts'
 import type { AuditEvent, AuditSink } from '../../audit/types.ts'
 import type { Actor, Person } from '../../core/types.ts'
 import { runLeaverEngine } from '../../engine/leaver/engine.ts'
@@ -303,7 +304,7 @@ export function renderPerson(person: Person): string {
     '  address         ' + person.primaryEmail,
     '  also known as   ' + (person.aliasEmails.length > 0 ? person.aliasEmails.join(', ') : 'nothing else recorded'),
     '  manager         ' + (person.managerEmail ?? 'none recorded'),
-    '  leaving date    ' + (person.terminationDate ?? 'none'),
+    '  leaving date    ' + (leaveDateOf(person) ?? 'none') + leaveDateNote(person),
     '  hold            ' + (person.hold ? 'YES: ' + (person.holdReason ?? 'no reason recorded') : 'no'),
     '  parked          ' + (person.reviewReason ?? 'no'),
     '  google account  ' +
@@ -342,4 +343,13 @@ export function renderPerson(person: Person): string {
   }
   if (person.note) lines.push('  note            ' + person.note)
   return lines.join('\n')
+}
+
+/** Says which HR field decided the date, when the two the HR system holds differ. */
+function leaveDateNote(person: { terminationDate?: string | null; lastWorkingDay?: string | null; startDate?: string | null }): string {
+  const source = leaveDateSource(person)
+  if (source === 'lastWorkingDay' && person.terminationDate && person.terminationDate !== person.lastWorkingDay) {
+    return '  (last working day; contract ends ' + person.terminationDate + ')'
+  }
+  return ''
 }

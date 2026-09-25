@@ -30,7 +30,23 @@ export interface HrisPerson {
   managerName?: string | null
   /** ISO date. Never a locale-formatted string: see HrisAdapter. */
   startDate?: string | null
+  /**
+   * The contractual leaving date.
+   *
+   * Not on its own the day access ends. See `lastWorkingDay` and
+   * `leaveDateOf()` in src/hris/leave-date.ts for how the two combine.
+   */
   terminationDate?: string | null
+  /**
+   * The last day the person is actually in.
+   *
+   * Often earlier than the termination date: notice served away from work,
+   * garden leave, a contract that ends on a Friday after a last shift on the
+   * Wednesday. Access should stop the day after this, not the day after the
+   * contract ends, so where both are held the earlier one decides. An adapter
+   * that cannot read it leaves it null and the termination date is used.
+   */
+  lastWorkingDay?: string | null
 }
 
 export interface HrisSnapshot {

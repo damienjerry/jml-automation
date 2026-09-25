@@ -22,6 +22,7 @@
  *    the query as well as in the loop.
  */
 
+import { leaveDateOf } from '../../hris/leave-date.ts'
 import { addDays } from '../../core/clock.ts'
 import type { JmlConfig } from '../../config/schema.ts'
 import type { Person } from '../../core/types.ts'
@@ -59,7 +60,9 @@ export function deleteCutoff(today: string, cfg: JmlConfig): string {
 /**
  * Day 0: suspend today.
  *
- * The termination date is required, not merely checked against the lookback.
+ * The leaving date is required, not merely checked against the lookback. It is
+ * the last working day where the HR system holds one, otherwise the
+ * termination date: see src/hris/leave-date.ts.
  * A terminated row with no date at all cannot be aged, and acting on one is
  * indistinguishable from acting on a record nobody has looked at for years.
  */
@@ -69,7 +72,7 @@ export function selectDay0(people: readonly Person[], today: string, cfg: JmlCon
     if (person.status !== 'terminated') return false
     if (!isActionable(person)) return false
     if (day(person.offboarding?.suspendedAt) !== null) return false
-    const leaving = day(person.terminationDate)
+    const leaving = day(leaveDateOf(person))
     return leaving !== null && leaving >= cutoff
   })
 }

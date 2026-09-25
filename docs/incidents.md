@@ -18,7 +18,7 @@ why so much of this code spends its effort on reading back what it did.
 
 Each entry ends with the file that would fail if the safeguard were removed.
 There are 68 such files under [../test/regression/](../test/regression/), out of
-1338 tests in total. One of the entries, the last one on this page, is a defect
+1351 tests in total. One of the entries, the last one on this page, is a defect
 found in this repository rather than in the automation it was ported from.
 
 ---
@@ -165,6 +165,24 @@ that lives only in the adapter protects only the adapter's own path.
 
 Held by [hris-implausible-headcount-aborts.test.ts](../test/regression/hris-implausible-headcount-aborts.test.ts)
 and [hris-truncated-aborts.test.ts](../test/regression/hris-truncated-aborts.test.ts).
+
+### Access stayed open until the contract ended
+
+The HR system keeps a leaver on the employed list until the contract ends, and
+holds the last day they were actually in as a separate field. The sync keyed on
+the employed list alone, so somebody whose last shift was on a Wednesday kept a
+working laptop and mailbox until the Friday, and for the whole notice period
+where notice was served away from work.
+
+**Rule now in force.** One function decides the leaving date: the last working
+day where the HR system holds one and it is not after the termination date,
+otherwise the termination date, with any date before the current start date
+ignored as an earlier stint. The sync derives `terminated` the day after that
+date even while the HR system still lists the person as employed, and every
+selection, notification and lookback check reads the same function rather than
+the raw field.
+
+Held by [access-open-until-contract-end.test.ts](../test/regression/access-open-until-contract-end.test.ts).
 
 ### The HR read paged once
 

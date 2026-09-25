@@ -33,6 +33,7 @@ import type { IdentityRules } from '../core/identity.ts'
 import { nullLogger } from '../core/logger.ts'
 import type { Logger } from '../core/logger.ts'
 import type { Actor, LifecycleStatus, Person, ReviewReason } from '../core/types.ts'
+import { leaveDateOf } from '../hris/leave-date.ts'
 import { HrisImplausible, HrisIncomplete } from '../hris/types.ts'
 import type { HrisPerson, HrisSnapshot } from '../hris/types.ts'
 import type { PeopleStore } from '../store/types.ts'
@@ -143,7 +144,14 @@ export function deriveHrisStatus(
 ): HrisDerivedStatus {
   const start = record.startDate
   if (start && ISO_DATE.test(start) && start > today) return 'hired'
-  return activeIds.has(record.hrisId) ? 'active' : 'terminated'
+  if (!activeIds.has(record.hrisId)) return 'terminated'
+  // Still on the employed list, but past the day they were last in. HR
+  // systems keep somebody employed until the contract ends; access should not
+  // wait for that. Offboarding starts the day AFTER the leave date, so on the
+  // day itself the person is still active and can hand over.
+  const leave = leaveDateOf(record)
+  if (leave !== null && today > leave) return 'terminated'
+  return 'active'
 }
 
 /** True when a leaving date is missing, unparseable, or older than the lookback. */
@@ -172,6 +180,7 @@ const PRESERVED_ROW_FIELDS = [
   'site',
   'managerEmail',
   'terminationDate',
+  'lastWorkingDay',
 ] as const satisfies readonly (keyof Person)[]
 
 const EVENT_FOR: Record<HrisDerivedStatus, TransitionEvent> = {
@@ -637,7 +646,7 @@ async function parkLateTermination(
   base: RowBase,
 ): Promise<SyncRow | null> {
   if (current.status !== 'terminated' || current.reviewReason || current.offboarding?.suspendedAt) return null
-  const date = record.terminationDate ?? current.terminationDate
+  const date = leaveDateOf(record) ?? leaveDateOf(current)
   if (!terminationOutsideLookback(date, ctx.today, ctx.terminationLookbackDays)) return null
 
   if (!ctx.dryRun) await ctx.people.patch(current.hrisId, { reviewReason: 'termination_older_than_lookback' })
@@ -666,7 +675,7 @@ async function statusChange(
   let reason = `HR status moved from ${current.status} to ${desired}.`
 
   if (desired === 'terminated') {
-    const date = record.terminationDate ?? current.terminationDate
+    const date = leaveDateOf(record) ?? leaveDateOf(current)
     if (terminationOutsideLookback(date, ctx.today, ctx.terminationLookbackDays)) {
       // The status stays truthful. Parking it as active instead would let a
       // leaver go on shielding their own identifiers from the engine's
@@ -765,6 +774,7 @@ function toPerson(record: HrisPerson, status: LifecycleStatus, source: string): 
     managerEmail: record.managerEmail ?? null,
     startDate: record.startDate ?? null,
     terminationDate: record.terminationDate ?? null,
+    lastWorkingDay: record.lastWorkingDay ?? null,
     hold: false,
     holdReason: null,
     reviewReason: null,

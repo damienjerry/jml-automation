@@ -8,6 +8,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { DatabaseSync } from 'node:sqlite'
+import { MIGRATIONS } from '../../src/store/sqlite/migrations/index.ts'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -60,7 +61,7 @@ describe('the store on disk', () => {
 
     const raw = new DatabaseSync(path)
     const applied = raw.prepare('SELECT id FROM schema_migrations ORDER BY id').all() as Record<string, unknown>[]
-    expect(applied.map((row) => String(row['id']))).toEqual(['001-people'])
+    expect(applied.map((row) => String(row['id']))).toEqual(MIGRATIONS.map((m) => m.id))
     raw.close()
 
     const again = new SqlitePeopleStore({ path })
@@ -71,7 +72,7 @@ describe('the store on disk', () => {
     const count = check.prepare('SELECT count(*) AS total FROM schema_migrations').get() as
       | Record<string, unknown>
       | undefined
-    expect(Number(count?.['total'])).toBe(1)
+    expect(Number(count?.['total'])).toBe(MIGRATIONS.length)
     check.close()
   })
 

@@ -224,6 +224,7 @@ function validatePerson(record: unknown, path: string, index: number): HrisPerso
     managerEmail: optionalString(raw['managerEmail'], path, index, 'managerEmail')?.toLowerCase() ?? null,
     startDate: isoOrNull(raw['startDate'], path, index, 'startDate'),
     terminationDate: isoOrNull(raw['terminationDate'], path, index, 'terminationDate'),
+    lastWorkingDay: isoOrNull(raw['lastWorkingDay'], path, index, 'lastWorkingDay'),
   }
   return person
 }

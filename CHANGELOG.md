@@ -158,7 +158,7 @@ Read this before arming anything.
   earlier private use, not from this code**, which does not ship those
   adapters.
 
-Test coverage is not evidence about your tenant. 1338 tests across 133 files
+Test coverage is not evidence about your tenant. 1351 tests across 135 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/jml-toolkit/jml-toolkit/releases/tag/v0.1.0

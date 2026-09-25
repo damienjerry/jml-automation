@@ -120,6 +120,15 @@ const HiBobFieldsSchema = z
           'ORDERED fallbacks. HR systems hold the leaving date in different places depending on how the tenant is configured, and reading only the first one makes a leaver look like they have no date at all.',
         ),
       ),
+    lastWorkingDay: z
+      .string()
+      .default('employee.lastDayOfWork')
+      .describe(
+        meta(
+          '',
+          'Path to the last day the person is physically in. Where it is earlier than the termination date it decides the offboarding day, because access should stop when the person does, not when the contract ends. Blank disables it.',
+        ),
+      ),
   })
   .strict()
 

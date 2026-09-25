@@ -25,6 +25,7 @@
  * summary rather than designed later from memory.
  */
 
+import { leaveDateOf } from '../hris/leave-date.ts'
 import { daysBetween } from '../core/clock.ts'
 import type { IsoDate } from '../core/clock.ts'
 import type { ChangeGate, GateDecision } from '../core/gate.ts'
@@ -224,7 +225,7 @@ async function leaverEvents(
   const events: LifecycleEvent[] = []
 
   for (const person of rows) {
-    const date = person.terminationDate
+    const date = leaveDateOf(person)
     const days = date ? daysBetween(today, date) : null
     const stale = terminationOutsideLookback(date, today, lookbackDays)
 
@@ -269,7 +270,7 @@ async function scheduledLeaverEvents(people: PeopleStore, today: IsoDate): Promi
   const rows = await people.list({ status: ['hired', 'active'], excludeHeld: true })
   const events: LifecycleEvent[] = []
   for (const person of rows) {
-    const date = person.terminationDate
+    const date = leaveDateOf(person)
     if (!date) continue
     const days = daysBetween(today, date)
     if (days < 0) continue

@@ -217,6 +217,11 @@
                     "internal.terminationDate",
                     "employment.terminationDate"
                   ]
+                },
+                "lastWorkingDay": {
+                  "type": "string",
+                  "description": "Path to the last day the person is physically in. Where it is earlier than the termination date it decides the offboarding day, because access should stop when the person does, not when the contract ends. Blank disables it.",
+                  "default": "employee.lastDayOfWork"
                 }
               },
               "required": [],

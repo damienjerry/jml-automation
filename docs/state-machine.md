@@ -218,6 +218,24 @@ new HR record, and somebody has to decide that.
 See [`reinstated-after-day0-auto-holds`](../test/regression/reinstated-after-day0-auto-holds.test.ts)
 and [`sync-revives-offboarding-row`](../test/regression/sync-revives-offboarding-row.test.ts).
 
+## The leaving date
+
+Two HR fields can describe when somebody leaves. The termination date is when the
+contract ends. The last working day is the last day the person is actually in,
+and it is often earlier: notice served away from work, garden leave, a contract
+that ends on a Friday after a last shift midweek.
+
+The toolkit uses the last working day where the HR system holds one and it is
+not after the termination date, otherwise the termination date. Offboarding
+starts the day **after** that date, while the HR system may still list the
+person as employed. A date before the current start date belongs to an earlier
+stint and is ignored, so a rehire is never offboarded on their first morning.
+The rule lives in one place, `src/hris/leave-date.ts`, and every selection,
+notification and lookback check reads it rather than the raw field.
+
+Why: the automation this was ported from keyed on the employed list alone, and
+left access open between somebody's last day in and the end of their contract.
+
 ## Selection: who is acted on today
 
 The selections are pure functions over rows
