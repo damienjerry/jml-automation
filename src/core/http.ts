@@ -123,7 +123,14 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     const maxRetries = req.maxRetries ?? defaultRetries
     const retryOn5xx = req.retryOn5xx ?? true
 
-    const headers: Record<string, string> = { accept: 'application/json', ...(req.headers ?? {}) }
+    // Header names are folded to lower case before the defaults are applied.
+    // HTTP header names are case-insensitive, but a plain object is not: a
+    // caller spelling `Content-Type` beside this client's `content-type`
+    // default produced two keys, fetch joined them into
+    // `application/json, application/json`, and the HR system answered 415
+    // to every people search while every fixture-driven test passed.
+    const headers: Record<string, string> = { accept: 'application/json' }
+    for (const [name, value] of Object.entries(req.headers ?? {})) headers[name.toLowerCase()] = value
     let payload: string | undefined
     if (req.body !== undefined) {
       if (typeof req.body === 'string') {
