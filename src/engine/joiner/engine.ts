@@ -77,7 +77,7 @@ export async function runJoinerEngine(deps: JoinerDeps, opts: JoinerRunOptions):
   }
   const gate = deps.gate ?? createActivationGate(deps.cfg.joiner.gate)
   const holidays = new Set(deps.cfg.joiner.holidays)
-  const selection = { today, leadWorkingDays: deps.cfg.joiner.leadWorkingDays, holidays }
+  const selection = { today, leadWorkingDays: deps.cfg.joiner.leadWorkingDays, graceDays: deps.cfg.joiner.graceDays, holidays }
 
   let rows = await deps.store.list({ status: ['hired', 'active'], excludeHeld: true })
   if (opts.only) {
@@ -88,10 +88,10 @@ export async function runJoinerEngine(deps: JoinerDeps, opts: JoinerRunOptions):
       report.errors.push('no employed person matches the requested id or address')
       return finish(deps, report)
     }
-    // A named person is looked at even when the lead window would skip them,
-    // but every other rule still applies: naming somebody is not permission
-    // to reset a working account.
-    const skip = rows[0] ? joinerSkipReason(rows[0], { ...selection, leadWorkingDays: 3650 }) : 'not_employed'
+    // A named person is looked at even when the lead window or the grace
+    // period would skip them, but every other rule still applies: naming
+    // somebody is not permission to reset a working account.
+    const skip = rows[0] ? joinerSkipReason(rows[0], { ...selection, leadWorkingDays: 3650, graceDays: 36_500 }) : 'not_employed'
     if (skip) {
       report.people.push(result(rows[0]!, 'joiner_skipped', `not a candidate: ${describeSkip(skip)}`))
       report.counts.joinerSkipped = 1
@@ -158,6 +158,7 @@ function describeSkip(reason: JoinerSkipReason): string {
     out_of_scope: 'the HR system says IT does not provision for them',
     no_start_date: 'no start date held',
     starts_later: 'the start date is outside the lead window',
+    started_before_grace: 'started longer ago than joiner.graceDays with no activation recorded, so they are treated as an existing employee; name them with --hris-id to activate anyway',
     no_address: 'no work address held',
   }
   return text[reason]

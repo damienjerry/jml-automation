@@ -55,17 +55,7 @@ Counts:
 ... 6 more line(s)
 --- end notification ---
 run demo-before  pipeline  armed  ok=true
-  counts: hrisEmployed=7 hrisPeople=7 joinerCandidates=5 joinerSkipped=5 sync.created=6 sync.scanned=7 sync.skipped_no_email=1
-  Jane Doe        joiner_skipped active -> active
-      already in use at first sight; recorded as activated by observation, nothing touched
-  Lee Nakamura    joiner_skipped active -> active
-      already in use at first sight; recorded as activated by observation, nothing touched
-  Kit Marlowe     joiner_skipped active -> active
-      already in use at first sight; recorded as activated by observation, nothing touched
-  Sam Rivera      joiner_skipped active -> active
-      already in use at first sight; recorded as activated by observation, nothing touched
-  Robin Ellis     joiner_skipped active -> active
-      already in use at first sight; recorded as activated by observation, nothing touched
+  counts: hrisEmployed=7 hrisPeople=7 sync.created=6 sync.scanned=7 sync.skipped_no_email=1
 audit rows written this step: 3
 
   people store:

@@ -241,7 +241,12 @@ left access open between somebody's last day in and the end of their contract.
 Activation is markers on the person, not a status, like offboarding. The HR
 system's integrations create a staged identity account and an unlicensed Google
 account; the engine does everything after that, three working days before the
-start date (`joiner.leadWorkingDays`, with `joiner.holidays` skipped):
+start date (`joiner.leadWorkingDays`, with `joiner.holidays` skipped). The
+window has a far edge too: somebody who started more than `joiner.graceDays`
+ago with no activation recorded is an existing employee, not a starter. On a
+fresh people store nobody has an activation marker, and without that edge every
+person on the books was a candidate, five per run, for ever. Naming a person
+with `--hris-id` looks at them whatever their start date.
 
 | Leg | Arming action | What it does | Read back |
 | --- | --- | --- | --- |

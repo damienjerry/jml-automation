@@ -19,7 +19,7 @@ export class FakeNotion {
   rateLimitOnce = false
   private seq = 0
 
-  constructor(databaseId = 'db-people', properties: Record<string, { type: string }> = { Name: { type: 'title' } }) {
+  constructor(databaseId = 'db-people', properties: Record<string, { type: string; select?: { options: { name: string }[] } }> = { Name: { type: 'title' } }) {
     this.database = { id: databaseId, properties: { ...properties } }
   }
 

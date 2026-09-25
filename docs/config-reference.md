@@ -70,6 +70,7 @@ not exist.
 | `store.peopleDatabaseId` (notion) | `NOTION_PEOPLE_DB_ID` | string | **required** | - | Database id holding one row per person. |
 | `store.properties` (notion) | - | map | `{}` | - | Map from this toolkit’s field names to your property names. |
 | `store.statusValues` (notion) | - | map | `{}` | - | Map from lifecycle status to your select options. |
+| `store.readOnly` (notion) | `NOTION_READ_ONLY` | boolean | `false` | - | Never write to the database. Reads, counts, `jml store verify` and every dry run work; every write refuses; a missing property is read as empty rather than added. For a database another automation owns, such as a shadow run beside a live estate. |
 | `store.adapter` (sheets) | - | literal "sheets" | **required** | - | A spreadsheet as the people store. |
 | `store.spreadsheetId` (sheets) | `PEOPLE_SHEET_ID` | string | **required** | - | Spreadsheet id. |
 | `store.tab` (sheets) | `PEOPLE_SHEET_TAB` | string | `People` | - | Worksheet name. |
@@ -100,6 +101,7 @@ not exist.
 | `leaver.deviceGate.directBindingsOnly` | - | literal true | `true` | - | NOT overridable. Membership of a group that grants access to a machine is not custody of it, so only a direct binding blocks a deletion. |
 | `leaver.deviceGate.failClosed` | - | literal true | `true` | - | NOT overridable. A gate that cannot be read blocks. Reading an error as "no devices" is how an account gets deleted while the machine is still out there. |
 | `joiner.leadWorkingDays` | `JOINER_LEAD_WORKING_DAYS` | integer | `3` | - | Activate this many working days before the start date, so the temporary password reaches the manager in time. Weekends and the dates in holidays are skipped. |
+| `joiner.graceDays` | `JOINER_GRACE_DAYS` | integer | `7` | - | Somebody who started more than this many days ago with no activation recorded is an existing employee, not a starter: not selected, not announced, and their manager is not nudged. On a fresh people store every employee looks like a starter otherwise. Name a person with --hris-id to activate them regardless. |
 | `joiner.holidays` | - | string[] | `[]` | - | ISO dates that are not working days. Kept as data rather than a national calendar URL, because the toolkit must not depend on somebody else's endpoint being up on the morning a starter arrives. |
 | `joiner.maxActivationsPerRun` | `JOINER_MAX_PER_RUN` | integer | `5` | - | More candidates than this are reported and held for the next run rather than all being activated at once. A crowd of joiners is a data fault far more often than a hiring round. |
 | `joiner.gate` | `JOINER_GATE` | none \| manual \| ticket | `none` | - | What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticketing adapter opens it (interface only in this phase; behaves as manual). |

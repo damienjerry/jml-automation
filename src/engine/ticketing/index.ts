@@ -15,7 +15,7 @@
  * because it is driven by a webhook rather than by the pipeline.
  */
 
-import { addDays } from '../../core/clock.ts'
+import { addDays, daysBetween } from '../../core/clock.ts'
 import type { RunReport } from '../../core/types.ts'
 import { leaveDateOf } from '../../hris/leave-date.ts'
 import type { TicketRef, TicketingAdapter } from '../../ticketing/types.ts'
@@ -58,6 +58,10 @@ export async function runTicketing(deps: TicketingDeps, opts: TicketingRunOption
     const rows = await deps.store.list({ status: ['hired', 'active'], excludeHeld: true })
     for (const person of rows) {
       if (!person.startDate || person.inScope === false || person.activation?.activatedAt || person.activation?.gateOpenedAt || person.activation?.refusedReason) continue
+      // Past the grace period they are an existing employee, and their
+      // manager is not asked to raise a starter form for somebody who has
+      // been here a year.
+      if (daysBetween(person.startDate, today) > deps.cfg.joiner.graceDays) continue
       const ctx: AuditCtx = { person, runId: opts.runId, actor: opts.actor, dryRun: opts.dryRun }
       try {
         if (cfg.nudgeManager && !person.activation?.nudgedAt && person.startDate <= horizon) {

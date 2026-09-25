@@ -18,7 +18,17 @@ store:
 
 `jml store verify` works against it, and it passes the same conformance suite
 as the SQLite store, driven by an in-memory fake of the Notion API in the tests.
-It has not been run against a real Notion workspace.
+It has been read against one real workspace: a 710-row people database owned by
+another automation, in read-only mode, with the counts agreeing with the HR
+system. It has not written to a real workspace.
+
+Two things about an existing database. Department, role, source and manager may
+be `select` or `email` columns as well as text; `init` accepts either and
+writes each in its own shape, so nothing another automation reads has to be
+retyped. And `readOnly: true` makes the adapter never write: reads, counts,
+`verify` and every dry run work, every write refuses, and a missing property is
+read as empty rather than added. That is the setting for a shadow run beside a
+live estate, or for a database somebody else owns.
 
 How a person is laid out: the columns a human reads and edits (name, address,
 status, start date, the hold checkbox, the suspension date, a note) are real

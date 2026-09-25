@@ -196,6 +196,7 @@ function buildStore(cfg: JmlConfig, clock: Clock, secrets: SecretRegistry, http:
       databaseId: cfg.store.peopleDatabaseId,
       properties: cfg.store.properties,
       statusValues: cfg.store.statusValues,
+      readOnly: cfg.store.readOnly,
       clock,
     })
   }

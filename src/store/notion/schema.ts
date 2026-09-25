@@ -64,25 +64,33 @@ export const DEFAULT_STATUS_VALUES: Record<LifecycleStatus, string> = {
   departed: 'Departed',
 }
 
-/** The Notion type each mapped property must have, for init() to add or refuse. */
-export const PROPERTY_TYPES: Record<keyof NotionPropertyMap, string> = {
-  title: 'title',
-  hrisId: 'rich_text',
-  primaryEmail: 'email',
-  status: 'select',
-  suspendedAt: 'date',
-  hold: 'checkbox',
-  googleAccountPresent: 'checkbox',
-  identityId: 'rich_text',
-  managerEmail: 'rich_text',
-  note: 'rich_text',
-  startDate: 'date',
-  department: 'rich_text',
-  jobTitle: 'rich_text',
-  source: 'rich_text',
-  updatedAt: 'date',
-  state: 'rich_text',
+/**
+ * The Notion types each mapped property may have. The first is what init()
+ * creates when the property is missing; the rest are accepted when it already
+ * exists, so a database that keeps departments and roles as select options
+ * (most do) can be used without retyping columns another automation reads.
+ */
+export const PROPERTY_TYPES: Record<keyof NotionPropertyMap, readonly string[]> = {
+  title: ['title'],
+  hrisId: ['rich_text'],
+  primaryEmail: ['email'],
+  status: ['select'],
+  suspendedAt: ['date'],
+  hold: ['checkbox'],
+  googleAccountPresent: ['checkbox'],
+  identityId: ['rich_text'],
+  managerEmail: ['rich_text', 'email'],
+  note: ['rich_text'],
+  startDate: ['date'],
+  department: ['rich_text', 'select'],
+  jobTitle: ['rich_text', 'select'],
+  source: ['rich_text', 'select'],
+  updatedAt: ['date'],
+  state: ['rich_text'],
 }
+
+/** The type each mapped property actually has in the database, from init(). */
+export type NotionPropertyTypes = Partial<Record<keyof NotionPropertyMap, string>>
 
 export function resolvePropertyMap(overrides: Record<string, string> = {}): NotionPropertyMap {
   const map = { ...DEFAULT_PROPERTIES }
@@ -138,10 +146,29 @@ function readEmail(prop: unknown): string {
   return ((prop as { email?: string | null } | undefined)?.email ?? '').trim().toLowerCase()
 }
 
+/** A text-like value whatever the column's type: rich text, a select option, a title or an email. */
+function readText(prop: unknown): string {
+  if (!prop || typeof prop !== 'object') return ''
+  const p = prop as Record<string, unknown>
+  if ('rich_text' in p) return readRichText(prop)
+  if ('select' in p) return readSelect(prop) ?? ''
+  if ('title' in p) return readTitle(prop)
+  if ('email' in p) return readEmail(prop)
+  return ''
+}
+
+/** Write a text-like value in the shape the column's live type expects. */
+function writeText(text: string | null | undefined, type: string | undefined): unknown {
+  const value = (text ?? '').trim()
+  if (type === 'select') return { select: value ? { name: value } : null }
+  if (type === 'email') return { email: value || null }
+  return richText(value)
+}
+
 /** The parts of a Person that live in the JSON property. */
 type StateBlob = Omit<Person, 'hrisId' | 'status' | 'primaryEmail' | 'displayName' | 'hold' | 'note' | 'startDate' | 'department' | 'jobTitle' | 'source' | 'updatedAt' | 'managerEmail'>
 
-export function toProperties(person: Person, map: NotionPropertyMap, statuses: Record<LifecycleStatus, string>): NotionProperties {
+export function toProperties(person: Person, map: NotionPropertyMap, statuses: Record<LifecycleStatus, string>, types: NotionPropertyTypes = {}): NotionProperties {
   const { hrisId, status, primaryEmail, displayName, hold, note, startDate, department, jobTitle, source, updatedAt, managerEmail, ...rest } = person
   const googleAccountPresent = person.googleAccountPresent
   const blob: StateBlob = rest
@@ -154,12 +181,12 @@ export function toProperties(person: Person, map: NotionPropertyMap, statuses: R
     [map.hold]: { checkbox: hold },
     [map.googleAccountPresent]: { checkbox: googleAccountPresent === true },
     [map.identityId]: richText(person.externalIds?.jumpcloudUserId ?? ''),
-    [map.managerEmail]: richText(managerEmail ?? ''),
+    [map.managerEmail]: writeText(managerEmail, types.managerEmail),
     [map.note]: richText(note ?? ''),
     [map.startDate]: { date: startDate ? { start: startDate } : null },
-    [map.department]: richText(department ?? ''),
-    [map.jobTitle]: richText(jobTitle ?? ''),
-    [map.source]: richText(source ?? ''),
+    [map.department]: writeText(department, types.department),
+    [map.jobTitle]: writeText(jobTitle, types.jobTitle),
+    [map.source]: writeText(source, types.source),
     [map.updatedAt]: { date: updatedAt ? { start: updatedAt } : null },
     [map.state]: richText(JSON.stringify(blob)),
   }
@@ -204,34 +231,36 @@ export function fromPage(page: NotionPage, map: NotionPropertyMap, statuses: Rec
     hold: readCheckbox(p[map.hold]),
     note: readRichText(p[map.note]) || null,
     startDate: readDate(p[map.startDate]),
-    department: readRichText(p[map.department]) || null,
-    jobTitle: readRichText(p[map.jobTitle]) || null,
-    source: readRichText(p[map.source]) || null,
+    department: readText(p[map.department]) || null,
+    jobTitle: readText(p[map.jobTitle]) || null,
+    source: readText(p[map.source]) || null,
     updatedAt: readDate(p[map.updatedAt]),
-    managerEmail: readRichText(p[map.managerEmail]).trim().toLowerCase() || null,
+    managerEmail: readText(p[map.managerEmail]).trim().toLowerCase() || null,
     googleAccountPresent: readCheckbox(p[map.googleAccountPresent]) ? true : (blob.googleAccountPresent ?? null),
     externalIds,
     offboarding,
   }
 }
 
-/** Which mapped properties the database lacks, and which exist with the wrong type. */
-export function schemaGaps(db: NotionDatabase, map: NotionPropertyMap): { missing: (keyof NotionPropertyMap)[]; wrongType: { key: keyof NotionPropertyMap; name: string; have: string; want: string }[] } {
+/** Which mapped properties the database lacks, which exist with a type this adapter cannot use, and the live type of each one it can. */
+export function schemaGaps(db: NotionDatabase, map: NotionPropertyMap): { missing: (keyof NotionPropertyMap)[]; wrongType: { key: keyof NotionPropertyMap; name: string; have: string; want: string }[]; types: NotionPropertyTypes } {
   const byName = new Map(Object.entries(db.properties).map(([name, def]) => [name, def.type]))
   const missing: (keyof NotionPropertyMap)[] = []
   const wrongType: { key: keyof NotionPropertyMap; name: string; have: string; want: string }[] = []
+  const types: NotionPropertyTypes = {}
   for (const key of Object.keys(map) as (keyof NotionPropertyMap)[]) {
     const name = map[key]
     const have = byName.get(name)
-    const want = PROPERTY_TYPES[key]
+    const allowed = PROPERTY_TYPES[key]
     if (have === undefined) missing.push(key)
-    else if (have !== want) wrongType.push({ key, name, have, want })
+    else if (!allowed.includes(have)) wrongType.push({ key, name, have, want: allowed.join(' or ') })
+    else types[key] = have
   }
-  return { missing, wrongType }
+  return { missing, wrongType, types }
 }
 
 export function propertyDefinition(key: keyof NotionPropertyMap, statuses: Record<LifecycleStatus, string>): unknown {
-  const type = PROPERTY_TYPES[key]
+  const type = PROPERTY_TYPES[key][0]!
   if (type === 'select') return { select: { options: Object.values(statuses).map((name) => ({ name })) } }
   return { [type]: {} }
 }

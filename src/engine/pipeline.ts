@@ -218,6 +218,7 @@ export async function runPipeline(deps: PipelineDeps, opts: PipelineOptions): Pr
         people: deps.store,
         today,
         terminationLookbackDays: deps.cfg.leaver.terminationLookbackDays,
+        joinerGraceDays: deps.cfg.joiner.graceDays,
         // Announced only when the set of people changes, with the configured
         // weekly re-raise. A schedule firing is not news.
         gate: createChangeGate({

@@ -220,6 +220,15 @@ const NotionStoreSchema = z
       .record(z.string())
       .default({})
       .describe(meta('', 'Map from lifecycle status to your select options.')),
+    readOnly: z
+      .boolean()
+      .default(false)
+      .describe(
+        meta(
+          'NOTION_READ_ONLY',
+          'Never write to the database. Reads, counts, `jml store verify` and every dry run work; every write refuses; a missing property is read as empty rather than added. For a database another automation owns, such as a shadow run beside a live estate.',
+        ),
+      ),
   })
   .strict()
 
@@ -319,6 +328,17 @@ const JoinerSchema = z
         meta(
           'JOINER_LEAD_WORKING_DAYS',
           'Activate this many working days before the start date, so the temporary password reaches the manager in time. Weekends and the dates in holidays are skipped.',
+        ),
+      ),
+    graceDays: z
+      .number()
+      .int()
+      .min(0)
+      .default(7)
+      .describe(
+        meta(
+          'JOINER_GRACE_DAYS',
+          'Somebody who started more than this many days ago with no activation recorded is an existing employee, not a starter: not selected, not announced, and their manager is not nudged. On a fresh people store every employee looks like a starter otherwise. Name a person with --hris-id to activate them regardless.',
         ),
       ),
     holidays: z

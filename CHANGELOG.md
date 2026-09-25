@@ -13,10 +13,19 @@ it, wait for the mailbox, and send the messages. Nothing is armed by default.
 
 ### Added
 
+**A grace period on the joiner side.** `joiner.graceDays` (default 7):
+somebody who started longer ago than that with no activation recorded is an
+existing employee to the selection, to the detect step and to the manager
+nudge. Found on the first run against a real tenant, where a fresh store made
+102 of 150 employees into starters and the run held 97 of them over the per-run
+cap for ever. `--hris-id` still activates a named person regardless.
+
 **Notion people store.** One database, one row per person, single-writer
 under the pipeline lease, read-verify-write on every status change, full
 pagination. Passes the shared store conformance suite against a fake of the
-Notion API.
+Notion API. Department, role, source and manager may be select or email
+columns, and `readOnly: true` turns the adapter into a reader for a database
+another automation owns.
 
 **Owner notifications.** Optional. The day after a leaving date, each
 platform owner in a register file gets one message naming the platforms they

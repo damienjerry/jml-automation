@@ -128,6 +128,8 @@ leaver:
 joiner:
   # Activate this many working days before the start date, so the temporary password reaches the manager in time. Weekends and the dates in holidays are skipped.
   leadWorkingDays: 3
+  # Somebody who started more than this many days ago with no activation recorded is an existing employee, not a starter: not selected, not announced, and their manager is not nudged. On a fresh people store every employee looks like a starter otherwise. Name a person with --hris-id to activate them regardless.
+  graceDays: 7
   # ISO dates that are not working days. Kept as data rather than a national calendar URL, because the toolkit must not depend on somebody else's endpoint being up on the morning a starter arrives.
   holidays: []
   # More candidates than this are reported and held for the next run rather than all being activated at once. A crowd of joiners is a data fault far more often than a hiring round.
@@ -291,6 +293,7 @@ server:
 #   store.peopleDatabaseId: ""
 #   store.properties: {}
 #   store.statusValues: {}
+#   store.readOnly: false
 #   store.adapter: sheets
 #   store.spreadsheetId: ""
 #   store.tab: People

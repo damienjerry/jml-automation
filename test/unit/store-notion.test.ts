@@ -87,3 +87,69 @@ describe('the Notion store on its own', () => {
     expect(JSON.stringify(sent.filter)).not.toContain('suspended')
   })
 })
+
+/** A database laid out the way most existing ones are: departments and roles as select options. */
+function selectTypedFake(): FakeNotion {
+  return new FakeNotion('db-people', {
+    Name: { type: 'title' },
+    Department: { type: 'select', select: { options: [{ name: 'Operations' }] } },
+    Role: { type: 'select', select: { options: [] } },
+    Source: { type: 'select', select: { options: [] } },
+    Manager: { type: 'email' },
+  })
+}
+
+describePeopleStoreConformance({
+  name: 'notion (fake API, select-typed department, role and source)',
+  create: async () => make(selectTypedFake()).store,
+  writes: (store) => (store as NotionPeopleStore).writes,
+  largeListSize: 150,
+})
+
+describe('select-typed and email-typed columns', () => {
+  it('are accepted by init, written in their own shape and read back as text', async () => {
+    const { fake, store } = make(selectTypedFake())
+    await store.init()
+    expect(fake.database.properties['Department']?.type).toBe('select')
+    await store.upsert(samplePerson({ hrisId: 'hr-1', department: 'Finance', jobTitle: 'Analyst', source: 'hris', managerEmail: 'jane.doe@example.com' }))
+    const page = [...fake.pages.values()][0]!
+    expect(page.properties['Department']).toEqual({ select: { name: 'Finance' } })
+    expect(page.properties['Role']).toEqual({ select: { name: 'Analyst' } })
+    expect(page.properties['Manager']).toEqual({ email: 'jane.doe@example.com' })
+    const read = await store.get('hr-1')
+    expect(read?.department).toBe('Finance')
+    expect(read?.jobTitle).toBe('Analyst')
+    expect(read?.managerEmail).toBe('jane.doe@example.com')
+  })
+
+  it('still refuses a type nothing here can read or write', async () => {
+    const fake = new FakeNotion('db-people', { Name: { type: 'title' }, Department: { type: 'number' } })
+    const { store } = make(fake)
+    await expect(store.init()).rejects.toThrow(/"Department" is number, needs rich_text or select/)
+  })
+})
+
+describe('a read-only store', () => {
+  it('reads and counts, refuses every write, and never adds a property', async () => {
+    const fake = new FakeNotion()
+    const writer = make(fake).store
+    await writer.init()
+    await writer.upsert(samplePerson({ hrisId: 'hr-1' }))
+
+    // The database now lacks a mapped property, as one owned by somebody else would.
+    delete fake.database.properties['Notes']
+    const before = Object.keys(fake.database.properties).sort()
+
+    const client = new NotionClient({ http: fake.http(), token: { use: (fn) => fn('notion-token-not-real') } })
+    const reader = new NotionPeopleStore({ client, databaseId: fake.database.id, readOnly: true })
+    await reader.init()
+    expect(Object.keys(fake.database.properties).sort()).toEqual(before)
+
+    expect(await reader.countExact()).toBe(1)
+    expect((await reader.get('hr-1'))?.note).toBeNull()
+    await expect(reader.upsert(samplePerson({ hrisId: 'hr-2' }))).rejects.toThrow(/readOnly/)
+    await expect(reader.patch('hr-1', { note: 'x' })).rejects.toThrow(/readOnly/)
+    expect(reader.writes).toBe(0)
+    expect(await reader.countExact()).toBe(1)
+  })
+})

@@ -237,6 +237,11 @@
               },
               "description": "Map from lifecycle status to your select options.",
               "default": {}
+            },
+            "readOnly": {
+              "type": "boolean",
+              "description": "Never write to the database. Reads, counts, `jml store verify` and every dry run work; every write refuses; a missing property is read as empty rather than added. For a database another automation owns, such as a shadow run beside a live estate.",
+              "default": false
             }
           },
           "required": [
@@ -521,6 +526,11 @@
           "type": "integer",
           "description": "Activate this many working days before the start date, so the temporary password reaches the manager in time. Weekends and the dates in holidays are skipped.",
           "default": 3
+        },
+        "graceDays": {
+          "type": "integer",
+          "description": "Somebody who started more than this many days ago with no activation recorded is an existing employee, not a starter: not selected, not announced, and their manager is not nudged. On a fresh people store every employee looks like a starter otherwise. Name a person with --hris-id to activate them regardless.",
+          "default": 7
         },
         "holidays": {
           "type": "array",

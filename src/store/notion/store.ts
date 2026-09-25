@@ -18,13 +18,20 @@ import { matchesFilter } from '../memory/store.ts'
 import { applyPatch, clonePerson, guardTransition, mergeHrisFields, normaliseEmail, normaliseNewPerson } from '../transitions-guard.ts'
 import type { PeopleStore, PersonFilter, StoreCapabilities, TransitionRequest, TransitionResult, UpsertResult } from '../types.ts'
 import { NotionClient, type NotionPage } from './client.ts'
-import { fromPage, propertyDefinition, resolvePropertyMap, resolveStatusValues, schemaGaps, toProperties, type NotionPropertyMap } from './schema.ts'
+import { fromPage, propertyDefinition, resolvePropertyMap, resolveStatusValues, schemaGaps, toProperties, type NotionPropertyMap, type NotionPropertyTypes } from './schema.ts'
 
 export interface NotionPeopleStoreOptions {
   client: NotionClient
   databaseId: string
   properties?: Record<string, string>
   statusValues?: Record<string, string>
+  /**
+   * Never write. Reads, counts, `verify` and every dry run work; every write
+   * throws; `init()` reports a missing property instead of adding one. For a
+   * database that another automation owns, which is what a shadow run against
+   * a live estate looks at.
+   */
+  readOnly?: boolean
   clock?: Clock
 }
 
@@ -35,6 +42,9 @@ export class NotionPeopleStore implements PeopleStore {
   private readonly databaseId: string
   private readonly map: NotionPropertyMap
   private readonly statuses: Record<LifecycleStatus, string>
+  private readonly readOnly: boolean
+  /** The live type of each mapped property, so a select column is written as one. */
+  private types: NotionPropertyTypes = {}
   private readonly clock: Clock
   /** Page ids by HR id, filled by every read so a write does not need a query first. */
   private readonly pageIds = new Map<string, string>()
@@ -45,6 +55,7 @@ export class NotionPeopleStore implements PeopleStore {
     this.databaseId = options.databaseId
     this.map = resolvePropertyMap(options.properties)
     this.statuses = resolveStatusValues(options.statusValues)
+    this.readOnly = options.readOnly === true
     this.clock = options.clock ?? new SystemClock()
   }
 
@@ -55,10 +66,15 @@ export class NotionPeopleStore implements PeopleStore {
   async init(): Promise<void> {
     const db = await this.client.getDatabase(this.databaseId)
     const gaps = schemaGaps(db, this.map)
+    this.types = gaps.types
     if (gaps.wrongType.length > 0) {
       const detail = gaps.wrongType.map((g) => `"${g.name}" is ${g.have}, needs ${g.want}`).join('; ')
       throw new Error(`the Notion database has mapped properties of the wrong type: ${detail}. Remap them in store.properties or change the property type in Notion.`)
     }
+    // Read-only means read-only for the schema as well. A missing property
+    // reads as empty, which is the right answer for a database this toolkit
+    // does not own.
+    if (this.readOnly) return
     if (gaps.missing.length > 0) {
       // Additive only. The title property cannot be added after the fact and
       // is always present, so it never appears here.
@@ -138,7 +154,10 @@ export class NotionPeopleStore implements PeopleStore {
   async close(): Promise<void> {}
 
   private async write(person: Person, pageId: string | null): Promise<void> {
-    const properties = toProperties(person, this.map, this.statuses)
+    if (this.readOnly) {
+      throw new Error(`store.readOnly is true, so the Notion database is never written (refused a write for ${person.hrisId}). Clear readOnly once this toolkit owns the database.`)
+    }
+    const properties = toProperties(person, this.map, this.statuses, this.types)
     const page = pageId ? await this.client.updatePage(pageId, properties) : await this.client.createPage(this.databaseId, properties)
     this.pageIds.set(person.hrisId, page.id)
     this.writeCount += 1
