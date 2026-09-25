@@ -185,6 +185,25 @@ ticketing:
   # One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder.
   formInstruction: "In Slack, run /suptask and choose the New Starter IT Request form."
 
+ownerNotifications:
+  # Tell each platform owner in the register when somebody leaves.
+  enabled: false
+  # Required when enabled. Nobody whose leaving date is before this is ever notified, so switching the feature on cannot blast every owner about every leaver in the history.
+  goLiveDate: null
+  # A leaver older than this is not picked up, so a register that gains an owner later does not reopen old departures.
+  lookbackDays: 14
+  register:
+    # Where the register is read from. A file export is the reference; other sources are later adapters.
+    adapter: file
+    # CSV with a header row, or JSON. Required when enabled.
+    path: ""
+    # Header of the platform-name column.
+    nameColumn: Software
+    # Header of the owner-address column. Several addresses may share a cell.
+    ownerColumn: "Owner Email"
+    # Header of the column saying how offboarding is handled. A value of Retired skips the row.
+    handlingColumn: Offboarding
+
 devices:
   # What happens to a device when nobody says otherwise.
   dispositionDefault: return_to_pool

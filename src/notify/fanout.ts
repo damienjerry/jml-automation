@@ -138,6 +138,7 @@ export const TEMPLATE_NAMES = [
   'joiner-nudge',
   'joiner-reminder',
   'leaver-ticket',
+  'leaver-owner',
 ] as const
 
 export type TemplateName = (typeof TEMPLATE_NAMES)[number]

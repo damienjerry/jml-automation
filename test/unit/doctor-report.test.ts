@@ -75,6 +75,7 @@ async function harness(opts: HarnessOptions = {}): Promise<{ rt: Runtime; secret
     secrets: createSecretRegistry(new Map([['identity.jumpcloud.apiKey', secret]])),
     source: 'jml.config.yaml',
     ticketing: null,
+    register: null,
     store,
     state,
     audit: createJsonlAuditSink({ dir, today: () => '2026-03-03', fsync: false }),

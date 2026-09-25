@@ -404,6 +404,29 @@ const TicketingSchema = z
   })
   .strict()
 
+const OwnerNotificationsSchema = z
+  .object({
+    enabled: z.boolean().default(false).describe(meta('OWNER_NOTIFICATIONS', 'Tell each platform owner in the register when somebody leaves.')),
+    goLiveDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable()
+      .default(null)
+      .describe(meta('OWNER_NOTIFICATIONS_GO_LIVE', 'Required when enabled. Nobody whose leaving date is before this is ever notified, so switching the feature on cannot blast every owner about every leaver in the history.')),
+    lookbackDays: z.number().int().positive().default(14).describe(meta('', 'A leaver older than this is not picked up, so a register that gains an owner later does not reopen old departures.')),
+    register: z
+      .object({
+        adapter: z.enum(['file']).default('file').describe(meta('', 'Where the register is read from. A file export is the reference; other sources are later adapters.')),
+        path: z.string().default('').describe(meta('SAAS_REGISTER_PATH', 'CSV with a header row, or JSON. Required when enabled.')),
+        nameColumn: z.string().default('Software').describe(meta('', 'Header of the platform-name column.')),
+        ownerColumn: z.string().default('Owner Email').describe(meta('', 'Header of the owner-address column. Several addresses may share a cell.')),
+        handlingColumn: z.string().default('Offboarding').describe(meta('', 'Header of the column saying how offboarding is handled. A value of Retired skips the row.')),
+      })
+      .strict()
+      .default({}),
+  })
+  .strict()
+
 const LeaverSchema = z
   .object({
     terminationLookbackDays: z
@@ -683,6 +706,7 @@ export const ConfigObject = z
     leaver: LeaverSchema.default({}),
     joiner: JoinerSchema.default({}),
     ticketing: TicketingSchema.default({}),
+    ownerNotifications: OwnerNotificationsSchema.default({}),
     devices: DevicesSchema.default({}),
     notify: NotifySchema.default({}),
     audit: AuditSchema.default({}),
@@ -710,6 +734,12 @@ export const ALL_ARMED_ACTIONS: readonly ArmedAction[] = ARMED_ACTIONS
 
 /** The schema to parse with. Adds the cross-field rules. */
 export const ConfigSchema = ConfigObject.superRefine((cfg, ctx) => {
+  if (cfg.ownerNotifications.enabled && !cfg.ownerNotifications.goLiveDate) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ownerNotifications', 'goLiveDate'], message: 'ownerNotifications.enabled needs goLiveDate, so switching it on cannot notify every owner about every leaver in the history.' })
+  }
+  if (cfg.ownerNotifications.enabled && !cfg.ownerNotifications.register.path) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ownerNotifications', 'register', 'path'], message: 'ownerNotifications.enabled needs register.path.' })
+  }
   if (cfg.mode === 'armed' && cfg.armedActions.length === 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

@@ -55,6 +55,7 @@ export function pipelineDeps(rt: Runtime): PipelineDeps {
     google: rt.providers.google,
     joiner: { idp: rt.providers.idp, google: rt.providers.google },
     ticketing: rt.ticketing,
+    register: rt.register,
     notifier: rt.notifier,
     audit: rt.audit,
     clock: rt.clock,

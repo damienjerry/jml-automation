@@ -27,6 +27,7 @@ export type NotificationKind =
   | 'joiner.reminder'
   | 'ticket.unmatched'
   | 'ticket.created'
+  | 'leaver.owner'
 
 export interface Notification {
   kind: NotificationKind

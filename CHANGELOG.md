@@ -13,6 +13,11 @@ it, wait for the mailbox, and send the messages. Nothing is armed by default.
 
 ### Added
 
+**Owner notifications.** Optional. The day after a leaving date, each
+platform owner in a register file gets one message naming the platforms they
+own. A required go-live date and a lookback stop the first run reaching
+into the history.
+
 **Ticketing.** Optional. With a ticketing adapter (Suptask shipped; the
 interface is four methods), a joiner's manager is nudged once to raise the
 starter form and reminded once the day before, a ticket on that form opens
@@ -172,7 +177,7 @@ Read this before arming anything.
   earlier private use, not from this code**, which does not ship those
   adapters.
 
-Test coverage is not evidence about your tenant. 1407 tests across 146 files
+Test coverage is not evidence about your tenant. 1419 tests across 148 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/jml-toolkit/jml-toolkit/releases/tag/v0.1.0

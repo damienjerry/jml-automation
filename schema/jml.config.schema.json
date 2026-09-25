@@ -714,6 +714,69 @@
       "additionalProperties": false,
       "default": {}
     },
+    "ownerNotifications": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Tell each platform owner in the register when somebody leaves.",
+          "default": false
+        },
+        "goLiveDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Required when enabled. Nobody whose leaving date is before this is ever notified, so switching the feature on cannot blast every owner about every leaver in the history.",
+          "default": null
+        },
+        "lookbackDays": {
+          "type": "integer",
+          "description": "A leaver older than this is not picked up, so a register that gains an owner later does not reopen old departures.",
+          "default": 14
+        },
+        "register": {
+          "type": "object",
+          "properties": {
+            "adapter": {
+              "type": "string",
+              "enum": [
+                "file"
+              ],
+              "description": "Where the register is read from. A file export is the reference; other sources are later adapters.",
+              "default": "file"
+            },
+            "path": {
+              "type": "string",
+              "description": "CSV with a header row, or JSON. Required when enabled.",
+              "default": ""
+            },
+            "nameColumn": {
+              "type": "string",
+              "description": "Header of the platform-name column.",
+              "default": "Software"
+            },
+            "ownerColumn": {
+              "type": "string",
+              "description": "Header of the owner-address column. Several addresses may share a cell.",
+              "default": "Owner Email"
+            },
+            "handlingColumn": {
+              "type": "string",
+              "description": "Header of the column saying how offboarding is handled. A value of Retired skips the row.",
+              "default": "Offboarding"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
     "devices": {
       "type": "object",
       "properties": {

@@ -14,6 +14,8 @@
  */
 
 import { SuptaskAdapter } from '../../ticketing/suptask/adapter.ts'
+import { FileRegisterAdapter } from '../../register/file.ts'
+import type { SaasRegisterAdapter } from '../../register/types.ts'
 import type { TicketingAdapter } from '../../ticketing/types.ts'
 import { dirname, join } from 'node:path'
 import { createFanoutAuditSink } from '../../audit/fanout.ts'
@@ -98,6 +100,7 @@ export interface Runtime {
   http: HttpClient
   providers: Providers | null
   ticketing: TicketingAdapter | null
+  register: SaasRegisterAdapter | null
   close(): Promise<void>
 }
 
@@ -146,6 +149,7 @@ export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOpt
   const providers = opts.withProviders ? buildProviders(cfg, loaded.secrets, http) : null
   const notifier = buildNotifier(cfg, loaded.secrets, http, providers, opts.io)
   const ticketing = buildTicketing(cfg, loaded.secrets, http)
+  const register = cfg.ownerNotifications.enabled ? new FileRegisterAdapter({ path: cfg.ownerNotifications.register.path, nameColumn: cfg.ownerNotifications.register.nameColumn, ownerColumn: cfg.ownerNotifications.register.ownerColumn, handlingColumn: cfg.ownerNotifications.register.handlingColumn }) : null
 
   return {
     cfg,
@@ -162,6 +166,7 @@ export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOpt
     http,
     providers,
     ticketing,
+    register,
     async close() {
       // The audit sink is closed first and its failure is not swallowed: an
       // unflushed row is a step nobody can prove happened.

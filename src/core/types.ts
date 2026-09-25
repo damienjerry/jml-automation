@@ -103,6 +103,8 @@ export interface OffboardingRecord {
   /** A human confirmed deletion may proceed, when config requires it. */
   operatorAck?: { by: string; at: string; note?: string } | null
   departedAt?: string | null
+  /** Owners told, keyed by address, with the date. One message per owner, ever. */
+  ownersNotified?: Record<string, string> | null
   /** The leaver ticket, raised once when the row becomes a day-0 candidate. */
   ticketRef?: { id: string; number: string; url: string | null } | null
 }

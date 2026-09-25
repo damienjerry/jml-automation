@@ -44,6 +44,8 @@ import { runSync } from './sync.ts'
 import { runLeaverEngine, type LeaverRunOptions } from './leaver/engine.ts'
 import { runJoinerEngine, type JoinerDeps } from './joiner/engine.ts'
 import { runTicketing } from './ticketing/index.ts'
+import { runOwnerNotifications } from './ownernotify/index.ts'
+import type { SaasRegisterAdapter } from '../register/types.ts'
 import type { TicketingAdapter } from '../ticketing/types.ts'
 import type { LeaverDeps } from './leaver/legs.ts'
 import { notifyRunAborted, notifyRunSummary, runAuditCtx } from './leaver/notify.ts'
@@ -57,7 +59,7 @@ export const PIPELINE_LEASE = 'pipeline'
  */
 export const PIPELINE_LEASE_TTL_SECONDS = 900
 
-export type PipelineStepName = 'sync' | 'detect' | 'ticketing' | 'joiner' | 'leaver'
+export type PipelineStepName = 'sync' | 'detect' | 'ticketing' | 'joiner' | 'leaver' | 'owners'
 
 /**
  * The one HTTP call the pipeline makes itself.
@@ -77,6 +79,8 @@ export interface PipelineDeps extends LeaverDeps {
   joiner?: Pick<JoinerDeps, 'idp' | 'google' | 'gate' | 'passwordGenerator'> | null
   /** Null when no ticketing system is configured; the step then does nothing. */
   ticketing?: TicketingAdapter | null
+  /** Null when owner notifications are off. */
+  register?: SaasRegisterAdapter | null
   /** Needed only for the liveness ping. */
   http?: LivenessHttp
   secrets?: SecretRegistry
@@ -93,7 +97,7 @@ export interface PipelineOptions {
 }
 
 /** Sync, then detect, then the engine. The order is the point of this module. */
-const DEFAULT_STEPS: readonly PipelineStepName[] = ['sync', 'detect', 'ticketing', 'joiner', 'leaver']
+const DEFAULT_STEPS: readonly PipelineStepName[] = ['sync', 'detect', 'ticketing', 'joiner', 'leaver', 'owners']
 
 type AbortReason =
   | 'lease_held'
@@ -268,6 +272,13 @@ export async function runPipeline(deps: PipelineDeps, opts: PipelineOptions): Pr
         await recordRun(deps, report)
         return report
       }
+    }
+
+    if (steps.includes('owners') && deps.cfg.ownerNotifications.enabled) {
+      // After the leaver step: the day after somebody's last day is also the
+      // day their status has settled, and the owners hear once.
+      const owners = await runOwnerNotifications({ ...deps, register: deps.register ?? null }, { dryRun: opts.dryRun, actor: opts.actor, runId })
+      mergeLeaverReport(report, owners)
     }
 
     await flushAudit(deps, report)

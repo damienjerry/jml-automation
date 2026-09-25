@@ -20,7 +20,7 @@ Read this before you grant anything on the strength of this page.
 
 | Claim | Status |
 | --- | --- |
-| The toolkit has run end to end against a real tenancy | **No.** Nothing here has ever run against a live tenant. The connectors are driven by scripted fakes in 1407 tests, and the demo runs offline with no credentials. |
+| The toolkit has run end to end against a real tenancy | **No.** Nothing here has ever run against a live tenant. The connectors are driven by scripted fakes in 1419 tests, and the demo runs offline with no credentials. |
 | The two device uninstall scripts have run on real hardware | **No.** `src/engine/device/scripts/manifest.json` records `provenOnHardware: false`, and a handover is refused on any platform whose script carries that flag until you name the machine you canaried it on. See [the canary runbook](runbooks/canary-a-device-script.md). |
 | The n8n bundle has been imported into a running n8n | **No.** The exports validate and scrub; no instance has loaded them. |
 

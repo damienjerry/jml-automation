@@ -61,6 +61,7 @@ async function runtime(auditDir: string, people: readonly Person[] = []): Promis
     http: createHttpClient(),
     providers: null,
     ticketing: null,
+    register: null,
     close: async () => {
       await state.close()
       await store.close()

@@ -316,6 +316,30 @@ what a starter needed, and the bridge that read it once matched a ticket to the
 wrong person by name. The nudge, before it was recorded on the row, fired every
 run until the channel was muted.
 
+## Owner notifications
+
+Optional (`ownerNotifications.enabled`). The day after a leaving date, every
+owner listed in the register gets one message naming the platforms they own,
+asking them to check for and remove access. Sent whether or not the person is
+known to have an account, and never chased; the message says so. IT
+administers some platforms and closes access itself; for the rest, telling the
+owner is the only thing IT can do.
+
+The register is a file export (CSV with a header row, or JSON) read through
+`ownerNotifications.register`. Rows marked Retired are skipped.
+
+Guards:
+
+- `goLiveDate` is required. Nobody whose leaving date is before it is ever
+  notified, so switching the feature on cannot tell every owner about every
+  leaver in the store's history.
+- `lookbackDays` (14). A leaver older than it is not picked up, so a register
+  that gains an owner later does not reopen old departures.
+- One message per leaver per owner, recorded in `offboarding.ownersNotified`.
+  An undelivered message leaves no record and is tried again.
+- A register with no owner addresses is a refusal, not a quiet day.
+- Out-of-scope people are skipped; they never had accounts.
+
 ## Who IT provisions for
 
 An HR system holds people who never get a work account: drivers, hub staff,

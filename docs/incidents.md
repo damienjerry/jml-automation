@@ -18,7 +18,7 @@ why so much of this code spends its effort on reading back what it did.
 
 Each entry ends with the file that would fail if the safeguard were removed.
 There are 68 such files under [../test/regression/](../test/regression/), out of
-1407 tests in total. One of the entries, the last one on this page, is a defect
+1419 tests in total. One of the entries, the last one on this page, is a defect
 found in this repository rather than in the automation it was ported from.
 
 ---
@@ -665,6 +665,21 @@ checked before every create; a failed create leaves no marker, so the next run
 tries again.
 
 Held by [leaver-ticket-raised-every-run.test.ts](../test/regression/leaver-ticket-raised-every-run.test.ts).
+
+## Owners
+
+### Every owner told about every leaver on day one
+
+A feature that reads "everyone who left recently" from a store that holds
+years of leavers, switched on for the first time, would message every owner
+about every one of them.
+
+**Rule now in force.** A go-live date is required and nothing before it is ever
+notified; a lookback bounds what "recently" means; each leaver-owner pair is
+recorded so it happens once; and a register that returns no owners refuses
+rather than reading as nothing to send.
+
+Held by [owner-notified-about-the-whole-history.test.ts](../test/regression/owner-notified-about-the-whole-history.test.ts).
 
 ## Devices
 
