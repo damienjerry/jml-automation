@@ -1173,3 +1173,59 @@ codebase will probably be one of them again.
 The failure direction is what makes these expensive. A gate that breaks loudly
 gets fixed on the same day. A gate that breaks quietly looks exactly like a
 week in which nothing went wrong.
+
+## The first run against a real tenant
+
+Everything above was ported from a private automation and covered by tests
+against hand-written doubles. On 2026-09-25 the read-only half was pointed at
+a real HR system, identity provider, Google Workspace and a Notion database
+for the first time. It found five defects in an afternoon that 1466 passing
+tests had not. Each is now a regression test.
+
+### The HR system refused every people search with 415
+
+The adapter set `Content-Type: application/json`. The HTTP client set its own
+`content-type` default beside it, because a plain object treats the two
+spellings as different keys, and fetch folded them into
+`application/json, application/json`. The fake HTTP layer in the tests never
+merged headers, so every test passed. Header names are now folded to lower
+case before any default applies.
+
+### The bootstrap tombstoned the people who had not started yet
+
+The HR system keeps a starter off the employed list until their first day.
+The bootstrap read "not on the employed list" as "historic leaver" and wrote a
+terminal tombstone for four future starters; the next sync then warned that
+each was tombstoned while employed, and the only remedy it could offer was a
+new HR record. The sync had always read a future start date before the
+employed set. That derivation now lives in one place and the bootstrap uses it.
+
+### `--json` produced a file nothing could parse
+
+The console notifier wrote the run summary to stdout, in front of the report.
+Under `--json` it now writes to stderr, with the log lines.
+
+### Every employee was a joiner candidate
+
+A fresh people store holds no activation marker for anybody, and the joiner
+selection had no lower bound on the start date, so 102 of 150 people on the
+books were starters whose account had never been activated. The run capped at
+five and reported 97 held over the cap, for ever. With the gate at `none` that
+is a temporary password issued to five long-serving people per run; with a
+ticketing adapter wired in it is a starter-form nudge to a hundred managers.
+`joiner.graceDays` now bounds the selection, the detect step and the nudge;
+naming a person with `--hris-id` still looks at them.
+
+### The Notion adapter could not read a database it did not create
+
+Department and source were select columns, and the adapter accepted rich text
+only. `init` would then have added a missing property to a database another
+automation owned, which is a schema write nobody asked for. Select and email
+columns are now accepted and written in their own shape, and
+`store.readOnly: true` makes the adapter a reader that refuses every write and
+reads a missing property as empty.
+
+The pattern is the one this file keeps recording: a fake that agrees with the
+code is not evidence about the vendor, and a first run against anything real
+should be expected to fail in ways no test predicted. That is what `mode:
+dry-run` and an empty `armedActions` list are for.
