@@ -37,6 +37,8 @@ function stubEngine(overrides: Partial<ServerEngine> = {}): ServerEngine {
     leaver: async () => report({ kind: 'leaver' }),
 
     joiner: async () => report({ kind: 'joiner' }),
+
+    ticketInbound: async () => ({ outcome: 'ignored' }),
     devicePreflight: notImplemented as unknown as ServerEngine['devicePreflight'],
     deviceDispose: notImplemented as unknown as ServerEngine['deviceDispose'],
     show: async () => null,

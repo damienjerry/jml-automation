@@ -103,6 +103,8 @@ export interface OffboardingRecord {
   /** A human confirmed deletion may proceed, when config requires it. */
   operatorAck?: { by: string; at: string; note?: string } | null
   departedAt?: string | null
+  /** The leaver ticket, raised once when the row becomes a day-0 candidate. */
+  ticketRef?: { id: string; number: string; url: string | null } | null
 }
 
 /**
@@ -134,6 +136,12 @@ export interface ActivationRecord {
   gateOpenedBy?: string | null
   /** A permanent refusal, cleared only by a human. */
   refusedReason?: string | null
+  /** The manager was asked to raise the starter form. Once. */
+  nudgedAt?: string | null
+  /** The day-before reminder went. Once. */
+  remindedAt?: string | null
+  /** The ticket that opened the gate, when one did. */
+  ticketRef?: { id: string; number: string; url: string | null } | null
   attempts?: number | null
   legs?: Partial<Record<ActivationLegName, LegRecord>> | null
 }

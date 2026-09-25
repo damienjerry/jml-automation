@@ -43,6 +43,8 @@ import { runDetect } from './detect.ts'
 import { runSync } from './sync.ts'
 import { runLeaverEngine, type LeaverRunOptions } from './leaver/engine.ts'
 import { runJoinerEngine, type JoinerDeps } from './joiner/engine.ts'
+import { runTicketing } from './ticketing/index.ts'
+import type { TicketingAdapter } from '../ticketing/types.ts'
 import type { LeaverDeps } from './leaver/legs.ts'
 import { notifyRunAborted, notifyRunSummary, runAuditCtx } from './leaver/notify.ts'
 
@@ -55,7 +57,7 @@ export const PIPELINE_LEASE = 'pipeline'
  */
 export const PIPELINE_LEASE_TTL_SECONDS = 900
 
-export type PipelineStepName = 'sync' | 'detect' | 'joiner' | 'leaver'
+export type PipelineStepName = 'sync' | 'detect' | 'ticketing' | 'joiner' | 'leaver'
 
 /**
  * The one HTTP call the pipeline makes itself.
@@ -73,6 +75,8 @@ export interface PipelineDeps extends LeaverDeps {
   hris: HrisAdapter
   /** Present when the connectors support activation; the joiner step is skipped otherwise. */
   joiner?: Pick<JoinerDeps, 'idp' | 'google' | 'gate' | 'passwordGenerator'> | null
+  /** Null when no ticketing system is configured; the step then does nothing. */
+  ticketing?: TicketingAdapter | null
   /** Needed only for the liveness ping. */
   http?: LivenessHttp
   secrets?: SecretRegistry
@@ -89,7 +93,7 @@ export interface PipelineOptions {
 }
 
 /** Sync, then detect, then the engine. The order is the point of this module. */
-const DEFAULT_STEPS: readonly PipelineStepName[] = ['sync', 'detect', 'joiner', 'leaver']
+const DEFAULT_STEPS: readonly PipelineStepName[] = ['sync', 'detect', 'ticketing', 'joiner', 'leaver']
 
 type AbortReason =
   | 'lease_held'
@@ -227,6 +231,13 @@ export async function runPipeline(deps: PipelineDeps, opts: PipelineOptions): Pr
       report.warnings.push(...detect.warnings)
       report.errors.push(...detect.errors)
       if (!detect.ok) report.ok = false
+    }
+
+    if (steps.includes('ticketing') && deps.cfg.ticketing.adapter !== 'none') {
+      // Before the joiner step: a nudge sent today and a gate opened by a
+      // ticket both want to be visible to the same run's activation pass.
+      const ticketing = await runTicketing({ ...deps, ticketing: deps.ticketing ?? null }, { dryRun: opts.dryRun, actor: opts.actor, runId })
+      mergeLeaverReport(report, ticketing)
     }
 
     if (steps.includes('joiner') && deps.joiner) {

@@ -13,6 +13,13 @@ it, wait for the mailbox, and send the messages. Nothing is armed by default.
 
 ### Added
 
+**Ticketing.** Optional. With a ticketing adapter (Suptask shipped; the
+interface is four methods), a joiner's manager is nudged once to raise the
+starter form and reminded once the day before, a ticket on that form opens
+the activation gate through `POST /v1/tickets/inbound` and the
+`jml-ticket-inbound` workflow, and a leaver ticket is raised once when a
+person becomes a day-0 candidate.
+
 **The joiner half.** Three working days before a start date, a temporary
 password with a forced reset on the staged identity account, a licence, a
 poll until the mailbox exists, an organisational unit move, and the password
@@ -165,7 +172,7 @@ Read this before arming anything.
   earlier private use, not from this code**, which does not ship those
   adapters.
 
-Test coverage is not evidence about your tenant. 1391 tests across 143 files
+Test coverage is not evidence about your tenant. 1407 tests across 146 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/jml-toolkit/jml-toolkit/releases/tag/v0.1.0

@@ -19,6 +19,7 @@ import { previewDeviceDisposition, runDeviceDisposition } from '../../engine/dev
 import { runLeaverEngine } from '../../engine/leaver/engine.ts'
 import { runPipeline } from '../../engine/pipeline.ts'
 import { runJoinerEngine } from '../../engine/joiner/engine.ts'
+import { openGateFromTicket } from '../../engine/ticketing/bridge.ts'
 import { joinerDeps } from './joiner.ts'
 import { startServer, type RunningServer } from '../../server/http.ts'
 import type { ServerEngine } from '../../server/routes.ts'
@@ -50,6 +51,13 @@ export function serverEngine(rt: Runtime): ServerEngine {
           ? { only: { ...(req.hrisId ? { hrisId: req.hrisId } : {}), ...(req.email ? { email: req.email } : {}) } }
           : {}),
       }),
+    ticketInbound: async (req) => {
+      if (!rt.ticketing) return { outcome: 'ignored', detail: 'no ticketing adapter is configured' }
+      const event = rt.ticketing.parseInbound(req.body)
+      if (!event) return { outcome: 'ignored', detail: 'the body is not a ticket event this adapter recognises' }
+      const result = await openGateFromTicket({ ...leaverDeps(rt), ticketing: rt.ticketing }, event, req.actor)
+      return { ...result }
+    },
     devicePreflight: (req) =>
       previewDeviceDisposition(deviceDeps(rt), {
         systemId: req.systemId,

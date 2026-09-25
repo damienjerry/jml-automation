@@ -151,6 +151,40 @@ joiner:
   # Length of the generated temporary password.
   temporaryPasswordLength: 20
 
+ticketing:
+  # Which ticketing system. none disables every ticketing feature.
+  adapter: none
+  suptask:
+    # Public API base URL.
+    baseUrl: "https://public-api-prod.suptask.com/api/v2/public"
+    # Workspace API token, as a secret reference.
+    apiToken: null
+    # The inbox tickets are raised in.
+    queueId: ""
+    # The chat user id automated tickets are raised as, usually the IT owner.
+    requesterId: ""
+    # The new-starter form. Only a ticket raised on this form may open the activation gate.
+    starterFormId: ""
+    # The form leaver tickets are raised on. Blank raises them with no form.
+    leaverFormId: ""
+  starterForm:
+    # Form field label holding the first name.
+    firstNameField: "First Name"
+    # Form field label holding the surname.
+    lastNameField: "Last Name"
+    # Form field label holding the work address, if the form asks for one. Matched before the name.
+    emailField: "Work Email"
+    # Form field label holding a personal address. Written to the person when present.
+    personalEmailField: "Personal Email"
+  # Ask the manager to raise the starter form when a joiner is detected and the gate is closed. Once per person.
+  nudgeManager: true
+  # Remind the manager once, the day before the start date, if the gate is still closed.
+  dayBeforeReminder: true
+  # Raise a ticket when a leaver becomes a day-0 candidate, so the platforms IT does not administer have somewhere to be worked through.
+  leaverTicket: true
+  # One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder.
+  formInstruction: "In Slack, run /suptask and choose the New Starter IT Request form."
+
 devices:
   # What happens to a device when nobody says otherwise.
   dispositionDefault: return_to_pool

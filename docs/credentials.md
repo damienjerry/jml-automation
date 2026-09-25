@@ -20,7 +20,7 @@ Read this before you grant anything on the strength of this page.
 
 | Claim | Status |
 | --- | --- |
-| The toolkit has run end to end against a real tenancy | **No.** Nothing here has ever run against a live tenant. The connectors are driven by scripted fakes in 1391 tests, and the demo runs offline with no credentials. |
+| The toolkit has run end to end against a real tenancy | **No.** Nothing here has ever run against a live tenant. The connectors are driven by scripted fakes in 1407 tests, and the demo runs offline with no credentials. |
 | The two device uninstall scripts have run on real hardware | **No.** `src/engine/device/scripts/manifest.json` records `provenOnHardware: false`, and a handover is refused on any platform whose script carries that flag until you name the machine you canaried it on. See [the canary runbook](runbooks/canary-a-device-script.md). |
 | The n8n bundle has been imported into a running n8n | **No.** The exports validate and scrub; no instance has loaded them. |
 
@@ -880,3 +880,17 @@ once pruned those rows and every historic leaver read as a fresh departure.
 Regression tests:
 [`tombstones-pruned-refire`](../test/regression/tombstones-pruned-refire.test.ts),
 [`tombstone-count-drop-aborts`](../test/regression/tombstone-count-drop-aborts.test.ts).
+
+## Ticketing
+
+Optional. Nothing here is needed unless `ticketing.adapter` is set.
+
+| | |
+| --- | --- |
+| Credential | a workspace API token for the ticketing product |
+| Config | `ticketing.suptask.apiToken` (a secret reference), `queueId`, `requesterId`, `starterFormId`, `leaverFormId` |
+| Env | `SUPTASK_API_TOKEN`, `SUPTASK_QUEUE_ID`, `SUPTASK_REQUESTER_ID`, `SUPTASK_STARTER_FORM_ID`, `SUPTASK_LEAVER_FORM_ID` |
+| Minimum | create a ticket, reply on a ticket, read one ticket (for `jml doctor`). Suptask tokens are workspace-wide; there is no narrower grant. |
+| Inbound | the product's ticket-created webhook, scoped to the starter form, pointed at the `jml-ticket-inbound` workflow, which relays to the sidecar with the sidecar's bearer token. The toolkit checks the form id again. |
+| If it leaks | tickets can be raised, read and replied to as the requester the token belongs to. It cannot open a gate on its own: that needs the sidecar token as well. |
+| Rotate | issue a new token in the product, update the secret, `jml doctor`. |

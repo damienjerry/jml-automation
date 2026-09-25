@@ -284,6 +284,38 @@ form was the only thing that said what a starter needed, and activating
 without it produced accounts nobody had asked for and no kit for the people
 who had.
 
+## Ticketing: the form gate and the leaver ticket
+
+Optional, off until `ticketing.adapter` is set. Suptask is the reference
+adapter; the interface is `createTicket`, `reply`, `parseInbound` and
+`testConnection`, so another product is an afternoon's adapter.
+
+With `joiner.gate: ticket`, three things happen around a starter:
+
+1. **Nudge.** When a joiner is detected and the gate is closed, the manager is
+   asked once to raise the starter form (`ticketing.formInstruction` says how).
+   `activation.nudgedAt` records it; a run firing is never a reason to ask
+   again. No usable manager address means IT is told once instead.
+2. **Remind.** The day before the start date, if the gate is still closed, one
+   reminder. `activation.remindedAt`.
+3. **Bridge.** A ticket-created webhook, relayed by `jml-ticket-inbound` to
+   `POST /v1/tickets/inbound`, opens the gate when the ticket is on the
+   configured starter form and matches exactly one person still waiting: by
+   work address if the form asks for one, else by exact name. Ambiguity never
+   opens a gate; the ticket and IT are both told. A personal address on the
+   form is written to the person and validated at send time like any other.
+   `activation.gateOpenedBy` reads `ticket:<number>`.
+
+For leavers, `ticketing.leaverTicket` raises one ticket the run a person first
+becomes a day-0 candidate, carrying the plan and dates, with a due date of the
+day after leaving. `offboarding.ticketRef` records it, so a ticket is never
+raised twice for one person.
+
+Why: in the estate this came from, the manager's form was the only statement of
+what a starter needed, and the bridge that read it once matched a ticket to the
+wrong person by name. The nudge, before it was recorded on the row, fired every
+run until the channel was muted.
+
 ## Who IT provisions for
 
 An HR system holds people who never get a work account: drivers, hub staff,

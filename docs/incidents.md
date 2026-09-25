@@ -18,7 +18,7 @@ why so much of this code spends its effort on reading back what it did.
 
 Each entry ends with the file that would fail if the safeguard were removed.
 There are 68 such files under [../test/regression/](../test/regression/), out of
-1391 tests in total. One of the entries, the last one on this page, is a defect
+1407 tests in total. One of the entries, the last one on this page, is a defect
 found in this repository rather than in the automation it was ported from.
 
 ---
@@ -637,6 +637,34 @@ adopter supplies; a per-run cap holds and names the rest; a missing account is
 looked at again next run without noise; and a configurable gate has to be open.
 
 Held by [joiner-selection-and-gate.test.ts](../test/regression/joiner-selection-and-gate.test.ts).
+
+## Ticketing
+
+### The starter form was the gate, and nothing opened it
+
+Activation depended on a form the manager had to raise, and the only thing
+that read the form was a bridge matching tickets to people by name. Nobody was
+told to raise it, so accounts sat staged past the start date; and the nudge
+that was added fired on every run until the channel was muted.
+
+**Rule now in force.** One nudge per person when the joiner is detected, one
+reminder the day before, both recorded on the row. The bridge opens the gate
+only for a ticket on the configured form that matches exactly one person still
+waiting, by work address first and exact name second; ambiguity tells the
+ticket and IT and opens nothing. Somebody already activated is never a match.
+
+Held by [starter-form-never-consulted.test.ts](../test/regression/starter-form-never-consulted.test.ts).
+
+### A leaver ticket per run
+
+Ticket creation is not idempotent. Without a marker, every run that saw the
+same day-0 candidate raised another ticket.
+
+**Rule now in force.** The ticket reference is written to the row on success and
+checked before every create; a failed create leaves no marker, so the next run
+tries again.
+
+Held by [leaver-ticket-raised-every-run.test.ts](../test/regression/leaver-ticket-raised-every-run.test.ts).
 
 ## Devices
 

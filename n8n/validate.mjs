@@ -42,6 +42,7 @@ export const DEVICE_ROUTE_TIMEOUT_MS = 600_000
 export const ALLOWED_NODE_TYPES = new Set([
   'n8n-nodes-base.scheduleTrigger',
   'n8n-nodes-base.formTrigger',
+  'n8n-nodes-base.webhook',
   'n8n-nodes-base.errorTrigger',
   'n8n-nodes-base.set',
   'n8n-nodes-base.httpRequest',

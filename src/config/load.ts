@@ -233,6 +233,7 @@ export function collectSecretFields(config: JmlConfig): { path: string; value: s
  * added to the schema without appearing here.
  */
 export const SECRET_PATHS: readonly string[] = [
+  'ticketing.suptask.apiToken',
   'hris.hibob.serviceUserId',
   'hris.hibob.serviceToken',
   'store.token',

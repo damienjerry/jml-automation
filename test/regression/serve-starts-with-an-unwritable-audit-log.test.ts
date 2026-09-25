@@ -60,6 +60,7 @@ async function runtime(auditDir: string, people: readonly Person[] = []): Promis
     domain: createDomainMap({ primaryDomain: 'example.com' }),
     http: createHttpClient(),
     providers: null,
+    ticketing: null,
     close: async () => {
       await state.close()
       await store.close()

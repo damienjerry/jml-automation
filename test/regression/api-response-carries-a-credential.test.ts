@@ -28,6 +28,7 @@ function context(engine: Partial<ServerEngine>): RouteContext {
       pipeline: unused,
       leaver: unused,
       joiner: unused,
+      ticketInbound: unused,
       devicePreflight: unused,
       deviceDispose: unused,
       show: async () => null,

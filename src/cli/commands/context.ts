@@ -13,6 +13,8 @@
  * rather than a property of loading the config.
  */
 
+import { SuptaskAdapter } from '../../ticketing/suptask/adapter.ts'
+import type { TicketingAdapter } from '../../ticketing/types.ts'
 import { dirname, join } from 'node:path'
 import { createFanoutAuditSink } from '../../audit/fanout.ts'
 import { createJsonlAuditSink } from '../../audit/jsonl.ts'
@@ -95,6 +97,7 @@ export interface Runtime {
   domain: DomainMap
   http: HttpClient
   providers: Providers | null
+  ticketing: TicketingAdapter | null
   close(): Promise<void>
 }
 
@@ -142,6 +145,7 @@ export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOpt
   const audit = buildAudit(cfg, loaded.secrets, clock, http)
   const providers = opts.withProviders ? buildProviders(cfg, loaded.secrets, http) : null
   const notifier = buildNotifier(cfg, loaded.secrets, http, providers, opts.io)
+  const ticketing = buildTicketing(cfg, loaded.secrets, http)
 
   return {
     cfg,
@@ -157,6 +161,7 @@ export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOpt
     domain,
     http,
     providers,
+    ticketing,
     async close() {
       // The audit sink is closed first and its failure is not swallowed: an
       // unflushed row is a step nobody can prove happened.
@@ -311,4 +316,30 @@ function buildNotifier(
   }
 
   return createFanoutNotifier({ it, manager })
+}
+
+/**
+ * The ticketing adapter, or null when none is configured.
+ *
+ * Built even when the runtime has no providers: the inbound bridge only needs
+ * the store and the adapter, and a dry-run pipeline still nudges managers.
+ */
+function buildTicketing(cfg: JmlConfig, secrets: SecretRegistry, http: HttpClient): TicketingAdapter | null {
+  if (cfg.ticketing.adapter !== 'suptask') return null
+  const st = cfg.ticketing.suptask
+  if (!secrets.has('ticketing.suptask.apiToken') || !st.queueId || !st.requesterId) {
+    throw new CliError('ticketing.adapter is suptask, so ticketing.suptask.apiToken, queueId and requesterId are required', {
+      exitCode: 78,
+      docsAnchor: 'docs/credentials.md#ticketing',
+    })
+  }
+  return new SuptaskAdapter({
+    http,
+    apiToken: secrets.get('ticketing.suptask.apiToken'),
+    baseUrl: st.baseUrl,
+    queueId: st.queueId,
+    requesterId: st.requesterId,
+    starterFormId: st.starterFormId || null,
+    leaverFormId: st.leaverFormId || null,
+  })
 }

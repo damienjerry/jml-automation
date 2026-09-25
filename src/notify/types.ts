@@ -23,6 +23,10 @@ export type NotificationKind =
   | 'joiner.manager'
   | 'joiner.refused'
   | 'joiner.withheld'
+  | 'joiner.nudge'
+  | 'joiner.reminder'
+  | 'ticket.unmatched'
+  | 'ticket.created'
 
 export interface Notification {
   kind: NotificationKind

@@ -606,6 +606,114 @@
       "additionalProperties": false,
       "default": {}
     },
+    "ticketing": {
+      "type": "object",
+      "properties": {
+        "adapter": {
+          "type": "string",
+          "enum": [
+            "none",
+            "suptask"
+          ],
+          "description": "Which ticketing system. none disables every ticketing feature.",
+          "default": "none"
+        },
+        "suptask": {
+          "type": "object",
+          "properties": {
+            "baseUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "Public API base URL.",
+              "default": "https://public-api-prod.suptask.com/api/v2/public"
+            },
+            "apiToken": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "description": "Workspace API token, as a secret reference.",
+              "default": null
+            },
+            "queueId": {
+              "type": "string",
+              "description": "The inbox tickets are raised in.",
+              "default": ""
+            },
+            "requesterId": {
+              "type": "string",
+              "description": "The chat user id automated tickets are raised as, usually the IT owner.",
+              "default": ""
+            },
+            "starterFormId": {
+              "type": "string",
+              "description": "The new-starter form. Only a ticket raised on this form may open the activation gate.",
+              "default": ""
+            },
+            "leaverFormId": {
+              "type": "string",
+              "description": "The form leaver tickets are raised on. Blank raises them with no form.",
+              "default": ""
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        },
+        "starterForm": {
+          "type": "object",
+          "properties": {
+            "firstNameField": {
+              "type": "string",
+              "description": "Form field label holding the first name.",
+              "default": "First Name"
+            },
+            "lastNameField": {
+              "type": "string",
+              "description": "Form field label holding the surname.",
+              "default": "Last Name"
+            },
+            "emailField": {
+              "type": "string",
+              "description": "Form field label holding the work address, if the form asks for one. Matched before the name.",
+              "default": "Work Email"
+            },
+            "personalEmailField": {
+              "type": "string",
+              "description": "Form field label holding a personal address. Written to the person when present.",
+              "default": "Personal Email"
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "default": {}
+        },
+        "nudgeManager": {
+          "type": "boolean",
+          "description": "Ask the manager to raise the starter form when a joiner is detected and the gate is closed. Once per person.",
+          "default": true
+        },
+        "dayBeforeReminder": {
+          "type": "boolean",
+          "description": "Remind the manager once, the day before the start date, if the gate is still closed.",
+          "default": true
+        },
+        "leaverTicket": {
+          "type": "boolean",
+          "description": "Raise a ticket when a leaver becomes a day-0 candidate, so the platforms IT does not administer have somewhere to be worked through.",
+          "default": true
+        },
+        "formInstruction": {
+          "type": "string",
+          "description": "One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder.",
+          "default": "In Slack, run /suptask and choose the New Starter IT Request form."
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "default": {}
+    },
     "devices": {
       "type": "object",
       "properties": {

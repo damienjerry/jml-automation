@@ -368,6 +368,42 @@ const JoinerSchema = z
   })
   .strict()
 
+const TicketingSchema = z
+  .object({
+    adapter: z
+      .enum(['none', 'suptask'])
+      .default('none')
+      .describe(meta('TICKETING_ADAPTER', 'Which ticketing system. none disables every ticketing feature.')),
+    suptask: z
+      .object({
+        baseUrl: z.string().url().default('https://public-api-prod.suptask.com/api/v2/public').describe(meta('SUPTASK_BASE_URL', 'Public API base URL.')),
+        apiToken: secretRef('SUPTASK_API_TOKEN', 'Workspace API token, as a secret reference.').nullable().default(null),
+        queueId: z.string().default('').describe(meta('SUPTASK_QUEUE_ID', 'The inbox tickets are raised in.')),
+        requesterId: z.string().default('').describe(meta('SUPTASK_REQUESTER_ID', 'The chat user id automated tickets are raised as, usually the IT owner.')),
+        starterFormId: z.string().default('').describe(meta('SUPTASK_STARTER_FORM_ID', 'The new-starter form. Only a ticket raised on this form may open the activation gate.')),
+        leaverFormId: z.string().default('').describe(meta('SUPTASK_LEAVER_FORM_ID', 'The form leaver tickets are raised on. Blank raises them with no form.')),
+      })
+      .strict()
+      .default({}),
+    starterForm: z
+      .object({
+        firstNameField: z.string().default('First Name').describe(meta('', 'Form field label holding the first name.')),
+        lastNameField: z.string().default('Last Name').describe(meta('', 'Form field label holding the surname.')),
+        emailField: z.string().default('Work Email').describe(meta('', 'Form field label holding the work address, if the form asks for one. Matched before the name.')),
+        personalEmailField: z.string().default('Personal Email').describe(meta('', 'Form field label holding a personal address. Written to the person when present.')),
+      })
+      .strict()
+      .default({}),
+    nudgeManager: z.boolean().default(true).describe(meta('', 'Ask the manager to raise the starter form when a joiner is detected and the gate is closed. Once per person.')),
+    dayBeforeReminder: z.boolean().default(true).describe(meta('', 'Remind the manager once, the day before the start date, if the gate is still closed.')),
+    leaverTicket: z.boolean().default(true).describe(meta('', 'Raise a ticket when a leaver becomes a day-0 candidate, so the platforms IT does not administer have somewhere to be worked through.')),
+    formInstruction: z
+      .string()
+      .default('In Slack, run /suptask and choose the New Starter IT Request form.')
+      .describe(meta('', 'One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder.')),
+  })
+  .strict()
+
 const LeaverSchema = z
   .object({
     terminationLookbackDays: z
@@ -646,6 +682,7 @@ export const ConfigObject = z
     google: GoogleSchema,
     leaver: LeaverSchema.default({}),
     joiner: JoinerSchema.default({}),
+    ticketing: TicketingSchema.default({}),
     devices: DevicesSchema.default({}),
     notify: NotifySchema.default({}),
     audit: AuditSchema.default({}),

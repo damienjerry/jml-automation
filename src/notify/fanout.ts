@@ -135,6 +135,9 @@ export const TEMPLATE_NAMES = [
   'joiner-manager',
   'joiner-refused',
   'joiner-withheld',
+  'joiner-nudge',
+  'joiner-reminder',
+  'leaver-ticket',
 ] as const
 
 export type TemplateName = (typeof TEMPLATE_NAMES)[number]

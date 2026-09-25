@@ -1,0 +1,375 @@
+{
+  "name": "jml-ticket-inbound",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "jml-on-error",
+    "executionTimeout": 300,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "nodes": [
+    {
+      "name": "Ticket created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "jml-ticket-inbound",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "notes": "Point the ticketing system's ticket-created webhook here, scoped to the new-starter form. The toolkit checks the form id again, so a wrongly scoped trigger costs a 'ignored' answer rather than an opened gate."
+    },
+    {
+      "name": "Hand the ticket to the toolkit",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.JML_API_URL }}/v1/tickets/inbound",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-JML-Actor",
+              "value": "system:ticketing-webhook"
+            }
+          ]
+        },
+        "sendBody": true,
+        "options": {
+          "timeout": 60000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        },
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "eventType",
+              "value": "={{ $json.body.eventType }}"
+            },
+            {
+              "name": "ticket",
+              "value": "={{ $json.body.ticket }}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Bridge answered?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "answered-200",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the toolkit refused the ticket",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        780,
+        160
+      ],
+      "parameters": {
+        "errorMessage": "=The toolkit API refused the inbound ticket (HTTP {{ $json.statusCode }}). The gate was not opened; open it by hand with jml joiner approve."
+      }
+    },
+    {
+      "name": "Summarise",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s-outcome",
+              "name": "outcome",
+              "type": "string",
+              "value": "={{ $json.body.outcome }}"
+            },
+            {
+              "id": "s-detail",
+              "name": "detail",
+              "type": "string",
+              "value": "={{ $json.body.detail }}"
+            },
+            {
+              "id": "s-hris",
+              "name": "hrisId",
+              "type": "string",
+              "value": "={{ $json.body.hrisId ?? '' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Worth telling anybody?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "not-ignored",
+              "leftValue": "={{ $json.outcome }}",
+              "rightValue": "ignored",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "A ticket on another form is answered 'ignored' and is nobody's business. Everything else is announced."
+    },
+    {
+      "name": "Done quietly",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        160
+      ],
+      "parameters": {}
+    },
+    {
+      "name": "Post what the bridge decided",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1300,
+        0
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "authentication": "accessToken",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.SLACK_JML_CHANNEL_ID }}"
+        },
+        "text": "=Starter form ticket: {{ $json.outcome }} ({{ $json.detail }}){{ $json.hrisId ? ' for ' + $json.hrisId : '' }}",
+        "otherOptions": {}
+      }
+    },
+    {
+      "name": "Slack accepted the post?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "slack-ok-true",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "name": "Stop: the record was not delivered",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        160
+      ],
+      "parameters": {
+        "errorMessage": "=The bridge acted but the record was not announced: {{ JSON.stringify($json).slice(0, 400) }}"
+      }
+    },
+    {
+      "name": "Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        0
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Ticket created": {
+      "main": [
+        [
+          {
+            "node": "Hand the ticket to the toolkit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hand the ticket to the toolkit": {
+      "main": [
+        [
+          {
+            "node": "Bridge answered?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bridge answered?": {
+      "main": [
+        [
+          {
+            "node": "Summarise",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: the toolkit refused the ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarise": {
+      "main": [
+        [
+          {
+            "node": "Worth telling anybody?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Worth telling anybody?": {
+      "main": [
+        [
+          {
+            "node": "Post what the bridge decided",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Done quietly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post what the bridge decided": {
+      "main": [
+        [
+          {
+            "node": "Slack accepted the post?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack accepted the post?": {
+      "main": [
+        [
+          {
+            "node": "Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: the record was not delivered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -45,24 +45,25 @@ const rulesFor = (name: string): string[] =>
 describe('the shipped bundle', () => {
   it('passes its own gate', () => {
     const { checked, findings } = validateFiles(bundleFiles()) as { checked: number; findings: Finding[] }
-    expect(checked).toBe(5)
+    expect(checked).toBe(6)
     expect(findings).toEqual([])
   })
 
-  it('ships the five workflows the documentation describes', () => {
+  it('ships the six workflows the documentation describes', () => {
     expect(shipped().map((w) => w.name).sort()).toEqual([
       'jml-device-disposition',
       'jml-doctor',
       'jml-leaver-manual',
       'jml-on-error',
       'jml-pipeline',
+      'jml-ticket-inbound',
     ])
   })
 
   it('imports inactive, so an import cannot arm a schedule', () => {
     // A bundle that arms itself runs against a real tenant before anybody has
     // read what it does.
-    expect(shipped().map((w) => w.active)).toEqual([false, false, false, false, false])
+    expect(shipped().map((w) => w.active)).toEqual([false, false, false, false, false, false])
   })
 
   it('names the error workflow everywhere except in the error workflow itself', () => {

@@ -80,6 +80,8 @@ export interface ServerEngine {
     email?: string
   }): Promise<RunReport>
   joiner(req: { dryRun: boolean; actor: Actor; runId: string; hrisId?: string; email?: string }): Promise<RunReport>
+  /** A raw ticketing webhook body. Returns what the bridge decided; never a run. */
+  ticketInbound(req: { body: unknown; actor: Actor }): Promise<Record<string, unknown>>
   devicePreflight(req: { systemId: string; disposition: DeviceDisposition; actor: Actor; runId: string }): Promise<DevicePreflight>
   deviceDispose(req: {
     systemId: string
@@ -331,6 +333,14 @@ async function route(req: ServerRequest, ctx: RouteContext): Promise<ServerRespo
         }),
       ),
     )
+  }
+
+  if (req.method === 'POST' && path === '/v1/tickets/inbound') {
+    // Synchronous: the bridge reads the store and writes one row. The caller
+    // is a webhook relay that wants an answer, not a job to poll.
+    const actor = actorFrom(req.headers, 'system:ticketing')
+    const result = await ctx.engine.ticketInbound({ body: parseBody(req), actor })
+    return json(200, { ok: true, ...result })
   }
 
   if (req.method === 'POST' && path === '/v1/joiners/run') {

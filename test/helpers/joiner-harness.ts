@@ -16,6 +16,8 @@ import { MemoryPeopleStore } from '../../src/store/memory/store.ts'
 import type { AuditEvent, AuditSink } from '../../src/audit/types.ts'
 import type { Notification, NotificationResult, Notifier } from '../../src/notify/types.ts'
 import { fakeStateStore } from '../unit/fake-state-store.ts'
+import { FakeTicketing } from './fake-ticketing.ts'
+import type { TicketingDeps } from '../../src/engine/ticketing/index.ts'
 import { storedPerson } from './sync-harness.ts'
 
 export const TODAY = '2026-01-28'
@@ -42,6 +44,8 @@ export const STAGED_SEED: FakeProvidersSeed = {
 
 export interface JoinerHarness {
   deps: JoinerDeps
+  ticketing: FakeTicketing
+  ticketingDeps: TicketingDeps
   store: MemoryPeopleStore
   providers: ReturnType<typeof createFakeProviders>
   sent: Notification[]
@@ -96,8 +100,11 @@ export async function joinerHarness(options: HarnessOptions = {}): Promise<Joine
     sleep: async () => undefined,
     passwordGenerator: () => 'TEST-ONLY-NOT-A-PASSWORD',
   }
+  const ticketing = new FakeTicketing()
   return {
     deps,
+    ticketing,
+    ticketingDeps: { ...deps, ticketing },
     store,
     providers,
     sent,

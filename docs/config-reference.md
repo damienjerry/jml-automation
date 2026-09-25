@@ -110,6 +110,21 @@ not exist.
 | `joiner.mailboxPoll.intervalMs` | - | integer | `10000` | - | Milliseconds between reads. |
 | `joiner.itSupportEmail` | `JOINER_IT_SUPPORT_EMAIL` | string \| null | `null` | - | Always receives a copy of the temporary password, so it is never lost when the other recipients are unusable. |
 | `joiner.temporaryPasswordLength` | - | integer | `20` | - | Length of the generated temporary password. |
+| `ticketing.adapter` | `TICKETING_ADAPTER` | none \| suptask | `none` | - | Which ticketing system. none disables every ticketing feature. |
+| `ticketing.suptask.baseUrl` | `SUPTASK_BASE_URL` | string | `"https://public-api-prod.suptask.com/api/v2/public"` | - | Public API base URL. |
+| `ticketing.suptask.apiToken` | `SUPTASK_API_TOKEN` | string \| null | `null` | yes | Workspace API token, as a secret reference. |
+| `ticketing.suptask.queueId` | `SUPTASK_QUEUE_ID` | string | `""` | - | The inbox tickets are raised in. |
+| `ticketing.suptask.requesterId` | `SUPTASK_REQUESTER_ID` | string | `""` | - | The chat user id automated tickets are raised as, usually the IT owner. |
+| `ticketing.suptask.starterFormId` | `SUPTASK_STARTER_FORM_ID` | string | `""` | - | The new-starter form. Only a ticket raised on this form may open the activation gate. |
+| `ticketing.suptask.leaverFormId` | `SUPTASK_LEAVER_FORM_ID` | string | `""` | - | The form leaver tickets are raised on. Blank raises them with no form. |
+| `ticketing.starterForm.firstNameField` | - | string | `"First Name"` | - | Form field label holding the first name. |
+| `ticketing.starterForm.lastNameField` | - | string | `"Last Name"` | - | Form field label holding the surname. |
+| `ticketing.starterForm.emailField` | - | string | `"Work Email"` | - | Form field label holding the work address, if the form asks for one. Matched before the name. |
+| `ticketing.starterForm.personalEmailField` | - | string | `"Personal Email"` | - | Form field label holding a personal address. Written to the person when present. |
+| `ticketing.nudgeManager` | - | boolean | `true` | - | Ask the manager to raise the starter form when a joiner is detected and the gate is closed. Once per person. |
+| `ticketing.dayBeforeReminder` | - | boolean | `true` | - | Remind the manager once, the day before the start date, if the gate is still closed. |
+| `ticketing.leaverTicket` | - | boolean | `true` | - | Raise a ticket when a leaver becomes a day-0 candidate, so the platforms IT does not administer have somewhere to be worked through. |
+| `ticketing.formInstruction` | - | string | `"In Slack, run /suptask and choose the New Starter IT Request form."` | - | One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder. |
 | `devices.dispositionDefault` | `DEVICE_DISPOSITION_DEFAULT` | return_to_pool \| reassign \| handover \| retain_unmanaged | `return_to_pool` | - | What happens to a device when nobody says otherwise. |
 | `devices.uninstallTriggers.windows` | `DEVICE_UNINSTALL_TRIGGER_WINDOWS` | string \| null | `null` | - | Command trigger name. Null refuses handover on this platform. |
 | `devices.uninstallTriggers.darwin` | `DEVICE_UNINSTALL_TRIGGER_MACOS` | string \| null | `null` | - | Command trigger name. Null refuses handover on this platform. |

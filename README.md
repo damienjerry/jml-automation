@@ -126,6 +126,7 @@ it is not overridable.
 | Day 0 | the day the HR system drops somebody from the employed set | Suspend the identity provider account, set the mailbox auto-reply, revoke paid licences, tell the manager and IT. |
 | Day 6 | 6 days after suspension, configurable | Hand the files to the manager through the Google data transfer API, then suspend the Google account. |
 | Day 7 | 7 days after suspension, configurable | Delete the identity provider account and the Google account, if every gate opens. Write a tombstone. |
+| Ticketing | with the detector, and on a webhook | Ask the manager to raise the starter form when a joiner is detected, remind once the day before, open the activation gate when a ticket on that form arrives, and raise a leaver ticket for the platforms IT does not administer. Suptask is the reference adapter; the interface is four methods. |
 | Devices | on demand | Read a machine and report every reason a disposition would be refused. Unbind, reassign, hand over or retain. |
 
 ## What it does not do
@@ -135,7 +136,7 @@ it is not overridable.
   activation, licence, mailbox, organisational unit and the messages. If your HR system
   does not create accounts, the joiner path has nothing to activate.
 - **It has never run against a real tenant.** Every claim in this repository is backed by
-  1391 tests, an offline demo and the code, and by nothing else. There is no passing
+  1407 tests, an offline demo and the code, and by nothing else. There is no passing
   `jml doctor` transcript in these docs for that reason.
 - **The two device uninstall scripts have never run on real hardware.**
   `src/engine/device/scripts/manifest.json` records `provenOnHardware: false` for both, and
@@ -213,7 +214,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 75 files each named for one of them, for example
+  and `test/regression/` holds 77 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.
