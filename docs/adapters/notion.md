@@ -1,26 +1,39 @@
 # Notion as the people store
 
-Read this first: **the Notion adapter is not implemented in this release.** The
-configuration schema accepts it and the store interface is written against it,
-but no code connects to Notion. Configuring it stops the CLI before anything
-runs:
+Shipped. `store.adapter: notion` with a token reference and a database id,
+plus optional `store.properties` and `store.statusValues` maps when your
+column names or status labels differ from the defaults.
 
+```yaml
+store:
+  adapter: notion
+  token: env:NOTION_API_KEY
+  peopleDatabaseId: ${NOTION_PEOPLE_DB_ID}
+  properties:
+    hrisId: HR ID          # your column for the HR system's id
+    identityId: JumpCloud ID
+  statusValues:
+    terminated: Terminated
 ```
-$ jml doctor
-store.adapter is "notion", which this release ships as an interface only.
-Use the sqlite store, or the memory store for a rehearsal.
-see docs/config-reference.md#keys
-```
 
-Exit code 78. The refusal happens in `buildStore()` in
-[`src/cli/commands/context.ts`](../../src/cli/commands/context.ts), before a
-run starts, so there is no half-working state to discover later.
+`jml store verify` works against it, and it passes the same conformance suite
+as the SQLite store, driven by an in-memory fake of the Notion API in the tests.
+It has not been run against a real Notion workspace.
 
-This page is here for two reasons: so you know what the shipped default is
-instead, and so that anybody writing the adapter has the contract in one place
-rather than reading it out of the SQLite implementation.
+How a person is laid out: the columns a human reads and edits (name, address,
+status, start date, the hold checkbox, the suspension date, a note) are real
+properties, and for status, hold, the suspension date and the note the column
+is what the engine reads, so ticking Hold in Notion stops the engine. Everything
+structured that nobody edits by hand (aliases, account ids, leg records,
+activation markers, review reasons) is one JSON property, `JML State`, split
+across rich-text chunks. `init` adds any mapped property the database lacks
+and refuses one that exists with the wrong type; it never removes or retypes.
 
 ## You probably do not need this
+
+The adapter exists for one situation: a team that already runs its people
+records in a Notion database and wants the toolkit to read and write the same
+rows. Everybody else should use the default.
 
 The default people store needs no setup at all. `jml init` writes a
 configuration with:
@@ -39,7 +52,7 @@ limit and no API to be deprecated under you.
 The reason to want person records in Notion is that other people can read them
 without a terminal. That is a real benefit. It is the only one.
 
-## What it would need: one database, one row per person
+## What it uses: one database, one row per person
 
 | Toolkit field | Suggested property | Notion type | Notes |
 | --- | --- | --- | --- |

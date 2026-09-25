@@ -14,6 +14,8 @@
  */
 
 import { SuptaskAdapter } from '../../ticketing/suptask/adapter.ts'
+import { NotionClient } from '../../store/notion/client.ts'
+import { NotionPeopleStore } from '../../store/notion/store.ts'
 import { FileRegisterAdapter } from '../../register/file.ts'
 import type { SaasRegisterAdapter } from '../../register/types.ts'
 import type { TicketingAdapter } from '../../ticketing/types.ts'
@@ -140,7 +142,7 @@ export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOpt
   const domain = createDomainMap({ primaryDomain: cfg.org.primaryDomain, aliasDomains: cfg.org.aliasDomains })
   const http = createHttpClient()
 
-  const store = buildStore(cfg, clock)
+  const store = buildStore(cfg, clock, loaded.secrets, http)
   await store.init()
   const state = new SqliteStateStore({ path: statePath(cfg), clock })
   await state.init()
@@ -177,9 +179,18 @@ export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOpt
   }
 }
 
-function buildStore(cfg: JmlConfig, clock: Clock): PeopleStore {
+function buildStore(cfg: JmlConfig, clock: Clock, secrets: SecretRegistry, http: HttpClient): PeopleStore {
   if (cfg.store.adapter === 'sqlite') return new SqlitePeopleStore({ path: cfg.store.path, clock })
   if (cfg.store.adapter === 'memory') return new MemoryPeopleStore({ clock })
+  if (cfg.store.adapter === 'notion') {
+    return new NotionPeopleStore({
+      client: new NotionClient({ http, token: secrets.get('store.token') }),
+      databaseId: cfg.store.peopleDatabaseId,
+      properties: cfg.store.properties,
+      statusValues: cfg.store.statusValues,
+      clock,
+    })
+  }
   throw new CliError(
     `store.adapter is "${cfg.store.adapter}", which this release ships as an interface only. ` +
       `Use the sqlite store, or the memory store for a rehearsal.`,

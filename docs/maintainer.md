@@ -80,6 +80,14 @@ fixture.
 
 ## The shadow deployment
 
+The people store for a shadow run is `store.adapter: notion` pointed at your
+live database, in `mode: dry-run`. The adapter reads the hold checkbox and the
+status column as the authority, so what your existing automation sets in those
+columns is what the toolkit sees. Run `jml store verify` first: if it reports
+more than one row per HR id, merge those rows before anything else, because the
+adapter keys on that id and a duplicate reads as two people.
+
+
 Run this toolkit against your live estate with nothing armed, on a schedule,
 beside the automation you already have. It reads the HR system, keeps its own
 store, and reports what it *would* do.

@@ -137,7 +137,7 @@ it is not overridable.
   activation, licence, mailbox, organisational unit and the messages. If your HR system
   does not create accounts, the joiner path has nothing to activate.
 - **It has never run against a real tenant.** Every claim in this repository is backed by
-  1419 tests, an offline demo and the code, and by nothing else. There is no passing
+  1457 tests, an offline demo and the code, and by nothing else. There is no passing
   `jml doctor` transcript in these docs for that reason.
 - **The two device uninstall scripts have never run on real hardware.**
   `src/engine/device/scripts/manifest.json` records `provenOnHardware: false` for both, and
@@ -241,7 +241,8 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | HR adapter: HiBob | required, or write your own | Read-only. No write, no time-off endpoints. |
 | HR adapter: JSON fixture | ships | Rehearse the sync, the detection and the store commands offline against a file. It is what `jml init` selects, so a first run cannot read a real HR system by accident. See [docs/adapters/hris-fixture.md](docs/adapters/hris-fixture.md). |
 | People store: SQLite | default | Transactional. `node:sqlite`, no native module. |
-| People store: Notion, Sheets | **interface only, not in this release** | The schema accepts the setting and start-up then refuses it. The contract is written down in [docs/adapters/notion.md](docs/adapters/notion.md) and [docs/adapters/sheets.md](docs/adapters/sheets.md) for whoever implements it. |
+| People store: Notion | optional | One Notion database, one row per person. Single-writer under the pipeline lease; `init` adds missing properties and never removes one. Passes the same conformance suite as SQLite. |
+| People store: Sheets | interface only | Not shipped in this release. |
 | People store: memory | demo and dry-run only | Nothing persists. |
 | Identity provider: JumpCloud | required | Users, device bindings, commands, command results. |
 | Google Workspace | required | Directory, licensing, data transfer, Gmail settings, Gmail send. |

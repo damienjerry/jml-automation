@@ -18,7 +18,7 @@ why so much of this code spends its effort on reading back what it did.
 
 Each entry ends with the file that would fail if the safeguard were removed.
 There are 68 such files under [../test/regression/](../test/regression/), out of
-1419 tests in total. One of the entries, the last one on this page, is a defect
+1457 tests in total. One of the entries, the last one on this page, is a defect
 found in this repository rather than in the automation it was ported from.
 
 ---

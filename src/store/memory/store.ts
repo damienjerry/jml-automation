@@ -36,7 +36,8 @@ export interface MemoryPeopleStoreOptions {
 }
 
 /** True when this row satisfies the filter. Mirrors the SQL in the SQLite store. */
-function matches(person: Person, filter: PersonFilter | undefined): boolean {
+/** The one implementation of PersonFilter over an in-memory Person, shared by every adapter that post-filters. */
+export function matchesFilter(person: Person, filter: PersonFilter | undefined): boolean {
   if (!filter) return true
   if (filter.status && filter.status.length > 0 && !filter.status.includes(person.status)) return false
   if (filter.excludeHeld && person.hold) return false
@@ -105,7 +106,7 @@ export class MemoryPeopleStore implements PeopleStore {
   /** Every match, in id order. No implicit page size: see the SQLite store. */
   async list(filter?: PersonFilter): Promise<Person[]> {
     const found = [...this.rows.values()]
-      .filter((person) => matches(person, filter))
+      .filter((person) => matchesFilter(person, filter))
       .sort((a, b) => a.hrisId.localeCompare(b.hrisId))
       .map(clonePerson)
     return filter?.limit === undefined ? found : found.slice(0, filter.limit)
@@ -113,7 +114,7 @@ export class MemoryPeopleStore implements PeopleStore {
 
   async countExact(filter?: PersonFilter): Promise<number> {
     let total = 0
-    for (const person of this.rows.values()) if (matches(person, filter)) total += 1
+    for (const person of this.rows.values()) if (matchesFilter(person, filter)) total += 1
     return total
   }
 
