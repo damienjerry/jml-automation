@@ -136,9 +136,13 @@ it is not overridable.
   identity account and the unlicensed Google account. The toolkit takes over from there:
   activation, licence, mailbox, organisational unit and the messages. If your HR system
   does not create accounts, the joiner path has nothing to activate.
-- **It has never run against a real tenant.** Every claim in this repository is backed by
-  1457 tests, an offline demo and the code, and by nothing else. There is no passing
-  `jml doctor` transcript in these docs for that reason.
+- **Only the read-only half has run against a real tenant.** One shadow run, on
+  2026-09-25: `jml doctor` passed against a live HR system, identity provider and Google
+  Workspace, the bootstrap and two dry cycles agreed with the estate's own records, and the
+  Notion adapter read a 700-row people database in read-only mode. It found five defects
+  that 1466 passing tests had not, all fixed and now covered. **No write has ever run
+  against a real provider**: not a suspension, a licence change, a transfer, a deletion,
+  an activation or a sent message.
 - **The two device uninstall scripts have never run on real hardware.**
   `src/engine/device/scripts/manifest.json` records `provenOnHardware: false` for both, and
   a handover is refused on any platform whose script is unproven unless you name the machine

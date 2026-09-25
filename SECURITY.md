@@ -191,12 +191,15 @@ there because the opposite behaviour caused a recorded incident.
 Stated here rather than in a footnote, because a sceptical reader is right to
 ask.
 
-- **Nothing in this toolkit has ever run against a real tenant.** Every
-  connector is exercised against a scripted HTTP double
+- **Only reads have run against a real tenant.** One shadow run on 2026-09-25:
+  `jml doctor`, the HR read, the identity directory read, the Google scope
+  probes and the Notion adapter in read-only mode. No write has. Every write
+  path is exercised against a scripted HTTP double
   ([test/fixtures/http/fake-http.ts](test/fixtures/http/fake-http.ts)), written
-  by hand from the vendors' documented behaviour. Nothing here is a recording of
-  a real response. The vendor behaviours the code guards against were
-  established in the private automation this was ported from, not by this code.
+  by hand from the vendors' documented behaviour, and the shadow run showed what
+  that is worth: the first real HR call answered 415 to a header shape every
+  fake accepted. The vendor behaviours the code guards against were established
+  in the private automation this was ported from, not by this code.
 - **Neither device uninstall script has ever run on real hardware.**
   [src/engine/device/scripts/manifest.json](src/engine/device/scripts/manifest.json)
   records `provenOnHardware: false` for both. Service names, uninstall

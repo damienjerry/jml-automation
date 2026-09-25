@@ -93,9 +93,10 @@ node bin/jml.mjs demo
 
 ## Two things worth knowing before changing anything
 
-- **Nothing here has run against a real tenant**, and neither device uninstall
-  script has run on real hardware. See the closing section of
-  [SECURITY.md](SECURITY.md).
+- **Only reads have run against a real tenant** (one shadow run, 2026-09-25:
+  doctor, HR read, directory read, Google scope probes, Notion read-only). No
+  write has, and neither device uninstall script has run on real hardware. See
+  the closing section of [SECURITY.md](SECURITY.md).
 - **Several safeguards are literal `true` in the schema and are not meant to
   be configurable**, among them `leaver.deviceGate.failClosed` and
   `devices.forbidGroupBoundCommands`. Each one is a recorded incident.

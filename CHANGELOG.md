@@ -172,11 +172,13 @@ workflow validation, typecheck, lint and the test suite.
 
 Read this before arming anything.
 
-- **Nothing in this toolkit has ever run against a real tenant.** Every
-  connector is exercised against a scripted HTTP double, written by hand from
-  the vendors' documented behaviour rather than recorded from a real response.
-  The vendor behaviours the code guards against were established in the private
-  automation this was ported from, not by this code.
+- **Only the read-only half has run against a real tenant.** One shadow run on
+  2026-09-25 proved `jml doctor`, the HR read, the bootstrap, the dry-run sync
+  and selection, and the Notion adapter as a reader, and found five defects the
+  test suite had not (recorded above under Added and in
+  `docs/incidents.md`). Every write path is still exercised only against a
+  scripted HTTP double, written by hand from the vendors' documented behaviour
+  rather than recorded from a real response.
 - **Neither device uninstall script has ever run on real hardware.** The
   manifest at
   [src/engine/device/scripts/manifest.json](src/engine/device/scripts/manifest.json)

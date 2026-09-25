@@ -27,9 +27,10 @@ but call the sidecar on a schedule and post the result.
                                                                           licensing, transfer)
 ```
 
-Nothing in this toolkit has ever run against a real tenant, and the n8n bundle
-has never been imported into a running n8n instance. The claims below are about
-the code and its tests.
+Only the read-only half of this toolkit has run against a real tenant (one
+shadow run, 2026-09-25), no write has, and the n8n bundle has never been
+imported into a running n8n instance. The claims below are about the code and
+its tests.
 
 ## What runs where
 

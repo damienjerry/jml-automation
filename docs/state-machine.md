@@ -13,9 +13,10 @@ the regression test that holds the guard in place is linked.
 
 Two things to be clear about before you trust any of it:
 
-- **Nothing in this toolkit has ever run against a real tenant.** The
-  behaviour below is covered by tests and by an offline demo. It has not been
-  proven against live Google Workspace or a live JumpCloud organisation.
+- **No write in this toolkit has ever run against a real tenant.** The reads
+  and the derivations below were checked against one live estate on 2026-09-25
+  and agreed with its own records; the effects (suspend, transfer, delete,
+  activate) are covered by tests and an offline demo only.
 - The two device uninstall scripts have never run on real hardware. Their
   manifest records `provenOnHardware: false` and a handover is refused unless
   you name the machine you canaried on. See
