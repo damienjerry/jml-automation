@@ -133,7 +133,7 @@ it is not overridable.
   detected, recorded and announced; no account is made. Phase 1 is the leaver path,
   detection, and the device gate.
 - **It has never run against a real tenant.** Every claim in this repository is backed by
-  1351 tests, an offline demo and the code, and by nothing else. There is no passing
+  1361 tests, an offline demo and the code, and by nothing else. There is no passing
   `jml doctor` transcript in these docs for that reason.
 - **The two device uninstall scripts have never run on real hardware.**
   `src/engine/device/scripts/manifest.json` records `provenOnHardware: false` for both, and
@@ -211,7 +211,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 69 files each named for one of them, for example
+  and `test/regression/` holds 70 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.

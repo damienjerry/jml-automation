@@ -129,6 +129,12 @@ the contract ends on the Friday. A date before `startDate` is treated as an
 earlier stint and ignored. The day-0 selection is derived from that leaving date
 and from `leaver.terminationLookbackDays`.
 
+`inScope` says whether IT provisions accounts for the person: `true`, `false`, or
+absent for "the HR system did not say", which is treated as `true`. A person
+marked `false` is never announced as a joiner and, in the next phase, never
+activated. They stay in the leaver set, because scope decides whether accounts
+are created and says nothing about accounts that already exist.
+
 ## What it refuses
 
 Each of these throws rather than returning a partial snapshot, because a

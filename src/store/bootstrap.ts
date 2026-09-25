@@ -156,6 +156,7 @@ export async function bootstrapTombstones(options: BootstrapOptions): Promise<Bo
         startDate: record.startDate ?? null,
         terminationDate: record.terminationDate ?? null,
         lastWorkingDay: record.lastWorkingDay ?? null,
+        inScope: record.inScope ?? null,
         hold: false,
         holdReason: null,
         reviewReason: null,

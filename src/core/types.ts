@@ -143,6 +143,8 @@ export interface Person {
   terminationDate?: string | null
   /** Last day physically in, when the HR system holds one. See HrisPerson. */
   lastWorkingDay?: string | null
+  /** Somebody IT provisions for. `null` reads as yes. See HrisPerson. */
+  inScope?: boolean | null
   /** Frozen by a human. Excluded from every automatic selection. */
   hold: boolean
   holdReason?: string | null

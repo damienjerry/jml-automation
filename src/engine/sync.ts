@@ -181,6 +181,7 @@ const PRESERVED_ROW_FIELDS = [
   'managerEmail',
   'terminationDate',
   'lastWorkingDay',
+  'inScope',
 ] as const satisfies readonly (keyof Person)[]
 
 const EVENT_FOR: Record<HrisDerivedStatus, TransitionEvent> = {
@@ -775,6 +776,7 @@ function toPerson(record: HrisPerson, status: LifecycleStatus, source: string): 
     startDate: record.startDate ?? null,
     terminationDate: record.terminationDate ?? null,
     lastWorkingDay: record.lastWorkingDay ?? null,
+    inScope: record.inScope ?? null,
     hold: false,
     holdReason: null,
     reviewReason: null,

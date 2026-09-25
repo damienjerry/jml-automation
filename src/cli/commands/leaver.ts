@@ -305,6 +305,7 @@ export function renderPerson(person: Person): string {
     '  also known as   ' + (person.aliasEmails.length > 0 ? person.aliasEmails.join(', ') : 'nothing else recorded'),
     '  manager         ' + (person.managerEmail ?? 'none recorded'),
     '  leaving date    ' + (leaveDateOf(person) ?? 'none') + leaveDateNote(person),
+    '  IT scope        ' + (person.inScope === false ? 'no: the HR system says IT does not provision for this person' : person.inScope === true ? 'yes' : 'not held, treated as yes'),
     '  hold            ' + (person.hold ? 'YES: ' + (person.holdReason ?? 'no reason recorded') : 'no'),
     '  parked          ' + (person.reviewReason ?? 'no'),
     '  google account  ' +

@@ -58,6 +58,7 @@ export const HRIS_OWNED_FIELDS = [
   'startDate',
   'terminationDate',
   'lastWorkingDay',
+  'inScope',
   'source',
 ] as const satisfies readonly (keyof Person)[]
 

@@ -35,6 +35,23 @@ Two habits that keep this working:
   keep the config and environment away from the repository entirely, and point
   the toolkit at it with `--config` or `JML_CONFIG`.
 
+## Pointing the adapter at your scope field
+
+If your HR system marks who IT provisions for, put the field path and the value
+that means "provision" in the overlay, never in the repository: a custom field's
+path carries an id your HR system generated, which identifies your tenant.
+
+```yaml
+hris:
+  hibob:
+    fields:
+      scopeField: custom.<category-id>.<field-id>
+      scopeInValues: [Provision]
+```
+
+Leave `scopeField` blank and everybody is in scope, which is the right default
+for an organisation where every employee gets an account.
+
 ## The local denylist
 
 The identifier gate in `tools/lint/check-identifiers.mjs` matches identifier

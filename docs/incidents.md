@@ -18,7 +18,7 @@ why so much of this code spends its effort on reading back what it did.
 
 Each entry ends with the file that would fail if the safeguard were removed.
 There are 68 such files under [../test/regression/](../test/regression/), out of
-1351 tests in total. One of the entries, the last one on this page, is a defect
+1361 tests in total. One of the entries, the last one on this page, is a defect
 found in this repository rather than in the automation it was ported from.
 
 ---
@@ -183,6 +183,24 @@ selection, notification and lookback check reads the same function rather than
 the raw field.
 
 Held by [access-open-until-contract-end.test.ts](../test/regression/access-open-until-contract-end.test.ts).
+
+### Every HR record was treated as needing accounts
+
+The HR system holds drivers, hub staff and contractors on their own kit
+alongside the people IT provisions for. The sync treated each record as
+somebody needing a work account, so every one of them was announced as a
+joiner and, once activation exists, would have been activated.
+
+**Rule now in force.** The HR adapter reads the field that says whether IT
+provisions for the person, configured per tenant because custom fields carry
+generated ids. `false` keeps them out of joiner announcements and out of
+activation; unknown reads as in scope, because the cheap mistake is a wasted
+lookup and the expensive one is an account that is never closed. A configured
+field with no in-scope values is refused at start-up, since it would put
+everybody out of scope without a word. Scope never removes anybody from the
+leaver set.
+
+Held by [out-of-scope-joiner-announced.test.ts](../test/regression/out-of-scope-joiner-announced.test.ts).
 
 ### The HR read paged once
 

@@ -100,8 +100,8 @@ const MailSchema = z
 
 const HiBobFieldsSchema = z
   .object({
-    id: z.string().default('root.id').describe(meta('', 'Path to the stable HR id.')),
-    email: z.string().default('root.email').describe(meta('', 'Path to the work email address.')),
+    hrisId: z.string().default('root.id').describe(meta('', 'Path to the stable HR id.')),
+    primaryEmail: z.string().default('root.email').describe(meta('', 'Path to the work email address.')),
     displayName: z.string().default('root.displayName').describe(meta('', 'Path to the display name.')),
     firstName: z.string().default('root.firstName').describe(meta('', 'Path to the first name.')),
     lastName: z.string().default('root.surname').describe(meta('', 'Path to the surname.')),
@@ -129,8 +129,30 @@ const HiBobFieldsSchema = z
           'Path to the last day the person is physically in. Where it is earlier than the termination date it decides the offboarding day, because access should stop when the person does, not when the contract ends. Blank disables it.',
         ),
       ),
+    scopeField: z
+      .string()
+      .default('')
+      .describe(
+        meta(
+          '',
+          'Path to the field that says whether IT provisions accounts for this person, for example a custom list field with Provision / Do not provision. Blank means everybody is in scope. HR systems generate ids for custom fields, so this is always a tenant setting.',
+        ),
+      ),
+    scopeInValues: z
+      .array(z.string())
+      .default([])
+      .describe(meta('', 'The values of scopeField that mean IT provisions for this person. Required when scopeField is set.')),
   })
   .strict()
+  .superRefine((fields, ctx) => {
+    if (fields.scopeField.trim() && fields.scopeInValues.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['scopeInValues'],
+        message: 'scopeField is set, so scopeInValues must name at least one value that means "provision"; otherwise everybody reads as out of scope.',
+      })
+    }
+  })
 
 const HiBobSchema = z
   .object({

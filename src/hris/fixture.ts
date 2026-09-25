@@ -225,6 +225,7 @@ function validatePerson(record: unknown, path: string, index: number): HrisPerso
     startDate: isoOrNull(raw['startDate'], path, index, 'startDate'),
     terminationDate: isoOrNull(raw['terminationDate'], path, index, 'terminationDate'),
     lastWorkingDay: isoOrNull(raw['lastWorkingDay'], path, index, 'lastWorkingDay'),
+    inScope: typeof raw['inScope'] === 'boolean' ? raw['inScope'] : null,
   }
   return person
 }

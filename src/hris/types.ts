@@ -47,6 +47,19 @@ export interface HrisPerson {
    * that cannot read it leaves it null and the termination date is used.
    */
   lastWorkingDay?: string | null
+  /**
+   * Whether this person is somebody IT provisions accounts for.
+   *
+   * Many HR systems hold people who never get a work account: drivers, hub
+   * staff, contractors on their own kit. Treating every HR record as needing
+   * accounts announces a joiner for each of them and looks up accounts that
+   * were never created. `false` keeps them out of joiner announcements and, in
+   * the next phase, out of activation. `null` means the adapter cannot tell
+   * and they are treated as in scope, which is the safe direction: a person
+   * wrongly in scope costs a lookup, a person wrongly out of scope costs their
+   * accounts never being closed.
+   */
+  inScope?: boolean | null
 }
 
 export interface HrisSnapshot {

@@ -61,19 +61,7 @@ not exist.
 | `hris.hibob.serviceUserId` | `HIBOB_SERVICE_USER_ID` | string | **required** | yes | Service user id, as a secret reference. |
 | `hris.hibob.serviceToken` | `HIBOB_SERVICE_TOKEN` | string | **required** | yes | Service user token, as a secret reference. |
 | `hris.hibob.pageSize` | `HIBOB_PAGE_SIZE` | integer | `200` | - | Page size for the paged read. |
-| `hris.hibob.fields.id` | - | string | `root.id` | - | Path to the stable HR id. |
-| `hris.hibob.fields.email` | - | string | `root.email` | - | Path to the work email address. |
-| `hris.hibob.fields.displayName` | - | string | `root.displayName` | - | Path to the display name. |
-| `hris.hibob.fields.firstName` | - | string | `root.firstName` | - | Path to the first name. |
-| `hris.hibob.fields.lastName` | - | string | `root.surname` | - | Path to the surname. |
-| `hris.hibob.fields.department` | - | string | `work.department` | - | Path to the department. |
-| `hris.hibob.fields.jobTitle` | - | string | `work.title` | - | Path to the job title. |
-| `hris.hibob.fields.site` | - | string | `work.site` | - | Path to the work site. |
-| `hris.hibob.fields.startDate` | - | string | `work.startDate` | - | Path to the start date. |
-| `hris.hibob.fields.managerEmail` | - | string | `work.reportsTo.email` | - | Path to the manager's email address. |
-| `hris.hibob.fields.managerName` | - | string | `work.reportsTo.displayName` | - | Path to the manager's name. |
-| `hris.hibob.fields.terminationDate` | - | string[] | `[internal.terminationDate, employment.terminationDate]` | - | ORDERED fallbacks. HR systems hold the leaving date in different places depending on how the tenant is configured, and reading only the first one makes a leaver look like they have no date at all. |
-| `hris.hibob.fields.lastWorkingDay` | - | string | `employee.lastDayOfWork` | - | Path to the last day the person is physically in. Where it is earlier than the termination date it decides the offboarding day, because access should stop when the person does, not when the contract ends. Blank disables it. |
+| `hris.hibob.fields` | - | value | `{}` | - | Where each field lives in the HR payload. |
 | `hris.fixture.path` | `HRIS_FIXTURE_PATH` | string | **required** | - | JSON file holding the snapshot. |
 | `store.adapter` (sqlite) | `STORE_ADAPTER` | literal "sqlite" | **required** | - | Local SQLite: the default people store. |
 | `store.path` (sqlite) | `STORE_SQLITE_PATH` | string | `./data/jml.sqlite` | - | Database file. |

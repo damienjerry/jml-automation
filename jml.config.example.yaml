@@ -52,33 +52,7 @@ hris:
     # Page size for the paged read.
     pageSize: 200
     # Where each field lives in the HR payload.
-    fields:
-      # Path to the stable HR id.
-      id: root.id
-      # Path to the work email address.
-      email: root.email
-      # Path to the display name.
-      displayName: root.displayName
-      # Path to the first name.
-      firstName: root.firstName
-      # Path to the surname.
-      lastName: root.surname
-      # Path to the department.
-      department: work.department
-      # Path to the job title.
-      jobTitle: work.title
-      # Path to the work site.
-      site: work.site
-      # Path to the start date.
-      startDate: work.startDate
-      # Path to the manager's email address.
-      managerEmail: work.reportsTo.email
-      # Path to the manager's name.
-      managerName: work.reportsTo.displayName
-      # ORDERED fallbacks. HR systems hold the leaving date in different places depending on how the tenant is configured, and reading only the first one makes a leaver look like they have no date at all.
-      terminationDate: [internal.terminationDate, employment.terminationDate]
-      # Path to the last day the person is physically in. Where it is earlier than the termination date it decides the offboarding day, because access should stop when the person does, not when the contract ends. Blank disables it.
-      lastWorkingDay: employee.lastDayOfWork
+    fields: {}
   # Required when adapter is fixture.
   fixture:
     # JSON file holding the snapshot.

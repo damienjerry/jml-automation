@@ -236,6 +236,25 @@ notification and lookback check reads it rather than the raw field.
 Why: the automation this was ported from keyed on the employed list alone, and
 left access open between somebody's last day in and the end of their contract.
 
+## Who IT provisions for
+
+An HR system holds people who never get a work account: drivers, hub staff,
+contractors on their own kit. The HR system usually knows which is which, in a
+field IT can read. The toolkit reads it into `inScope` and leans one way when it
+cannot: a person wrongly in scope costs a lookup, a person wrongly out of scope
+costs their accounts never being closed, so unknown reads as in scope.
+
+`inScope = false` keeps a person out of joiner announcements and, in the next
+phase, out of activation. It does not keep them out of the leaver set. Scope
+decides whether accounts are created; it says nothing about accounts that
+already exist from before the flag was set, and the engine's own provider
+lookups decide what there is to close. Out-of-scope joiners are counted in the
+run summary rather than dropped, so a run that announces nobody is
+distinguishable from one that read nobody.
+
+Why: every HR record was once treated as needing accounts, which announced a
+joiner for each of them and would have tried to activate them.
+
 ## Selection: who is acted on today
 
 The selections are pure functions over rows

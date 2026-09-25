@@ -61,6 +61,8 @@ export interface LifecycleEvent {
 
 export interface DetectCounts {
   joiner: number
+  /** Started or starting, but not somebody IT provisions for. Counted so a quiet run is not mistaken for a broken read. */
+  joinerOutOfScope: number
   leaver: number
   potentialLeaver: number
   /** Leavers the engine will actually start offboarding today. */
@@ -105,14 +107,16 @@ export async function runDetect(options: DetectOptions): Promise<DetectReport> {
   const lookahead = options.joinerLookaheadDays ?? DEFAULT_LOOKAHEAD_DAYS
   const grace = options.joinerGraceDays ?? DEFAULT_GRACE_DAYS
 
+  const joiners = await joinerEvents(people, today, lookahead, grace)
   const events: LifecycleEvent[] = [
-    ...(await joinerEvents(people, today, lookahead, grace)),
+    ...joiners.events,
     ...(await leaverEvents(people, today, options.terminationLookbackDays)),
     ...(await scheduledLeaverEvents(people, today)),
   ]
 
   const counts: DetectCounts = {
     joiner: events.filter((e) => e.kind === 'joiner').length,
+    joinerOutOfScope: joiners.outOfScope,
     leaver: events.filter((e) => e.kind === 'leaver').length,
     potentialLeaver: events.filter((e) => e.kind === 'potential_leaver').length,
     actionable: events.filter((e) => e.actionable).length,
@@ -182,15 +186,24 @@ async function joinerEvents(
   today: IsoDate,
   lookaheadDays: number,
   graceDays: number,
-): Promise<LifecycleEvent[]> {
+): Promise<{ events: LifecycleEvent[]; outOfScope: number }> {
   const rows = await people.list({ status: ['hired', 'active'], excludeHeld: true })
   const events: LifecycleEvent[] = []
+  let outOfScope = 0
 
   for (const person of rows) {
     if (person.activation?.activatedAt) continue
     const start = person.startDate
     if (!start) continue
     const days = daysBetween(today, start)
+    // Somebody the HR system says IT does not provision for: no accounts to
+    // set up, so nothing to announce. Counted rather than dropped, because a
+    // run that announces nobody must be distinguishable from one that read
+    // nobody. Only an explicit "no" excludes; unknown reads as in scope.
+    if (person.inScope === false) {
+      outOfScope += 1
+      continue
+    }
 
     if (person.status === 'hired' && days >= 0 && days <= lookaheadDays) {
       events.push(
@@ -202,7 +215,7 @@ async function joinerEvents(
       events.push(event(person, 'joiner', days, `Started on ${start}, ${Math.abs(days)} day(s) ago, with no activation recorded.`))
     }
   }
-  return events
+  return { events, outOfScope }
 }
 
 /**
@@ -330,6 +343,7 @@ export function renderSummary(
     `- Leavers the engine will start offboarding: ${counts.actionable}`,
     `- Terminated rows nothing will touch: ${counts.potentialLeaver}`,
     `- Joiners: ${counts.joiner}`,
+    ...(counts.joinerOutOfScope > 0 ? [`- Joiners the HR system marks as not needing IT accounts: ${counts.joinerOutOfScope}`] : []),
     '',
   )
   for (const kind of ['leaver', 'potential_leaver', 'joiner'] as const) {

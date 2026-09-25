@@ -47,6 +47,14 @@ export interface HiBobFieldMap {
    * differ.
    */
   lastWorkingDay: string
+  /**
+   * The field that says whether IT provisions for this person, and the values
+   * of it that mean yes. A blank path reads nobody as out of scope. Custom
+   * fields in HiBob carry generated ids, so the path is always a tenant
+   * setting; the shipped default is blank rather than somebody else's id.
+   */
+  scopeField: string
+  scopeInValues: string[]
 }
 
 export type HiBobFieldOverrides = Partial<HiBobFieldMap>
@@ -65,6 +73,8 @@ export const DEFAULT_HIBOB_FIELDS: HiBobFieldMap = {
   managerName: 'work.reportsTo.displayName',
   terminationDate: ['internal.terminationDate', 'employment.terminationDate'],
   lastWorkingDay: 'employee.lastDayOfWork',
+  scopeField: '',
+  scopeInValues: [],
 }
 
 export function resolveFieldMap(overrides?: HiBobFieldOverrides): HiBobFieldMap {
@@ -72,6 +82,13 @@ export function resolveFieldMap(overrides?: HiBobFieldOverrides): HiBobFieldMap 
   if (!map.terminationDate.length) {
     throw new Error(
       'hris.hibob.fields.terminationDate must name at least one path, otherwise no leaver ever has a date.',
+    )
+  }
+  if (map.scopeField.trim() && map.scopeInValues.length === 0) {
+    // A path with no in-scope values would read everybody as out of scope,
+    // which silences every joiner announcement without a word.
+    throw new Error(
+      'hris.hibob.fields.scopeField is set but scopeInValues is empty, which would put every person out of scope. Name the value that means "provision".',
     )
   }
   return map
@@ -100,6 +117,7 @@ export function requestFields(map: HiBobFieldMap): string[] {
     map.managerName,
     ...map.terminationDate,
     map.lastWorkingDay,
+    map.scopeField,
   ]
   return [...new Set(paths.filter((p) => p.trim().length > 0))]
 }
@@ -240,7 +258,20 @@ export function readPerson(record: unknown, map: HiBobFieldMap): HrisPerson {
     lastWorkingDay: map.lastWorkingDay.trim()
       ? toIsoDate(readPath(record, map.lastWorkingDay), map.lastWorkingDay, hrisId)
       : null,
+    inScope: readScope(record, map),
   }
+}
+
+/**
+ * A blank path, or a record with nothing at the path, reads as null: the
+ * adapter cannot tell, so the person is treated as in scope. Only an explicit
+ * value that is not in the in-scope list puts somebody out.
+ */
+function readScope(record: unknown, map: HiBobFieldMap): boolean | null {
+  if (!map.scopeField.trim()) return null
+  const value = readString(record, map.scopeField)
+  if (value === null) return null
+  return map.scopeInValues.includes(value)
 }
 
 function displayNameOf(
