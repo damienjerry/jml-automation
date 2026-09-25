@@ -32,7 +32,8 @@ export class ConsoleNotifier implements Notifier {
   }
 
   async send(n: Notification): Promise<NotificationResult> {
-    const to = n.audience === 'manager' ? (n.managerEmail ?? 'manager address unresolved') : 'IT'
+    const explicit = (n.recipients ?? []).filter((r) => r.trim() !== '')
+    const to = explicit.length > 0 ? explicit.join(', ') : n.audience === 'manager' ? (n.managerEmail ?? 'manager address unresolved') : 'IT'
     const lines = [
       '',
       `--- notification (${n.kind}) would be sent to ${to} ---`,

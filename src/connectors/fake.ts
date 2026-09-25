@@ -27,6 +27,8 @@ import {
   type GoogleWorkspaceConnector,
   type IdentityConnector,
   type ProviderUser,
+  type IdentityActivationConnector,
+  type GoogleProvisioningConnector,
 } from './types.ts'
 
 /** An account in the fake identity provider. */
@@ -37,6 +39,10 @@ export interface FakeIdpAccount {
   suspended?: boolean
   /** Machines bound directly to this account. Ids of `FakeDevice` entries. */
   devices?: string[]
+  /** The person has set their own password. Defaults to true: an unstaged account. */
+  activated?: boolean
+  mfaConfigured?: boolean
+  passwordExpired?: boolean
 }
 
 /** An account in the fake Google tenancy. */
@@ -45,6 +51,10 @@ export interface FakeGoogleAccount {
   email: string
   suspended?: boolean
   licences?: { productId: string; skuId: string }[]
+  /** Set when the mailbox has been built. The fake flips it on licence assignment after `mailboxReadyAfterReads` reads. */
+  mailboxReady?: boolean
+  mailboxReadyAfterReads?: number
+  orgUnitPath?: string
 }
 
 export interface FakeDevice {
@@ -81,6 +91,9 @@ export type FakeMethod =
   | 'idp.findUser'
   | 'idp.suspendUser'
   | 'idp.deleteUser'
+  | 'idp.getActivationState'
+  | 'idp.setTemporaryPassword'
+  | 'idp.expirePassword'
   | 'devices.listBoundDevices'
   | 'devices.unbindUser'
   | 'devices.bindUser'
@@ -94,6 +107,9 @@ export type FakeMethod =
   | 'google.getTransferStatus'
   | 'google.setVacationResponder'
   | 'google.sendMail'
+  | 'google.getMailboxState'
+  | 'google.assignLicence'
+  | 'google.moveToOrgUnit'
 
 export interface FakeProvidersSeed {
   idp?: FakeIdpAccount[]
@@ -115,9 +131,9 @@ export class FakeProviders {
   /** Every provider call this run made, in order, as `method(argument)`. */
   readonly calls: string[] = []
 
-  readonly identity: IdentityConnector
+  readonly identity: IdentityConnector & IdentityActivationConnector
   readonly devices: DeviceConnector
-  readonly google: GoogleWorkspaceConnector
+  readonly google: GoogleWorkspaceConnector & GoogleProvisioningConnector
 
   private readonly idpAccounts: FakeIdpAccount[]
   private readonly googleAccounts: FakeGoogleAccount[]
@@ -221,7 +237,7 @@ export class FakeProviders {
     }
   }
 
-  private buildIdentity(): IdentityConnector {
+  private buildIdentity(): IdentityConnector & IdentityActivationConnector {
     // Arrow properties, so `this` is the instance without aliasing it. The
     // connectors have to be plain objects because that is what the interfaces
     // are, and the state they read lives on the class.
@@ -261,6 +277,48 @@ export class FakeProviders {
         if (account.suspended) return { ok: true, verified: true, detail: { readBackState: 'SUSPENDED' } }
         account.suspended = true
         return { ok: true, verified: true, detail: { readBackState: 'SUSPENDED' } }
+      },
+
+      getActivationState: async (id) => {
+        this.record('idp.getActivationState', id)
+        const faulted = this.applyFault('idp.getActivationState', id)
+        if (faulted) throw new Error(faulted.error ?? 'the account could not be read')
+        const account = this.idpAccount(id)
+        if (!account) return null
+        return {
+          activated: account.activated !== false,
+          mfaConfigured: account.mfaConfigured === true,
+          suspended: account.suspended === true,
+          passwordExpired: account.passwordExpired === true,
+        }
+      },
+
+      setTemporaryPassword: async (id, password) => {
+        // The password is never recorded, even by a fake: a call log with a
+        // credential in it is the thing the real audit sink is built to avoid.
+        this.record('idp.setTemporaryPassword', id)
+        const faulted = this.applyFault('idp.setTemporaryPassword', id)
+        if (faulted) return faulted
+        const account = this.idpAccount(id)
+        if (!account) return { ok: false, verified: false, error: 'no such account', retryable: false }
+        if (account.activated !== false || account.mfaConfigured) {
+          return { ok: false, verified: false, error: 'the account is already in use; refusing to reset its password', retryable: false, detail: { reason: 'already_in_use' } }
+        }
+        if (password.length < 12) return { ok: false, verified: false, error: 'password too short', retryable: false }
+        // Setting a password clears a pending reset, exactly as the real
+        // provider does. The engine has to expire AFTER this, or the flag is lost.
+        account.passwordExpired = false
+        return { ok: true, verified: true, detail: { readBackState: 'ACTIVATED' } }
+      },
+
+      expirePassword: async (id) => {
+        this.record('idp.expirePassword', id)
+        const faulted = this.applyFault('idp.expirePassword', id)
+        if (faulted) return faulted
+        const account = this.idpAccount(id)
+        if (!account) return { ok: false, verified: false, error: 'no such account', retryable: false }
+        account.passwordExpired = true
+        return { ok: true, verified: true, detail: { passwordExpired: true } }
       },
 
       deleteUser: async (id) => {
@@ -327,7 +385,7 @@ export class FakeProviders {
     }
   }
 
-  private buildGoogle(): GoogleWorkspaceConnector {
+  private buildGoogle(): GoogleWorkspaceConnector & GoogleProvisioningConnector {
     return {
       name: 'fake-google',
 
@@ -421,6 +479,51 @@ export class FakeProviders {
         const faulted = this.applyFault('google.setVacationResponder', email)
         if (faulted) return faulted
         return { ok: true, verified: true }
+      },
+
+      getMailboxState: async (email) => {
+        this.record('google.getMailboxState', email)
+        const faulted = this.applyFault('google.getMailboxState', email)
+        if (faulted) throw new Error(faulted.error ?? 'the Google account could not be read')
+        const account = this.googleAccount(email)
+        if (!account) return null
+        // A mailbox takes a few reads to appear after licensing, like the real
+        // one, so a poll that gives up too early can be tested.
+        if (!account.mailboxReady && (account.licences?.length ?? 0) > 0) {
+          const left = account.mailboxReadyAfterReads ?? 0
+          if (left <= 0) account.mailboxReady = true
+          else account.mailboxReadyAfterReads = left - 1
+        }
+        return {
+          exists: true,
+          mailboxReady: account.mailboxReady === true,
+          orgUnitPath: account.orgUnitPath ?? '/',
+          suspended: account.suspended === true,
+        }
+      },
+
+      assignLicence: async (email, productId, skuId) => {
+        this.record('google.assignLicence', email)
+        const faulted = this.applyFault('google.assignLicence', email)
+        if (faulted) return faulted
+        const account = this.googleAccount(email)
+        if (!account) return { ok: false, verified: false, error: 'no Google account to license', retryable: false }
+        account.licences = account.licences ?? []
+        if (account.licences.some((l) => l.productId === productId && l.skuId === skuId)) {
+          return { ok: true, verified: true, alreadyAbsent: true, detail: { productId, skuId, reason: 'already_licensed' } }
+        }
+        account.licences.push({ productId, skuId })
+        return { ok: true, verified: true, detail: { productId, skuId } }
+      },
+
+      moveToOrgUnit: async (email, orgUnitPath) => {
+        this.record('google.moveToOrgUnit', email)
+        const faulted = this.applyFault('google.moveToOrgUnit', email)
+        if (faulted) return faulted
+        const account = this.googleAccount(email)
+        if (!account) return { ok: false, verified: false, error: 'no Google account to move', retryable: false }
+        account.orgUnitPath = orgUnitPath
+        return { ok: true, verified: true, detail: { orgUnitPath } }
       },
 
       sendMail: async (opts) => {

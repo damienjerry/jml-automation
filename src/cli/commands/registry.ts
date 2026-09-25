@@ -18,6 +18,7 @@ import type { CliIo } from './context.ts'
 import { deviceCommand } from './device.ts'
 import { generateCommand, initCommand } from './init.ts'
 import { leaverCommand, type LeaverCommandOptions } from './leaver.ts'
+import { joinerCommand, type JoinerCommandOptions } from './joiner.ts'
 import { n8nCommand } from './n8n.ts'
 import { runCommand } from './run.ts'
 import { serveCommand } from './serve.ts'
@@ -132,6 +133,27 @@ function leaverSpec(action: LeaverCommandOptions['action'], summary: string, not
   }
 }
 
+function joinerSpec(action: JoinerCommandOptions['action'], summary: string, notes: readonly string[] = []): CommandSpec {
+  return {
+    path: ['joiner', action],
+    summary,
+    value: PERSON_VALUE_FLAGS,
+    bool: ['armed', 'reset-refusal'],
+    notes,
+    run: (io, args) =>
+      joinerCommand(io, {
+        ...common(args),
+        action,
+        armed: bool(args, 'armed'),
+        resetRefusal: bool(args, 'reset-refusal'),
+        ...(value(args, 'hris-id') ? { hrisId: value(args, 'hris-id') } : {}),
+        ...(value(args, 'email') ? { email: value(args, 'email') } : {}),
+        ...(value(args, 'note') ? { note: value(args, 'note') } : {}),
+        ...(value(args, 'actor') ? { actor: value(args, 'actor') } : {}),
+      }),
+  }
+}
+
 function storeSpec(action: StoreCommandOptions['action'], summary: string, notes: readonly string[] = []): CommandSpec {
   return {
     path: ['store', action],
@@ -214,6 +236,12 @@ export const COMMANDS: readonly CommandSpec[] = [
   leaverSpec('release', 'clear the freeze and the parked reason together'),
   leaverSpec('ack', 'record that a person agrees the deletion may proceed'),
   leaverSpec('tombstone', 'close a row by hand without any account work (needs --reason)'),
+  joinerSpec('dry-run', 'plan activation for one starter, or everybody due, without touching a provider'),
+  joinerSpec('run', 'activate one starter, or everybody due (needs --armed, and each action armed in config)'),
+  joinerSpec('show', 'print one person with their activation markers'),
+  joinerSpec('approve', 'open the activation gate for one person, or clear a refusal with --reset-refusal', [
+    'With joiner.gate: none there is no gate; the command only clears a refusal.',
+  ]),
   {
     path: ['device', 'preflight'],
     summary: 'read a machine and print every reason a disposition could be refused',

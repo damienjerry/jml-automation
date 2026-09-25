@@ -18,7 +18,7 @@ why so much of this code spends its effort on reading back what it did.
 
 Each entry ends with the file that would fail if the safeguard were removed.
 There are 68 such files under [../test/regression/](../test/regression/), out of
-1361 tests in total. One of the entries, the last one on this page, is a defect
+1391 tests in total. One of the entries, the last one on this page, is a defect
 found in this repository rather than in the automation it was ported from.
 
 ---
@@ -571,6 +571,72 @@ the state is confirmed by reading the account back either way.
 Held by [google-delete-when-absent.test.ts](../test/regression/google-delete-when-absent.test.ts).
 
 ---
+
+## Joiners
+
+### A working colleague's password was reset by the joiner automation
+
+A mis-entered HR field queued somebody who had been employed for years for
+"activation". The only thing separating a staged account from a working one is
+that nobody has ever set its password or enrolled MFA.
+
+**Rule now in force.** Either sign of use refuses the activation with the
+password untouched; the connector checks again seconds later before the write,
+because two reads apart is long enough for the answer to change. With no gate
+the row is recorded as seen; with a gate somebody opened, the refusal is
+reported and stays until a person clears it.
+
+Held by [activation-resets-a-working-account.test.ts](../test/regression/activation-resets-a-working-account.test.ts).
+
+### Every starter was told to change a password nothing forced them to change
+
+The forced-reset flag was sent in the same write as the password. The provider
+answered 200, ignored the flag, and setting the password cleared it anyway.
+The account was usable with the emailed password indefinitely while the email
+said it must be changed, and the guard that noticed wrote to a container log
+nobody read.
+
+**Rule now in force.** The reset is its own action, after the password write,
+verified from a fresh read. A reset that did not apply fails the activation leg
+so it is retried and visible.
+
+Held by [forced-reset-before-password-set.test.ts](../test/regression/forced-reset-before-password-set.test.ts).
+
+### A starter's first message from IT was a bounce
+
+A directory integration creates a Google account with no mailbox. The welcome
+went to the work address minutes after the account appeared and bounced.
+
+**Rule now in force.** The engine licenses the account, polls until the mailbox
+exists, and withholds the work-address welcome rather than bouncing it when the
+mailbox is not ready in time. The personal address still gets it and IT is told.
+
+Held by [welcome-sent-before-mailbox-exists.test.ts](../test/regression/welcome-sent-before-mailbox-exists.test.ts).
+
+### A temporary password landed in a colleague's inbox
+
+The personal-address field held a company address, typed in by whoever filled
+the form, and the manager field held a person's name where an address belonged.
+The first put a credential in the wrong inbox; the second failed silently inside
+a catch.
+
+**Rule now in force.** Both recipients are validated at send time, against the
+domain map rather than as written. An unusable address is dropped with a
+warning, and the IT copy always goes.
+
+Held by [temporary-password-sent-to-a-company-address.test.ts](../test/regression/temporary-password-sent-to-a-company-address.test.ts).
+
+### Who is activated, and when
+
+A calendar-day lead crossed a weekend and the password arrived late; a data
+glitch queued a crowd; a starter with no account yet was reported as a failure
+every run; and the form that said what a starter needed was not consulted.
+
+**Rule now in force.** The lead is counted in working days on a calendar the
+adopter supplies; a per-run cap holds and names the rest; a missing account is
+looked at again next run without noise; and a configurable gate has to be open.
+
+Held by [joiner-selection-and-gate.test.ts](../test/regression/joiner-selection-and-gate.test.ts).
 
 ## Devices
 

@@ -84,13 +84,13 @@ The whole set:
 
 ```
 npm ci
-npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1361 tests
+npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1391 tests
 node bin/jml.mjs demo
 ```
 
 `npm run gate` on this checkout: 0 identifier errors and 0 warnings, 4
 generated artefacts current, 5 workflow files valid, typecheck and lint clean,
-1361 tests across 137 files passing. `npm run docs:links` separately: 32
+1391 tests across 143 files passing. `npm run docs:links` separately: 32
 Markdown files and 99 source files, 0 broken links.
 
 ## Credentials and blast radius

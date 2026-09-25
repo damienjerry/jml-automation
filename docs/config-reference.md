@@ -50,7 +50,7 @@ not exist.
 | `org.timezone` | `ORG_TIMEZONE` | string | **required** | - | IANA zone. ALL date-only arithmetic happens in it; never in UTC. |
 | `org.itTeamSignature` | `IT_TEAM_SIGNATURE` | string | **required** | - | Sign-off line on notifications sent to a person. |
 | `mode` | `JML_MODE` | dry-run \| armed | `dry-run` | - | dry-run plans and reports without touching a provider. It is the default, and the demo runs in it. |
-| `armedActions` | `JML_ARMED_ACTIONS` | suspend \| autoreply \| licence \| transfer \| google_suspend \| delete \| device_unbind \| device_handover[] | `[]` | - | Which actions may really happen. An action absent from this list records not_armed rather than running, so arming happens one action at a time. |
+| `armedActions` | `JML_ARMED_ACTIONS` | suspend \| autoreply \| licence \| transfer \| google_suspend \| delete \| device_unbind \| device_handover \| activate \| joiner_licence \| ou_move \| welcome[] | `[]` | - | Which actions may really happen. An action absent from this list records not_armed rather than running, so arming happens one action at a time. |
 | `mail.senderMailbox` | `MAIL_SENDER_MAILBOX` | string | **required** | - | The mailbox outbound mail is sent AS. Delegated authority is granted for this address specifically. |
 | `mail.bcc` | `MAIL_BCC` | string[] | `[]` | - | Addresses blind-copied on every notification. |
 | `mail.managerOnDay0` | `MAIL_MANAGER_ON_DAY0` | boolean | `true` | - | Tell the leaver's manager on day 0 that offboarding has started. |
@@ -76,6 +76,7 @@ not exist.
 | `store.adapter` (memory) | - | literal "memory" | **required** | - | In-memory store for the demo and for dry-run rehearsal. Nothing persists. |
 | `identity.jumpcloud.baseUrl` | `JUMPCLOUD_BASE_URL` | string | `"https://console.jumpcloud.com/api"` | - | Some tenants answer only on the console host and return 404 on the other one for every request, valid key or not. |
 | `identity.jumpcloud.apiKey` | `JUMPCLOUD_API_KEY` | string | **required** | yes | Organisation API key, as a secret reference. |
+| `identity.jumpcloud.consoleUrl` | `JUMPCLOUD_CONSOLE_URL` | string | `"https://console.jumpcloud.com"` | - | Where a starter signs in for the first time. Printed in the password and welcome messages. |
 | `identity.jumpcloud.poolUserEmail` | `JUMPCLOUD_POOL_USER_EMAIL` | string \| null | `null` | - | Spares account a returned device is rebound to. Null disables the rebind. |
 | `google.serviceAccountJson` | `GOOGLE_SERVICE_ACCOUNT_JSON` | string | **required** | yes | The whole service account key file, as a secret reference. `file:/path/to/key.json` is the usual form. |
 | `google.adminEmail` | `GOOGLE_ADMIN_EMAIL` | string | **required** | - | The admin this service account impersonates for directory, licensing and transfer calls. |
@@ -98,6 +99,17 @@ not exist.
 | `leaver.autoReply.bodyHtml` | `LEAVER_AUTOREPLY_BODY` | string | `"<p>${displayName} no longer works at ${orgName}.</p><p>Please contact ${managerName} at ${managerEmail}.</p>"` | - | Same placeholders as the subject. |
 | `leaver.deviceGate.directBindingsOnly` | - | literal true | `true` | - | NOT overridable. Membership of a group that grants access to a machine is not custody of it, so only a direct binding blocks a deletion. |
 | `leaver.deviceGate.failClosed` | - | literal true | `true` | - | NOT overridable. A gate that cannot be read blocks. Reading an error as "no devices" is how an account gets deleted while the machine is still out there. |
+| `joiner.leadWorkingDays` | `JOINER_LEAD_WORKING_DAYS` | integer | `3` | - | Activate this many working days before the start date, so the temporary password reaches the manager in time. Weekends and the dates in holidays are skipped. |
+| `joiner.holidays` | - | string[] | `[]` | - | ISO dates that are not working days. Kept as data rather than a national calendar URL, because the toolkit must not depend on somebody else's endpoint being up on the morning a starter arrives. |
+| `joiner.maxActivationsPerRun` | `JOINER_MAX_PER_RUN` | integer | `5` | - | More candidates than this are reported and held for the next run rather than all being activated at once. A crowd of joiners is a data fault far more often than a hiring round. |
+| `joiner.gate` | `JOINER_GATE` | none \| manual \| ticket | `none` | - | What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticketing adapter opens it (interface only in this phase; behaves as manual). |
+| `joiner.targetOrgUnitPath` | `JOINER_TARGET_OU` | string | `""` | - | Google organisational unit to move the account into on activation, for example the one whose sign-in is delegated to the identity provider. Blank skips the move. |
+| `joiner.licence.productId` | - | string | `Google-Apps` | - | Google licensing product id. |
+| `joiner.licence.skuId` | `JOINER_LICENCE_SKU` | string | `""` | - | The SKU to assign on activation. Blank skips licensing, and the welcome email is withheld if the mailbox is not ready anyway. |
+| `joiner.mailboxPoll.tries` | - | integer | `6` | - | How many times to re-read the account waiting for the mailbox. |
+| `joiner.mailboxPoll.intervalMs` | - | integer | `10000` | - | Milliseconds between reads. |
+| `joiner.itSupportEmail` | `JOINER_IT_SUPPORT_EMAIL` | string \| null | `null` | - | Always receives a copy of the temporary password, so it is never lost when the other recipients are unusable. |
+| `joiner.temporaryPasswordLength` | - | integer | `20` | - | Length of the generated temporary password. |
 | `devices.dispositionDefault` | `DEVICE_DISPOSITION_DEFAULT` | return_to_pool \| reassign \| handover \| retain_unmanaged | `return_to_pool` | - | What happens to a device when nobody says otherwise. |
 | `devices.uninstallTriggers.windows` | `DEVICE_UNINSTALL_TRIGGER_WINDOWS` | string \| null | `null` | - | Command trigger name. Null refuses handover on this platform. |
 | `devices.uninstallTriggers.darwin` | `DEVICE_UNINSTALL_TRIGGER_MACOS` | string \| null | `null` | - | Command trigger name. Null refuses handover on this platform. |

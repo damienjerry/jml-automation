@@ -18,6 +18,8 @@
 import { previewDeviceDisposition, runDeviceDisposition } from '../../engine/device/disposition.ts'
 import { runLeaverEngine } from '../../engine/leaver/engine.ts'
 import { runPipeline } from '../../engine/pipeline.ts'
+import { runJoinerEngine } from '../../engine/joiner/engine.ts'
+import { joinerDeps } from './joiner.ts'
 import { startServer, type RunningServer } from '../../server/http.ts'
 import type { ServerEngine } from '../../server/routes.ts'
 import { assertServable, runDoctor } from '../doctor.ts'
@@ -32,6 +34,15 @@ export function serverEngine(rt: Runtime): ServerEngine {
     pipeline: (req) => runPipeline(pipelineDeps(rt), req),
     leaver: (req) =>
       runLeaverEngine(leaverDeps(rt), {
+        dryRun: req.dryRun,
+        actor: req.actor,
+        runId: req.runId,
+        ...(req.hrisId || req.email
+          ? { only: { ...(req.hrisId ? { hrisId: req.hrisId } : {}), ...(req.email ? { email: req.email } : {}) } }
+          : {}),
+      }),
+    joiner: (req) =>
+      runJoinerEngine(joinerDeps(rt), {
         dryRun: req.dryRun,
         actor: req.actor,
         runId: req.runId,

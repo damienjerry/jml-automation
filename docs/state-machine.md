@@ -236,6 +236,54 @@ notification and lookback check reads it rather than the raw field.
 Why: the automation this was ported from keyed on the employed list alone, and
 left access open between somebody's last day in and the end of their contract.
 
+## Activation: the joiner half
+
+Activation is markers on the person, not a status, like offboarding. The HR
+system's integrations create a staged identity account and an unlicensed Google
+account; the engine does everything after that, three working days before the
+start date (`joiner.leadWorkingDays`, with `joiner.holidays` skipped):
+
+| Leg | Arming action | What it does | Read back |
+| --- | --- | --- | --- |
+| `activate` | `activate` | temporary password on the identity account, then the forced reset | account state, then `password_expired` from a fresh read |
+| `joiner_licence` | `joiner_licence` | assign `joiner.licence.skuId`, then poll until the mailbox exists | the assignment, then `isMailboxSetup` |
+| `ou_move` | `ou_move` | move the account into `joiner.targetOrgUnitPath` | the path from a fresh read |
+| `welcome` | `welcome` | the password to the personal address, the manager and IT; the welcome to the personal address and, only once the mailbox exists, the work address; a note to the manager | delivery |
+
+`activation.activatedAt` is the idempotency key. It is written only once the
+password and the reset are both read back, and a row that has it is never
+activated again whatever the later legs did. Later legs retry on the next run
+while it stands.
+
+Rules, each from a recorded failure:
+
+- **An account in use is never touched.** `activated` or MFA enrolled means a
+  working colleague. With no gate configured the row is recorded as activated
+  by observation and nothing is said, because on a first install that is every
+  existing employee. With a gate somebody opened, the row is refused and IT is
+  told, because somebody expected an activation and the account they expected
+  to activate is the wrong one. `jml joiner approve --reset-refusal` clears it.
+- **The forced reset runs after the password is set.** Setting a password
+  clears the flag and the flag is not writable on the account, so the other
+  order produces a password nobody has to change while the email says they must.
+- **The work-address welcome waits for the mailbox**, and is withheld rather
+  than bounced when the mailbox is not ready in time. The personal address
+  still gets it, and IT is told.
+- **Both credential recipients are validated at send time.** The personal
+  address must not be a company one, the manager's must be. An unusable
+  address is dropped with a warning and the IT copy always goes, so the
+  credential is re-routed to a person rather than lost.
+- **Out-of-scope people are never activated.** See the next section.
+- **A per-run cap** (`joiner.maxActivationsPerRun`) holds the rest and names
+  them: a crowd of joiners is a data fault more often than a hiring round.
+
+`joiner.gate` decides what has to happen first: `none`, `manual` (somebody runs
+`jml joiner approve`) or `ticket` (an adapter opens it; interface only in this
+phase, behaves as manual). The gate exists because in one estate a manager's
+form was the only thing that said what a starter needed, and activating
+without it produced accounts nobody had asked for and no kit for the people
+who had.
+
 ## Who IT provisions for
 
 An HR system holds people who never get a work account: drivers, hub staff,

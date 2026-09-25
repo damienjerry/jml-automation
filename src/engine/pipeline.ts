@@ -42,6 +42,7 @@ import { createIdentityRules } from '../core/identity.ts'
 import { runDetect } from './detect.ts'
 import { runSync } from './sync.ts'
 import { runLeaverEngine, type LeaverRunOptions } from './leaver/engine.ts'
+import { runJoinerEngine, type JoinerDeps } from './joiner/engine.ts'
 import type { LeaverDeps } from './leaver/legs.ts'
 import { notifyRunAborted, notifyRunSummary, runAuditCtx } from './leaver/notify.ts'
 
@@ -54,7 +55,7 @@ export const PIPELINE_LEASE = 'pipeline'
  */
 export const PIPELINE_LEASE_TTL_SECONDS = 900
 
-export type PipelineStepName = 'sync' | 'detect' | 'leaver'
+export type PipelineStepName = 'sync' | 'detect' | 'joiner' | 'leaver'
 
 /**
  * The one HTTP call the pipeline makes itself.
@@ -70,6 +71,8 @@ export interface LivenessHttp {
 
 export interface PipelineDeps extends LeaverDeps {
   hris: HrisAdapter
+  /** Present when the connectors support activation; the joiner step is skipped otherwise. */
+  joiner?: Pick<JoinerDeps, 'idp' | 'google' | 'gate' | 'passwordGenerator'> | null
   /** Needed only for the liveness ping. */
   http?: LivenessHttp
   secrets?: SecretRegistry
@@ -86,7 +89,7 @@ export interface PipelineOptions {
 }
 
 /** Sync, then detect, then the engine. The order is the point of this module. */
-const DEFAULT_STEPS: readonly PipelineStepName[] = ['sync', 'detect', 'leaver']
+const DEFAULT_STEPS: readonly PipelineStepName[] = ['sync', 'detect', 'joiner', 'leaver']
 
 type AbortReason =
   | 'lease_held'
@@ -224,6 +227,18 @@ export async function runPipeline(deps: PipelineDeps, opts: PipelineOptions): Pr
       report.warnings.push(...detect.warnings)
       report.errors.push(...detect.errors)
       if (!detect.ok) report.ok = false
+    }
+
+    if (steps.includes('joiner') && deps.joiner) {
+      // Joiners before leavers, so a starter whose account exists by the
+      // morning is activated on the same run that reads the HR system.
+      const joiner = await runJoinerEngine({ ...deps, idp: deps.joiner.idp, google: deps.joiner.google, ...(deps.joiner.gate ? { gate: deps.joiner.gate } : {}), ...(deps.joiner.passwordGenerator ? { passwordGenerator: deps.joiner.passwordGenerator } : {}) }, {
+        dryRun: opts.dryRun,
+        actor: opts.actor,
+        runId,
+        ...(opts.only ? { only: opts.only } : {}),
+      })
+      mergeLeaverReport(report, joiner)
     }
 
     if (steps.includes('leaver')) {

@@ -33,7 +33,7 @@ export function renderRunReport(report: RunReport): string {
     lines.push(
       '  ' +
         person.displayName.padEnd(16) +
-        person.phase.padEnd(8) +
+        person.phase.padEnd(15) +
         person.statusBefore +
         ' -> ' +
         person.statusAfter +

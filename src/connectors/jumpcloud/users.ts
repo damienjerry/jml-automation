@@ -22,13 +22,19 @@
 
 import type { Outcome } from '../../core/types.ts'
 import type { ConnectionCheck } from '../../hris/types.ts'
-import { AmbiguousMatch, type IdentityConnector, type ProviderUser } from '../types.ts'
+import {
+  AmbiguousMatch,
+  type ActivationState,
+  type IdentityActivationConnector,
+  type IdentityConnector,
+  type ProviderUser,
+} from '../types.ts'
 import { JumpCloudApiError, isRetryableStatus, preview, type JumpCloudClient } from './client.ts'
 
 /** What kind of key the credential turned out to be. Reported by `jml doctor`. */
 export type JumpCloudKeyRole = 'writer' | 'reader' | 'unknown'
 
-export class JumpCloudUsers implements IdentityConnector {
+export class JumpCloudUsers implements IdentityConnector, IdentityActivationConnector {
   readonly name = 'jumpcloud'
 
   private readonly client: JumpCloudClient
@@ -192,6 +198,98 @@ export class JumpCloudUsers implements IdentityConnector {
   }
 
   /** Read one account by id. Absent is null; anything else throws. */
+  /**
+   * Has anybody ever used this account.
+   *
+   * `activated` flips true when the person sets their own password; MFA
+   * enrolment is a second, independent sign of the same thing. Either one
+   * means a working colleague, and a working colleague never gets a password
+   * reset from an automation.
+   */
+  async getActivationState(id: string): Promise<ActivationState | null> {
+    const raw = await this.rawById(id)
+    if (!raw) return null
+    const mfa = raw['mfa']
+    return {
+      activated: raw['activated'] === true,
+      mfaConfigured: typeof mfa === 'object' && mfa !== null && (mfa as Record<string, unknown>)['configured'] === true,
+      suspended: raw['suspended'] === true,
+      passwordExpired: raw['password_expired'] === true,
+    }
+  }
+
+  /**
+   * Set a temporary password on a staged account.
+   *
+   * The whole object is read first and written back with the password merged
+   * in. The user endpoint tolerates a partial body for most fields, but the
+   * command endpoint in the same API does not, and a habit of partial writes
+   * against this provider has already silently disarmed things once.
+   *
+   * Refused outright when the account is already in use. The engine checks
+   * this too; the connector checks again because the two reads are seconds
+   * apart and the cost of being wrong is somebody's working password.
+   */
+  async setTemporaryPassword(id: string, password: string): Promise<Outcome> {
+    const raw = await this.rawById(id)
+    if (!raw) return { ok: false, verified: false, error: 'no such account', retryable: false, detail: { reason: 'no_such_account' } }
+    const mfa = raw['mfa']
+    const inUse =
+      raw['activated'] === true ||
+      (typeof mfa === 'object' && mfa !== null && (mfa as Record<string, unknown>)['configured'] === true)
+    if (inUse) {
+      return { ok: false, verified: false, error: 'the account is already in use; refusing to reset its password', retryable: false, detail: { reason: 'already_in_use' } }
+    }
+    const body: Record<string, unknown> = { ...raw, state: 'ACTIVATED', activated: true, password }
+    // The id is a path parameter. Sending it in the body has been rejected
+    // elsewhere on this API, so it is stripped rather than risked.
+    delete body['_id']
+    delete body['id']
+    const res = await this.client.call('PUT', `/systemusers/${encodeURIComponent(id)}`, { body })
+    if (res.status < 200 || res.status >= 300) {
+      return { ok: false, verified: false, error: `setting the password answered ${res.status}`, retryable: isRetryableStatus(res.status), detail: { status: res.status, body: preview(res) } }
+    }
+    const after = await this.rawById(id)
+    if (!after) return { ok: false, verified: false, error: 'the account could not be read back after the password was set', retryable: true }
+    const state = String(after['state'] ?? '')
+    // The state is the only observable effect of this write; the password
+    // itself cannot be read back, and must never be echoed here.
+    return state === 'ACTIVATED'
+      ? { ok: true, verified: true, detail: { readBackState: state } }
+      : { ok: false, verified: false, error: 'the password write was accepted and the account state did not change', retryable: true, detail: { readBackState: state } }
+  }
+
+  /**
+   * Force a password change on next sign-in.
+   *
+   * `password_expired` is not writable on the account: a PUT carrying it
+   * answers 200 and leaves it false. The flag has its own action endpoint,
+   * and setting a password clears it, so this must run AFTER
+   * setTemporaryPassword, never before. Verified from a fresh read only.
+   */
+  async expirePassword(id: string): Promise<Outcome> {
+    const res = await this.client.call('POST', `/systemusers/${encodeURIComponent(id)}/expire`, { body: {} })
+    if (res.status === 404) return { ok: false, verified: false, error: 'no such account', retryable: false, detail: { reason: 'no_such_account' } }
+    if (res.status < 200 || res.status >= 300) {
+      return { ok: false, verified: false, error: `expiring the password answered ${res.status}`, retryable: isRetryableStatus(res.status), detail: { status: res.status, body: preview(res) } }
+    }
+    const after = await this.rawById(id)
+    const expired = after?.['password_expired'] === true
+    return expired
+      ? { ok: true, verified: true, detail: { passwordExpired: true } }
+      : { ok: false, verified: false, error: 'the reset was accepted and the account still shows no pending password change', retryable: true, detail: { passwordExpired: false } }
+  }
+
+  private async rawById(id: string): Promise<Record<string, unknown> | null> {
+    const res = await this.client.call('GET', `/systemusers/${encodeURIComponent(id)}`)
+    if (res.status === 404) return null
+    if (res.status < 200 || res.status >= 300) {
+      throw new JumpCloudApiError(`reading the account answered ${res.status}`, res.status, preview(res), isRetryableStatus(res.status))
+    }
+    const body = res.json<Record<string, unknown>>()
+    return body && typeof body === 'object' ? body : null
+  }
+
   private async getById(id: string): Promise<ProviderUser | null> {
     const res = await this.client.call('GET', `/systemusers/${encodeURIComponent(id)}`)
     if (res.status === 404) return null

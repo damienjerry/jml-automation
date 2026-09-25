@@ -18,6 +18,11 @@ export type NotificationKind =
   | 'run.aborted'
   | 'device.report'
   | 'doctor.changed'
+  | 'joiner.password'
+  | 'joiner.welcome'
+  | 'joiner.manager'
+  | 'joiner.refused'
+  | 'joiner.withheld'
 
 export interface Notification {
   kind: NotificationKind
@@ -26,6 +31,12 @@ export interface Notification {
   /** Who this is for: the IT owner, or the leaver's manager. */
   audience: 'it' | 'manager'
   managerEmail?: string | null
+  /**
+   * Explicit addresses, for the joiner path where a message goes to a personal
+   * address that is nobody's manager. A mail notifier sends to these instead
+   * of its route; a chat notifier ignores them and delivers to its channel.
+   */
+  recipients?: string[] | null
   detail?: Record<string, unknown>
 }
 

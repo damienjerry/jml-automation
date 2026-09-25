@@ -22,7 +22,9 @@ transcript in this file. Every output below is real output from the offline path
 | 10 | arm `suspend`, watch one cycle | writes |
 | 11 | arm `transfer` | writes |
 | 12 | arm `delete` | writes, irreversibly |
-| 13 | import the n8n bundle | schedules the above |
+| 13 | `jml joiner dry-run` for one real starter, read the plan | reads only |
+| 14 | arm `activate`, then `joiner_licence`, `ou_move`, `welcome` | writes; the first one sets a password |
+| 15 | import the n8n bundle | schedules the above |
 
 ## 1. Run the demo
 

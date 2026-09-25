@@ -96,6 +96,7 @@ export class EmailNotifier implements Notifier {
   }
 
   private recipients(n: Notification): string[] {
+    if (n.recipients && n.recipients.length > 0) return n.recipients.map((r) => r.trim()).filter((r) => r.length > 0)
     if (n.audience === 'manager') {
       const manager = n.managerEmail?.trim()
       return manager ? [manager] : []

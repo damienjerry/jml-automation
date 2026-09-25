@@ -55,7 +55,17 @@ Counts:
 ... 6 more line(s)
 --- end notification ---
 run demo-before  pipeline  armed  ok=true
-  counts: hrisEmployed=7 hrisPeople=7 sync.created=6 sync.scanned=7 sync.skipped_no_email=1
+  counts: hrisEmployed=7 hrisPeople=7 joinerCandidates=5 joinerSkipped=5 sync.created=6 sync.scanned=7 sync.skipped_no_email=1
+  Jane Doe        joiner_skipped active -> active
+      already in use at first sight; recorded as activated by observation, nothing touched
+  Lee Nakamura    joiner_skipped active -> active
+      already in use at first sight; recorded as activated by observation, nothing touched
+  Kit Marlowe     joiner_skipped active -> active
+      already in use at first sight; recorded as activated by observation, nothing touched
+  Sam Rivera      joiner_skipped active -> active
+      already in use at first sight; recorded as activated by observation, nothing touched
+  Robin Ellis     joiner_skipped active -> active
+      already in use at first sight; recorded as activated by observation, nothing touched
 audit rows written this step: 3
 
   people store:
@@ -216,17 +226,17 @@ Counts:
 --- end notification ---
 run demo-day0  pipeline  armed  ok=true
   counts: day0=3 detect.actionable=3 detect.leaver=3 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 selectedDay0=3 sync.scanned=7 sync.skipped_no_email=1 sync.status_changed=4 sync.unchanged=2
-  Robin Ellis     day0    terminated -> offboarding
+  Robin Ellis     day0           terminated -> offboarding
       revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
       identity provider account suspended, read back
       auto-reply set on the mailbox
       revoked 1 licence(s): example-standard
-  Sam Rivera      day0    terminated -> offboarding
+  Sam Rivera      day0           terminated -> offboarding
       revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
       identity provider account suspended, read back
       auto-reply set on the mailbox
       revoked 1 licence(s): example-standard
-  Kit Marlowe     day0    terminated -> offboarding
+  Kit Marlowe     day0           terminated -> offboarding
       revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
       identity provider account suspended, read back
       auto-reply set on the mailbox
@@ -259,7 +269,7 @@ For review, no automatic action:
 
 - Lee Nakamura (p-1006): Terminated and parked as termination_older_than_lookback, so nothing automatic will touch it until somebody clears the reason.
 
-Joining (recorded only; joiner automation is a later phase):
+Joining:
 
 ... 1 more line(s)
 --- end notification ---
@@ -334,15 +344,15 @@ Counts:
 --- end notification ---
 run demo-transfer  pipeline  armed  ok=true
   counts: day6=3 detect.joiner=1 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 sync.preserved=3 sync.scanned=7 sync.skipped_no_email=1 sync.unchanged=3
-  Robin Ellis     day6    offboarding -> offboarding
+  Robin Ellis     day6           offboarding -> offboarding
       suspend_google=done(verified) transfer_drive=done(verified)
       files handed to jane.doe@example.com, confirmed complete by the provider
       Google account suspended, read back
-  Sam Rivera      day6    offboarding -> offboarding
+  Sam Rivera      day6           offboarding -> offboarding
       suspend_google=done(verified) transfer_drive=done(verified)
       files handed to jane.doe@example.com, confirmed complete by the provider
       Google account suspended, read back
-  Kit Marlowe     day6    offboarding -> offboarding
+  Kit Marlowe     day6           offboarding -> offboarding
       suspend_google=done(verified) transfer_drive=done(verified)
       files handed to jane.doe@example.com, confirmed complete by the provider
       Google account suspended, read back
@@ -429,14 +439,14 @@ Counts:
 --- end notification ---
 run demo-delete  pipeline  armed  ok=true
   counts: blocked=1 day7=2 detect.joiner=1 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 sync.preserved=3 sync.scanned=7 sync.skipped_no_email=1 sync.unchanged=3
-  Robin Ellis     blocked offboarding -> offboarding  blocked: devices_bound
+  Robin Ellis     blocked        offboarding -> offboarding  blocked: devices_bound
       1 device(s) are still bound to this person:
 - Demo field laptop, windows, serial DEMOSERIAL1
-  Sam Rivera      day7    offboarding -> departed
+  Sam Rivera      day7           offboarding -> departed
       delete_google=done(verified) delete_idp=done(verified)
       identity provider account deleted, confirmed gone
       Google account deleted, confirmed gone
-  Kit Marlowe     day7    offboarding -> departed
+  Kit Marlowe     day7           offboarding -> departed
       delete_google=done(verified) delete_idp=done(verified)
       identity provider account deleted, confirmed gone
       Google account deleted, confirmed gone
@@ -498,11 +508,100 @@ Counts:
 --- end notification ---
 run demo-delete-2  pipeline  armed  ok=true
   counts: day7=1 detect.joiner=1 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 sync.preserved=3 sync.scanned=7 sync.skipped_no_email=1 sync.unchanged=3
-  Robin Ellis     day7    offboarding -> departed
+  Robin Ellis     day7           offboarding -> departed
       delete_google=done(verified) delete_idp=done(verified)
       identity provider account deleted, confirmed gone
       Google account deleted, confirmed gone
 audit rows written this step: 10
+
+  people store:
+    p-1001  active      Jane Doe        
+    p-1002  hired       John Doe        
+    p-1003  departed    Robin Ellis     suspendedAt=2026-01-15 transferred
+    p-1004  departed    Sam Rivera      suspendedAt=2026-01-15 transferred
+    p-1005  departed    Kit Marlowe     suspendedAt=2026-01-15 transferred
+    p-1006  terminated  Lee Nakamura    parked=termination_older_than_lookback
+
+=== The next starter  (2026-01-28) ===
+A staged identity account exists for John Doe and nobody has signed into it. Three
+working days before their start the engine sets a temporary password with a forced reset,
+licenses the Google account, waits for the mailbox, moves the account into the managed
+organisational unit, and only then sends the welcome to the work address. The password
+goes to the personal address, the manager and the IT mailbox, and appears nowhere else.
+
+
+--- notification (joiner.password) would be sent to john.doe.home@example.net, jane.doe@example.com, it-support@example.com ---
+subject: John Doe: temporary password
+
+The account for John Doe has been activated ahead of their start date.
+
+Temporary password:
+
+    DEMO-ONLY-NOT-A-PASSWORD
+
+This password must be changed on first sign-in. Sign in at https://console.jumpcloud.com
+with the work address john.doe@example.com and the temporary password above; you will
+be asked for a new one straight away.
+
+The identity provider password is the one the laptop and the work mailbox use,
+so changing it there changes it everywhere.
+... 7 more line(s)
+--- end notification ---
+
+--- notification (joiner.welcome) would be sent to john.doe.home@example.net, john.doe@example.com ---
+subject: Welcome to Example Organisation: your IT access is ready
+
+John,
+
+Your IT access at Example Organisation is ready.
+
+1. Sign in at https://console.jumpcloud.com with john.doe@example.com and the temporary
+   password sent to your personal address and your manager. Do this first: the
+   laptop and the work mailbox use the same sign-in.
+2. Choose a new password when asked.
+3. Once signed in, add and verify a recovery email address in your profile, so
+   a forgotten password can be reset without waiting for IT.
+
+If anything on this list does not work, reply to this message.
+... 3 more line(s)
+--- end notification ---
+
+--- notification (joiner.manager) would be sent to jane.doe@example.com ---
+subject: John Doe is set up for 2026-02-02
+
+John Doe (john.doe@example.com) is set up for their start on 2026-02-02.
+
+The temporary password went to their personal address and to you. They must
+change it on first sign-in. Their mailbox is ready and the welcome note has gone to it.
+
+If they have not received it by their first morning, the IT team holds a copy.
+
+The IT team
+
+--- end notification ---
+
+--- notification (run.summary) would be sent to IT ---
+subject: pipeline run ok
+
+pipeline run demo-starter: ok
+
+- Mode: armed
+- Started: 2026-01-28T09:00:00.000Z
+- Finished: 2026-01-28T09:00:00.000Z
+
+Counts:
+
+- Suspended today: 0
+- Transfers: 0
+- Deletions: 0
+- Blocked: 0
+... 6 more line(s)
+--- end notification ---
+run demo-starter  pipeline  armed  ok=true
+  counts: activated=1 detect.joiner=1 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 joinerCandidates=1 sync.preserved=3 sync.scanned=7 sync.skipped_no_email=1 sync.unchanged=3
+  John Doe        activated      hired -> hired
+      activate=done(verified) joiner_licence=done(verified) ou_move=done(verified) welcome=done(verified)
+audit rows written this step: 17
 
   people store:
     p-1001  active      Jane Doe        

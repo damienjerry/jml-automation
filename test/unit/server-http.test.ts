@@ -38,6 +38,7 @@ function engine(overrides: Partial<ServerEngine> = {}): ServerEngine {
   return {
     pipeline: async () => report(),
     leaver: async () => report(),
+    joiner: async () => report(),
     devicePreflight: unused,
     deviceDispose: unused,
     show: async () => null,

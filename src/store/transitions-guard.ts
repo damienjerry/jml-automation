@@ -55,6 +55,7 @@ export const HRIS_OWNED_FIELDS = [
   'jobTitle',
   'site',
   'managerEmail',
+  'personalEmail',
   'startDate',
   'terminationDate',
   'lastWorkingDay',

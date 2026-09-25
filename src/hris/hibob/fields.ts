@@ -31,6 +31,8 @@ export interface HiBobFieldMap {
    * the right field the day a notification template needs the wording.
    */
   managerName: string
+  /** Non-work address. Blank disables the read. */
+  personalEmail: string
   /**
    * Ordered fallbacks: the first path that holds a value wins.
    *
@@ -71,6 +73,7 @@ export const DEFAULT_HIBOB_FIELDS: HiBobFieldMap = {
   startDate: 'work.startDate',
   managerEmail: 'work.reportsTo.email',
   managerName: 'work.reportsTo.displayName',
+  personalEmail: 'home.privateEmail',
   terminationDate: ['internal.terminationDate', 'employment.terminationDate'],
   lastWorkingDay: 'employee.lastDayOfWork',
   scopeField: '',
@@ -115,6 +118,7 @@ export function requestFields(map: HiBobFieldMap): string[] {
     map.startDate,
     map.managerEmail,
     map.managerName,
+    map.personalEmail,
     ...map.terminationDate,
     map.lastWorkingDay,
     map.scopeField,
@@ -253,6 +257,8 @@ export function readPerson(record: unknown, map: HiBobFieldMap): HrisPerson {
     jobTitle: readString(record, map.jobTitle),
     site: readString(record, map.site),
     managerEmail: readEmail(record, map.managerEmail),
+    managerName: readString(record, map.managerName),
+    personalEmail: map.personalEmail.trim() ? readEmail(record, map.personalEmail) : null,
     startDate: toIsoDate(readPath(record, map.startDate), map.startDate, hrisId),
     terminationDate,
     lastWorkingDay: map.lastWorkingDay.trim()

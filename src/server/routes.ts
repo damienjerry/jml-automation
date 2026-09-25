@@ -50,7 +50,7 @@ export interface ServerResponse {
   body: Record<string, unknown>
 }
 
-export type JobKind = 'pipeline' | 'leaver' | 'device'
+export type JobKind = 'pipeline' | 'leaver' | 'joiner' | 'device'
 
 export interface JobRecord {
   runId: string
@@ -79,6 +79,7 @@ export interface ServerEngine {
     hrisId?: string
     email?: string
   }): Promise<RunReport>
+  joiner(req: { dryRun: boolean; actor: Actor; runId: string; hrisId?: string; email?: string }): Promise<RunReport>
   devicePreflight(req: { systemId: string; disposition: DeviceDisposition; actor: Actor; runId: string }): Promise<DevicePreflight>
   deviceDispose(req: {
     systemId: string
@@ -329,6 +330,17 @@ async function route(req: ServerRequest, ctx: RouteContext): Promise<ServerRespo
           ...(email ? { email } : {}),
         }),
       ),
+    )
+  }
+
+  if (req.method === 'POST' && path === '/v1/joiners/run') {
+    const body = parseBody(req)
+    const dryRun = dryRunFrom(body)
+    const actor = actorFrom(req.headers, 'system:api')
+    const hrisId = optionalString(body, 'hrisId')
+    const email = optionalString(body, 'email')
+    return startJob('joiner', ctx, async (runId) =>
+      asRecord(await ctx.engine.joiner({ dryRun, actor, runId, ...(hrisId ? { hrisId } : {}), ...(email ? { email } : {}) })),
     )
   }
 

@@ -119,6 +119,35 @@ export async function revokeLicence(
 }
 
 /** One assignment, or null when the account does not hold that SKU. */
+/**
+ * Assign a licence.
+ *
+ * 412 from the provider means the seat is already held, which is the desired
+ * state and is reported as alreadyAbsent (nothing for us to do) rather than
+ * as work done, so the audit can tell the two apart. Read back afterwards: an
+ * assignment answering 2xx has been observed to precede a 404 on the same
+ * account for around ten seconds.
+ */
+export async function assignLicence(ctx: GoogleCtx, email: string, productId: string, skuId: string): Promise<Outcome> {
+  const write = await authorisedRequest(ctx, {
+    method: 'POST',
+    url: `${LICENSING_BASE}/product/${encodeURIComponent(productId)}/sku/${encodeURIComponent(skuId)}/user`,
+    scope: GOOGLE_SCOPES.licensing,
+    subject: ctx.cfg.adminEmail,
+    json: { userId: email },
+    label: 'google licence assign',
+  })
+  if (write.status === 412) return { ok: true, verified: true, alreadyAbsent: true, detail: { productId, skuId, reason: 'already_licensed' } }
+  if (write.status === 404) return { ok: false, verified: false, error: 'no Google account to license, or no such SKU', retryable: false, detail: { productId, skuId } }
+  if (!write.ok) {
+    return { ok: false, verified: false, error: `assigning the licence failed with status ${write.status}`, retryable: write.status === 429 || write.status >= 500, detail: { productId, skuId } }
+  }
+  const after = await getAssignment(ctx, productId, skuId, email)
+  return after
+    ? { ok: true, verified: true, detail: { productId, skuId } }
+    : { ok: false, verified: false, error: 'Google accepted the assignment and it does not read back yet', retryable: true, detail: { productId, skuId } }
+}
+
 async function getAssignment(
   ctx: GoogleCtx,
   productId: string,

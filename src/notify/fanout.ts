@@ -45,7 +45,8 @@ export class FanoutNotifier implements Notifier {
     let route = n.audience === 'manager' ? this.routes.manager : this.routes.it
     let undeliverable: string | null = null
 
-    if (n.audience === 'manager' && !n.managerEmail?.trim()) {
+    const explicit = (n.recipients ?? []).some((r) => r.trim() !== '')
+    if (n.audience === 'manager' && !n.managerEmail?.trim() && !explicit) {
       route = this.routes.it
       undeliverable = 'no manager address was resolved, so this went to the IT route instead'
     } else if (route.length === 0) {
@@ -129,6 +130,11 @@ export const TEMPLATE_NAMES = [
   'run-summary',
   'run-aborted',
   'device-report',
+  'joiner-password',
+  'joiner-welcome',
+  'joiner-manager',
+  'joiner-refused',
+  'joiner-withheld',
 ] as const
 
 export type TemplateName = (typeof TEMPLATE_NAMES)[number]

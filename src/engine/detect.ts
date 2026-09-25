@@ -359,5 +359,5 @@ export function renderSummary(
 const HEADINGS: Record<LifecycleEventKind, string> = {
   leaver: 'Leaving today',
   potential_leaver: 'For review, no automatic action',
-  joiner: 'Joining (recorded only; joiner automation is a later phase)',
+  joiner: 'Joining',
 }

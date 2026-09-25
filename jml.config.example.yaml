@@ -71,6 +71,8 @@ identity:
     baseUrl: "https://console.jumpcloud.com/api"
     # Organisation API key, as a secret reference.
     apiKey: env:JUMPCLOUD_API_KEY
+    # Where a starter signs in for the first time. Printed in the password and welcome messages.
+    consoleUrl: "https://console.jumpcloud.com"
     # Spares account a returned device is rebound to. Null disables the rebind.
     poolUserEmail: null
 
@@ -122,6 +124,32 @@ leaver:
     directBindingsOnly: true
     # NOT overridable. A gate that cannot be read blocks. Reading an error as "no devices" is how an account gets deleted while the machine is still out there.
     failClosed: true
+
+joiner:
+  # Activate this many working days before the start date, so the temporary password reaches the manager in time. Weekends and the dates in holidays are skipped.
+  leadWorkingDays: 3
+  # ISO dates that are not working days. Kept as data rather than a national calendar URL, because the toolkit must not depend on somebody else's endpoint being up on the morning a starter arrives.
+  holidays: []
+  # More candidates than this are reported and held for the next run rather than all being activated at once. A crowd of joiners is a data fault far more often than a hiring round.
+  maxActivationsPerRun: 5
+  # What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticketing adapter opens it (interface only in this phase; behaves as manual).
+  gate: none
+  # Google organisational unit to move the account into on activation, for example the one whose sign-in is delegated to the identity provider. Blank skips the move.
+  targetOrgUnitPath: ""
+  licence:
+    # Google licensing product id.
+    productId: Google-Apps
+    # The SKU to assign on activation. Blank skips licensing, and the welcome email is withheld if the mailbox is not ready anyway.
+    skuId: ""
+  mailboxPoll:
+    # How many times to re-read the account waiting for the mailbox.
+    tries: 6
+    # Milliseconds between reads.
+    intervalMs: 10000
+  # Always receives a copy of the temporary password, so it is never lost when the other recipients are unusable.
+  itSupportEmail: null
+  # Length of the generated temporary password.
+  temporaryPasswordLength: 20
 
 devices:
   # What happens to a device when nobody says otherwise.

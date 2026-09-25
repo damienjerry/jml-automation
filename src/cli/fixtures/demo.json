@@ -23,7 +23,11 @@
   "demoToday": "2026-01-15",
   "fetchedAt": "2026-01-15T08:00:00.000Z",
   "complete": true,
-  "activeIds": ["p-1001", "p-1002", "p-1007"],
+  "activeIds": [
+    "p-1001",
+    "p-1002",
+    "p-1007"
+  ],
   "people": [
     {
       "hrisId": "p-1001",
@@ -49,7 +53,8 @@
       "site": "Head Office",
       "managerEmail": "jane.doe@example.com",
       "startDate": "2026-02-02",
-      "terminationDate": null
+      "terminationDate": null,
+      "personalEmail": "john.doe.home@example.net"
     },
     {
       "hrisId": "p-1003",

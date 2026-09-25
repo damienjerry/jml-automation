@@ -105,6 +105,41 @@ export interface OffboardingRecord {
   departedAt?: string | null
 }
 
+/**
+ * Progress through activation. Written by the joiner engine and by a human
+ * opening the gate; never by the HR sync.
+ */
+export interface ActivationRecord {
+  /**
+   * Set only once the identity account has a temporary password and a forced
+   * reset, both read back. The idempotency key: a row with it is never
+   * activated again.
+   */
+  activatedAt?: string | null
+  /**
+   * `engine` when this toolkit did the work; `observed` when the account was
+   * already in use at first sight and was left alone. The second is what every
+   * existing employee reads as on a first install.
+   */
+  activatedBy?: 'engine' | 'observed' | null
+  passwordResetForced?: boolean | null
+  /** Where the temporary password went. Addresses, because a human checks this. */
+  passwordSentTo?: string[] | null
+  licenceAssignedAt?: string | null
+  mailboxReadyAt?: string | null
+  ouMovedAt?: string | null
+  welcomeSentAt?: string | null
+  /** Set when the gate is `manual` or `ticket` and somebody opened it. */
+  gateOpenedAt?: string | null
+  gateOpenedBy?: string | null
+  /** A permanent refusal, cleared only by a human. */
+  refusedReason?: string | null
+  attempts?: number | null
+  legs?: Partial<Record<ActivationLegName, LegRecord>> | null
+}
+
+export type ActivationLegName = 'activate' | 'joiner_licence' | 'ou_move' | 'welcome'
+
 /** A device the identity provider says is bound to this person. */
 export interface BoundDevice {
   id: string
@@ -139,6 +174,8 @@ export interface Person {
   jobTitle?: string | null
   site?: string | null
   managerEmail?: string | null
+  /** Non-work address from the HR system. See HrisPerson. */
+  personalEmail?: string | null
   startDate?: string | null
   terminationDate?: string | null
   /** Last day physically in, when the HR system holds one. See HrisPerson. */
@@ -157,13 +194,8 @@ export interface Person {
    */
   googleAccountPresent?: boolean | null
   offboarding?: OffboardingRecord | null
-  /** Reserved for joiner work in the next phase; unused today. */
-  activation?: {
-    activatedAt?: string | null
-    licenceAssignedAt?: string | null
-    ouMovedAt?: string | null
-    welcomeSentAt?: string | null
-  } | null
+  /** Progress through joiner activation. Markers, not statuses, like offboarding. */
+  activation?: ActivationRecord | null
   /** One slot. The history of what happened lives in the audit log. */
   note?: string | null
   source?: string | null
@@ -194,8 +226,8 @@ export interface PersonRunResult {
   hrisId: string
   /** Never the email address of a real person in logs; this is the display name. */
   displayName: string
-  phase: 'day0' | 'day6' | 'day7' | 'skipped' | 'parked' | 'blocked'
-  legs: Partial<Record<LegName, LegRecord>>
+  phase: 'day0' | 'day6' | 'day7' | 'skipped' | 'parked' | 'blocked' | 'activated' | 'joiner_skipped' | 'joiner_refused'
+  legs: Partial<Record<LegName | ActivationLegName, LegRecord>>
   statusBefore: LifecycleStatus
   statusAfter: LifecycleStatus
   blockedReason?: string | null
@@ -206,7 +238,7 @@ export interface PersonRunResult {
 /** What a whole run did. Returned by the CLI and by the HTTP sidecar. */
 export interface RunReport {
   runId: string
-  kind: 'pipeline' | 'sync' | 'detect' | 'leaver' | 'device'
+  kind: 'pipeline' | 'sync' | 'detect' | 'joiner' | 'leaver' | 'device'
   startedAt: string
   finishedAt: string
   dryRun: boolean

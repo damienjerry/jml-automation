@@ -28,6 +28,15 @@ export interface HrisPerson {
    * them.
    */
   managerName?: string | null
+  /**
+   * A non-work address the HR system holds for the person.
+   *
+   * Where the temporary password goes on activation, because the work
+   * mailbox does not exist yet and the manager may be away. Validated at send
+   * time: a company address in this field once sent a starter's credential to
+   * a colleague's inbox, and the HR system is not exempt from that check.
+   */
+  personalEmail?: string | null
   /** ISO date. Never a locale-formatted string: see HrisAdapter. */
   startDate?: string | null
   /**

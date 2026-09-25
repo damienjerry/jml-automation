@@ -82,6 +82,10 @@ const ARMED_ACTIONS = [
   'delete',
   'device_unbind',
   'device_handover',
+  'activate',
+  'joiner_licence',
+  'ou_move',
+  'welcome',
 ] as const
 
 const MailSchema = z
@@ -111,6 +115,7 @@ const HiBobFieldsSchema = z
     startDate: z.string().default('work.startDate').describe(meta('', 'Path to the start date.')),
     managerEmail: z.string().default('work.reportsTo.email').describe(meta('', "Path to the manager's email address.")),
     managerName: z.string().default('work.reportsTo.displayName').describe(meta('', "Path to the manager's name.")),
+    personalEmail: z.string().default('home.privateEmail').describe(meta('', 'Path to a non-work address, where the temporary password is sent on activation. Blank disables it.')),
     terminationDate: z
       .array(z.string())
       .default(['internal.terminationDate', 'employment.terminationDate'])
@@ -244,6 +249,11 @@ const IdentitySchema = z
             meta('JUMPCLOUD_BASE_URL', 'Some tenants answer only on the console host and return 404 on the other one for every request, valid key or not.'),
           ),
         apiKey: secretRef('JUMPCLOUD_API_KEY', 'Organisation API key, as a secret reference.'),
+        consoleUrl: z
+          .string()
+          .url()
+          .default('https://console.jumpcloud.com')
+          .describe(meta('JUMPCLOUD_CONSOLE_URL', 'Where a starter signs in for the first time. Printed in the password and welcome messages.')),
         poolUserEmail: z
           .string()
           .email()
@@ -295,6 +305,66 @@ const GoogleSchema = z
       })
       .strict()
       .default({}),
+  })
+  .strict()
+
+const JoinerSchema = z
+  .object({
+    leadWorkingDays: z
+      .number()
+      .int()
+      .min(0)
+      .default(3)
+      .describe(
+        meta(
+          'JOINER_LEAD_WORKING_DAYS',
+          'Activate this many working days before the start date, so the temporary password reaches the manager in time. Weekends and the dates in holidays are skipped.',
+        ),
+      ),
+    holidays: z
+      .array(z.string().regex(/^\d{4}-\d{2}-\d{2}$/))
+      .default([])
+      .describe(meta('', 'ISO dates that are not working days. Kept as data rather than a national calendar URL, because the toolkit must not depend on somebody else\'s endpoint being up on the morning a starter arrives.')),
+    maxActivationsPerRun: z
+      .number()
+      .int()
+      .positive()
+      .default(5)
+      .describe(
+        meta(
+          'JOINER_MAX_PER_RUN',
+          'More candidates than this are reported and held for the next run rather than all being activated at once. A crowd of joiners is a data fault far more often than a hiring round.',
+        ),
+      ),
+    gate: z
+      .enum(['none', 'manual', 'ticket'])
+      .default('none')
+      .describe(
+        meta(
+          'JOINER_GATE',
+          'What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticketing adapter opens it (interface only in this phase; behaves as manual).',
+        ),
+      ),
+    targetOrgUnitPath: z
+      .string()
+      .default('')
+      .describe(meta('JOINER_TARGET_OU', 'Google organisational unit to move the account into on activation, for example the one whose sign-in is delegated to the identity provider. Blank skips the move.')),
+    licence: z
+      .object({
+        productId: z.string().default('Google-Apps').describe(meta('', 'Google licensing product id.')),
+        skuId: z.string().default('').describe(meta('JOINER_LICENCE_SKU', 'The SKU to assign on activation. Blank skips licensing, and the welcome email is withheld if the mailbox is not ready anyway.')),
+      })
+      .strict()
+      .default({}),
+    mailboxPoll: z
+      .object({
+        tries: z.number().int().min(1).default(6).describe(meta('', 'How many times to re-read the account waiting for the mailbox.')),
+        intervalMs: z.number().int().min(0).default(10_000).describe(meta('', 'Milliseconds between reads.')),
+      })
+      .strict()
+      .default({}),
+    itSupportEmail: email('JOINER_IT_SUPPORT_EMAIL', 'Always receives a copy of the temporary password, so it is never lost when the other recipients are unusable.').nullable().default(null),
+    temporaryPasswordLength: z.number().int().min(16).max(64).default(20).describe(meta('', 'Length of the generated temporary password.')),
   })
   .strict()
 
@@ -575,6 +645,7 @@ export const ConfigObject = z
     identity: IdentitySchema,
     google: GoogleSchema,
     leaver: LeaverSchema.default({}),
+    joiner: JoinerSchema.default({}),
     devices: DevicesSchema.default({}),
     notify: NotifySchema.default({}),
     audit: AuditSchema.default({}),

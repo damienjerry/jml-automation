@@ -122,6 +122,7 @@ it is not overridable.
 | --- | --- | --- |
 | Sync | every run | Read the HR system, create and update rows, derive `hired`, `active` or `terminated`. Never touches a row the offboarding engine owns. |
 | Detect | every run | Announce joiners and leavers, and only when the set has changed. |
+| Activate | three working days before a start date, configurable | Set a temporary password with a forced reset on the staged identity account, license the Google account, wait for the mailbox, move the account into the managed organisational unit, then send the password to the personal address and the manager and the welcome to the work address. Never touches an account somebody is already using. |
 | Day 0 | the day the HR system drops somebody from the employed set | Suspend the identity provider account, set the mailbox auto-reply, revoke paid licences, tell the manager and IT. |
 | Day 6 | 6 days after suspension, configurable | Hand the files to the manager through the Google data transfer API, then suspend the Google account. |
 | Day 7 | 7 days after suspension, configurable | Delete the identity provider account and the Google account, if every gate opens. Write a tombstone. |
@@ -129,11 +130,12 @@ it is not overridable.
 
 ## What it does not do
 
-- **It does not create accounts.** Provisioning on hire is a later phase. A joiner is
-  detected, recorded and announced; no account is made. Phase 1 is the leaver path,
-  detection, and the device gate.
+- **It does not create accounts.** Your HR system's own integrations create the staged
+  identity account and the unlicensed Google account. The toolkit takes over from there:
+  activation, licence, mailbox, organisational unit and the messages. If your HR system
+  does not create accounts, the joiner path has nothing to activate.
 - **It has never run against a real tenant.** Every claim in this repository is backed by
-  1361 tests, an offline demo and the code, and by nothing else. There is no passing
+  1391 tests, an offline demo and the code, and by nothing else. There is no passing
   `jml doctor` transcript in these docs for that reason.
 - **The two device uninstall scripts have never run on real hardware.**
   `src/engine/device/scripts/manifest.json` records `provenOnHardware: false` for both, and
@@ -211,7 +213,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 70 files each named for one of them, for example
+  and `test/regression/` holds 75 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.

@@ -30,7 +30,7 @@ import { JumpCloudClient } from '../../connectors/jumpcloud/client.ts'
 import { JumpCloudCommands } from '../../connectors/jumpcloud/commands.ts'
 import { JumpCloudDevices } from '../../connectors/jumpcloud/devices.ts'
 import { JumpCloudUsers } from '../../connectors/jumpcloud/users.ts'
-import type { CommandTargeting, IdentityConnector } from '../../connectors/types.ts'
+import type { CommandTargeting, IdentityConnector, IdentityActivationConnector } from '../../connectors/types.ts'
 import type { DeviceOps } from '../../engine/device/preflight.ts'
 import { HiBobAdapter } from '../../hris/hibob/adapter.ts'
 import { FixtureHrisAdapter } from '../../hris/fixture.ts'
@@ -74,7 +74,7 @@ export interface CliIo {
 
 /** The provider surface, present only when a command asked for it. */
 export interface Providers {
-  idp: IdentityConnector
+  idp: IdentityConnector & IdentityActivationConnector
   devices: DeviceOps
   google: GoogleConnector
   commands: CommandTargeting

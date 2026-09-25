@@ -77,7 +77,7 @@ describe('the offline demo', () => {
   it('prints an audit row count for every step, so the two-row contract is visible', async () => {
     const result = await demo()
     const counts = [...result.output.matchAll(/audit rows written this step: (\d+)/g)].map((m) => Number(m[1]))
-    expect(counts.length).toBe(5)
+    expect(counts.length).toBe(6)
     // Day 0 acts on three people, so it writes far more than a quiet run.
     expect(Math.max(...counts)).toBeGreaterThan(20)
   })

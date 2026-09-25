@@ -15,7 +15,7 @@
  */
 
 import type { Outcome } from '../../core/types.ts'
-import type { ProviderUser } from '../types.ts'
+import type { MailboxState, ProviderUser } from '../types.ts'
 import { authorisedRequest, type GoogleCtx } from './auth.ts'
 import { GOOGLE_SCOPES } from './scopes.ts'
 
@@ -31,6 +31,7 @@ interface DirectoryUserBody {
   archived?: boolean
   orgUnitPath?: string
   aliases?: string[]
+  isMailboxSetup?: boolean
 }
 
 interface DirectoryListBody {
@@ -220,6 +221,49 @@ function readUser(ctx: GoogleCtx, email: string) {
     subject: ctx.cfg.adminEmail,
     label: 'google directory get',
   })
+}
+
+/**
+ * The account from the provisioning side.
+ *
+ * `isMailboxSetup` is the field that matters: an account created through a
+ * directory integration exists with no mailbox until it is licensed and
+ * Workspace has finished building one. Mail sent before that bounces.
+ */
+export async function getMailboxState(ctx: GoogleCtx, email: string): Promise<MailboxState | null> {
+  const response = await readUser(ctx, email)
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error(`reading the Google account failed with status ${response.status}`)
+  const body = response.json<DirectoryUserBody>() ?? {}
+  return {
+    exists: true,
+    mailboxReady: body.isMailboxSetup === true,
+    orgUnitPath: body.orgUnitPath ?? null,
+    suspended: body.suspended === true,
+  }
+}
+
+/** Move the account, then read the path back. */
+export async function moveToOrgUnit(ctx: GoogleCtx, email: string, orgUnitPath: string): Promise<Outcome> {
+  const write = await authorisedRequest(ctx, {
+    method: 'PATCH',
+    url: userUrl(email),
+    scope: GOOGLE_SCOPES.directoryUser,
+    subject: ctx.cfg.adminEmail,
+    json: { orgUnitPath },
+    label: 'google directory org unit move',
+  })
+  if (write.status === 404) return { ok: false, verified: false, error: 'no Google account to move', retryable: false, detail: { reason: 'no_google_account' } }
+  if (!write.ok) return failure('moving the Google account', write.status)
+  // Directory reads lag writes by several seconds. One immediate re-read that
+  // disagrees is reported unverified so the leg retries next run rather than
+  // recording a move that has not landed.
+  const after = await readUser(ctx, email)
+  if (!after.ok) return { ok: false, verified: false, error: `the Google account could not be read back after the move (status ${after.status})`, retryable: true }
+  const landed = (after.json<DirectoryUserBody>() ?? {}).orgUnitPath === orgUnitPath
+  return landed
+    ? { ok: true, verified: true, detail: { orgUnitPath } }
+    : { ok: false, verified: false, error: 'Google accepted the move and the account still reads the old organisational unit', retryable: true, detail: { orgUnitPath } }
 }
 
 function userUrl(email: string): string {

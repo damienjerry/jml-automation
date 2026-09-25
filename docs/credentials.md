@@ -20,7 +20,7 @@ Read this before you grant anything on the strength of this page.
 
 | Claim | Status |
 | --- | --- |
-| The toolkit has run end to end against a real tenancy | **No.** Nothing here has ever run against a live tenant. The connectors are driven by scripted fakes in 1361 tests, and the demo runs offline with no credentials. |
+| The toolkit has run end to end against a real tenancy | **No.** Nothing here has ever run against a live tenant. The connectors are driven by scripted fakes in 1391 tests, and the demo runs offline with no credentials. |
 | The two device uninstall scripts have run on real hardware | **No.** `src/engine/device/scripts/manifest.json` records `provenOnHardware: false`, and a handover is refused on any platform whose script carries that flag until you name the machine you canaried it on. See [the canary runbook](runbooks/canary-a-device-script.md). |
 | The n8n bundle has been imported into a running n8n | **No.** The exports validate and scrub; no instance has loaded them. |
 
@@ -247,7 +247,12 @@ restart is the whole cutover.
 | --- | --- |
 | Credential type | Admin API key, sent as an `x-api-key` header |
 | Config keys | `identity.jumpcloud.apiKey`, `identity.jumpcloud.baseUrl` |
-| Env | `JUMPCLOUD_API_KEY`, `JUMPCLOUD_BASE_URL` |
+| Env | `JUMPCLOUD_API_KEY`, `JUMPCLOUD_BASE_URL`, `JUMPCLOUD_CONSOLE_URL` |
+
+Activation needs the writer role as well: it reads the account (`activated`, `mfa`,
+`password_expired`), writes a temporary password with the whole object merged in, and
+calls the `/expire` action. None of that is possible on a read-only key, and the
+engine reports `not_armed` or a refusal rather than guessing.
 | Where | Admin portal, your own profile menu, API key. For a reporter key, create a separate administrator with a read-only role and take that admin's key. |
 
 ### The key has no scopes of its own
@@ -380,12 +385,12 @@ subject kinds appear in the code:
 
 | Scope | Subject | Used by | What breaks without it |
 | --- | --- | --- | --- |
-| `https://www.googleapis.com/auth/admin.directory.user` | admin | `getUser`, `suspendUser`, `deleteUser`, `listUsers` | No Google account can be read, suspended or deleted, and a leaver keeps a working mailbox. |
+| `https://www.googleapis.com/auth/admin.directory.user` | admin | `getUser`, `suspendUser`, `deleteUser`, `listUsers`, `getMailboxState`, `moveToOrgUnit` | No Google account can be read, suspended, deleted or moved, a leaver keeps a working mailbox, and a starter's welcome cannot wait for a mailbox it cannot see. |
 | `https://www.googleapis.com/auth/admin.directory.user.readonly` | admin | `resolveRecipient`, `transferDrive` | The person the leaver files are handed to cannot be resolved, so the transfer has no recipient and the row parks. |
-| `https://www.googleapis.com/auth/apps.licensing` | admin | `listLicences`, `revokeLicence` | Paid seats are never released, so a leaver is billed for indefinitely. |
+| `https://www.googleapis.com/auth/apps.licensing` | admin | `listLicences`, `revokeLicence`, `assignLicence` | Paid seats are never released, so a leaver is billed for indefinitely; a starter gets no licence and so no mailbox. |
 | `https://www.googleapis.com/auth/admin.datatransfer` | admin | `transferDrive`, `getTransferStatus` | The leaver files are never handed over, and deleting the account destroys them. |
 | `https://www.googleapis.com/auth/gmail.settings.basic` | **leaver** | `setVacationResponder` | No auto-reply is set, so mail sent to the leaver is accepted and then lost when the account goes. |
-| `https://www.googleapis.com/auth/gmail.send` | **sender mailbox** | `sendMail` | No notification leaves the toolkit, so nobody is told what happened. |
+| `https://www.googleapis.com/auth/gmail.send` | **sender mailbox** | `sendMail` | No notification leaves the toolkit, so nobody is told what happened, and no starter receives a temporary password. |
 
 Both `admin.directory.user` and its `.readonly` sibling are listed on purpose.
 The recipient lookup and the transfer both read the directory, and a deployment

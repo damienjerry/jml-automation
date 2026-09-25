@@ -182,6 +182,9 @@ export async function runDemo(opts: DemoOptions = {}): Promise<DemoResult> {
     store,
     state,
     idp: providers.identity,
+    // A fixed, obviously fake password, so the demo's output is the same every
+    // time and nobody mistakes it for a credential.
+    joiner: { idp: providers.identity, google: providers.google, passwordGenerator: () => 'DEMO-ONLY-NOT-A-PASSWORD' },
     devices: providers.devices,
     google: providers.google,
     notifier,
@@ -274,6 +277,23 @@ export async function runDemo(opts: DemoOptions = {}): Promise<DemoResult> {
     'demo-delete-2',
   )
 
+  const starter = fixture.people.find((person) => isFutureStarter(person, demoToday)) ?? null
+  if (starter && starter.startDate) {
+    // Three working days before the start date is when the temporary
+    // password has to reach the manager. The lead is counted in working days
+    // on the demo calendar, which has no holidays.
+    await step(
+      'The next starter',
+      'A staged identity account exists for ' + starter.displayName + ' and nobody has signed into it. Three\n' +
+        'working days before their start the engine sets a temporary password with a forced reset,\n' +
+        'licenses the Google account, waits for the mailbox, moves the account into the managed\n' +
+        'organisational unit, and only then sends the welcome to the work address. The password\n' +
+        'goes to the personal address, the manager and the IT mailbox, and appears nowhere else.',
+      addDays(starter.startDate, -5),
+      'demo-starter',
+    )
+  }
+
   const ok = reports.every((report) => report.ok)
   say('')
   say(ok ? 'The demo finished with every run ok.' : 'The demo finished with at least one run not ok.')
@@ -315,7 +335,7 @@ function demoConfigDocument(fixturePath: string, fixture: HrisFixtureFile): Reco
       itTeamSignature: 'The IT team',
     },
     mode: 'armed',
-    armedActions: ['suspend', 'autoreply', 'licence', 'transfer', 'google_suspend', 'delete'],
+    armedActions: ['suspend', 'autoreply', 'licence', 'transfer', 'google_suspend', 'delete', 'activate', 'joiner_licence', 'ou_move', 'welcome'],
     mail: { senderMailbox: 'it-noreply@example.com', managerOnDay0: true },
     hris: {
       adapter: 'fixture',
@@ -328,6 +348,14 @@ function demoConfigDocument(fixturePath: string, fixture: HrisFixtureFile): Reco
     store: { adapter: 'memory' },
     identity: { jumpcloud: { apiKey: 'env:JUMPCLOUD_API_KEY' } },
     google: { serviceAccountJson: 'env:GOOGLE_SERVICE_ACCOUNT_JSON', adminEmail: 'admin@example.com' },
+    joiner: {
+      leadWorkingDays: 3,
+      targetOrgUnitPath: '/Managed users',
+      licence: { productId: 'Example-Product', skuId: 'example-standard' },
+      // No real wait: the fake mailbox appears after a couple of reads.
+      mailboxPoll: { tries: 4, intervalMs: 0 },
+      itSupportEmail: 'it-support@example.com',
+    },
     notify: { adapters: ['console'] },
     // A salted hash would make the demo's own audit counts unreadable, and
     // nothing here is a real address.
@@ -380,11 +408,19 @@ function seedFrom(fixture: HrisFixtureFile, owner: HrisFixtureFile['people'][num
       email: person.primaryEmail,
       displayName: person.displayName,
       devices: owner && person.hrisId === owner.hrisId ? [DEMO_DEVICE_ID] : [],
+      // A future starter is what the HR integration leaves behind: a staged
+      // account nobody has signed into. Everybody else is in use.
+      ...(isFutureStarter(person, fixture.demoToday ?? '') ? { activated: false } : {}),
     })),
     google: withMailbox.map((person) => ({
       id: 'goog-' + person.hrisId,
       email: person.primaryEmail,
-      licences: [{ productId: 'Example-Product', skuId: 'example-standard' }],
+      // The starter's Google account exists with no licence and no mailbox,
+      // which is how a directory integration creates one. The mailbox appears
+      // a couple of reads after licensing, like the real thing.
+      ...(isFutureStarter(person, fixture.demoToday ?? '')
+        ? { licences: [], mailboxReady: false, mailboxReadyAfterReads: 2, orgUnitPath: '/' }
+        : { licences: [{ productId: 'Example-Product', skuId: 'example-standard' }], mailboxReady: true }),
     })),
     devices: [
       {
@@ -397,6 +433,10 @@ function seedFrom(fixture: HrisFixtureFile, owner: HrisFixtureFile['people'][num
       },
     ],
   }
+}
+
+function isFutureStarter(person: HrisFixtureFile['people'][number], demoToday: string): boolean {
+  return typeof person.startDate === 'string' && person.startDate > demoToday
 }
 
 function header(

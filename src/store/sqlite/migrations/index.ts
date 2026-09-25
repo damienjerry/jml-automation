@@ -16,6 +16,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { migration001 } from './001-people.ts'
 import { migration002 } from './002-last-working-day.ts'
 import { migration003 } from './003-in-scope.ts'
+import { migration004 } from './004-personal-email.ts'
 
 export interface Migration {
   /** Stable and never reused. Recorded in `schema_migrations`. */
@@ -24,4 +25,4 @@ export interface Migration {
   up(db: DatabaseSync): void
 }
 
-export const MIGRATIONS: readonly Migration[] = [migration001, migration002, migration003]
+export const MIGRATIONS: readonly Migration[] = [migration001, migration002, migration003, migration004]

@@ -59,6 +59,35 @@ export interface IdentityConnector {
   testConnection(): Promise<ConnectionCheck>
 }
 
+/** What the identity provider says about whether an account has ever been used. */
+export interface ActivationState {
+  /** The person has set their own password at least once. */
+  activated: boolean
+  mfaConfigured: boolean
+  suspended: boolean
+  /** A reset is pending: the next sign-in must change the password. */
+  passwordExpired: boolean
+}
+
+/**
+ * Bringing a staged account to life.
+ *
+ * Two rules, both from incidents. NEVER reset the password of an account
+ * somebody is using: a staged account has never been activated and has no
+ * MFA, and that is the whole test, because a mis-entered HR field once queued
+ * a working colleague for "activation". And a forced reset is a separate
+ * action AFTER the password is set: setting a password clears the flag, and
+ * the flag is not writable on the account itself, so a workflow that expires
+ * first and sets second produces a password nobody has to change.
+ */
+export interface IdentityActivationConnector {
+  getActivationState(id: string): Promise<ActivationState | null>
+  /** Read the whole object, merge, write it back. A partial write resets unsent fields. */
+  setTemporaryPassword(id: string, password: string): Promise<Outcome>
+  /** Verified only when a fresh read shows the reset pending. */
+  expirePassword(id: string): Promise<Outcome>
+}
+
 /** Devices, kept separate because not every identity provider manages them. */
 export interface DeviceConnector {
   /**
@@ -118,6 +147,27 @@ export interface CommandReceipt {
    * the leak and still finishes the others.
    */
   warnings?: string[]
+}
+
+/** What a Google account looks like from the provisioning side. */
+export interface MailboxState {
+  exists: boolean
+  /**
+   * False until Workspace has finished building the mailbox after a licence
+   * is assigned. A welcome email sent before this bounces, which is how a new
+   * starter's first message from IT was once a delivery failure.
+   */
+  mailboxReady: boolean
+  orgUnitPath: string | null
+  suspended: boolean
+}
+
+export interface GoogleProvisioningConnector {
+  getMailboxState(email: string): Promise<MailboxState | null>
+  /** 412 from the provider means already licensed and is reported as alreadyAbsent. */
+  assignLicence(email: string, productId: string, skuId: string): Promise<Outcome>
+  /** Read back after the write; a 200 is not an effect. */
+  moveToOrgUnit(email: string, orgUnitPath: string): Promise<Outcome>
 }
 
 export interface GoogleWorkspaceConnector {

@@ -13,7 +13,7 @@
 
 import type { HttpClient } from '../../core/http.ts'
 import type { ConnectionCheck } from '../../hris/types.ts'
-import type { GoogleWorkspaceConnector, ProviderUser } from '../types.ts'
+import type { GoogleProvisioningConnector, GoogleWorkspaceConnector, ProviderUser } from '../types.ts'
 import {
   createGoogleAuth,
   subjectFor,
@@ -21,9 +21,9 @@ import {
   type GoogleConnectorConfig,
   type GoogleCtx,
 } from './auth.ts'
-import { deleteUser, getUser, listUsers, resolveUserId, suspendUser } from './directory.ts'
+import { deleteUser, getUser, listUsers, resolveUserId, suspendUser, getMailboxState, moveToOrgUnit } from './directory.ts'
 import { sendMail, setVacationResponder } from './gmail.ts'
-import { listLicences, revokeLicence, type LicenceAssignment } from './licensing.ts'
+import { listLicences, revokeLicence, type LicenceAssignment, assignLicence } from './licensing.ts'
 import { getTransferStatus, transferDrive } from './transfer.ts'
 import { REQUIRED_SCOPE_USES, type GoogleScope } from './scopes.ts'
 
@@ -56,7 +56,7 @@ export interface ScopeReport {
 }
 
 /** Extends the shared contract with the Google-specific reads. */
-export interface GoogleConnector extends GoogleWorkspaceConnector {
+export interface GoogleConnector extends GoogleWorkspaceConnector, GoogleProvisioningConnector {
   /** Every account in the tenancy, listed by customer. */
   listUsers(): Promise<{ users: ProviderUser[]; complete: boolean }>
   /** The account's Google id, which the transfer API needs. */
@@ -105,6 +105,10 @@ export function createGoogleConnector(
     listLicenceAssignments: (email: string) => listLicences(ctx, email),
     revokeLicence: (email: string, productId: string, skuId: string) =>
       revokeLicence(ctx, email, productId, skuId),
+
+    getMailboxState: (email: string) => getMailboxState(ctx, email),
+    moveToOrgUnit: (email: string, orgUnitPath: string) => moveToOrgUnit(ctx, email, orgUnitPath),
+    assignLicence: (email: string, productId: string, skuId: string) => assignLicence(ctx, email, productId, skuId),
 
     transferDrive: (fromEmail: string, toEmail: string) => transferDrive(ctx, fromEmail, toEmail),
     getTransferStatus: (transferId: string) => getTransferStatus(ctx, transferId),

@@ -8,9 +8,16 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 First release. Phase 1 is the leaver path: read the HR system, keep a people
 store, and on the leaving date suspend access, hand over files, and delete
-accounts. Nothing is armed by default.
+accounts. Phase 1b adds the joiner half: activate the staged account, license
+it, wait for the mailbox, and send the messages. Nothing is armed by default.
 
 ### Added
+
+**The joiner half.** Three working days before a start date, a temporary
+password with a forced reset on the staged identity account, a licence, a
+poll until the mailbox exists, an organisational unit move, and the password
+and welcome messages. Four separate arming actions. An account anybody has
+ever used is refused, not reset. See docs/state-machine.md.
 
 **The leaver lifecycle.** Five statuses assigned in one place
 ([src/core/transitions.ts](src/core/transitions.ts)), with `departed`
@@ -158,7 +165,7 @@ Read this before arming anything.
   earlier private use, not from this code**, which does not ship those
   adapters.
 
-Test coverage is not evidence about your tenant. 1361 tests across 137 files
+Test coverage is not evidence about your tenant. 1391 tests across 143 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/jml-toolkit/jml-toolkit/releases/tag/v0.1.0
