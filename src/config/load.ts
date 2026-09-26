@@ -142,7 +142,10 @@ export async function loadConfig(opts: LoadOptions = {}): Promise<LoadedConfig> 
   }
 
   const wantProviders = typeof opts.providerSecrets === 'function' ? opts.providerSecrets(config) : opts.providerSecrets !== false
-  const secretPaths = collectSecretFields(config).filter((f) => wantProviders || !PROVIDER_SECRET_PATHS.includes(f.path))
+  // A Google Sheet as the HR source is read with the Google key, so that key
+  // is needed even by the HR-only commands.
+  const hrNeeds = config.hris.adapter === 'sheet' ? ['google.serviceAccountJson'] : []
+  const secretPaths = collectSecretFields(config).filter((f) => wantProviders || hrNeeds.includes(f.path) || !PROVIDER_SECRET_PATHS.includes(f.path))
   const resolved = new Map<string, SecretHandle>()
   if (!opts.allowMissingSecrets) {
     const providers = opts.providers ?? defaultProviders(env)

@@ -112,9 +112,11 @@
           "type": "string",
           "enum": [
             "hibob",
-            "fixture"
+            "fixture",
+            "csv",
+            "sheet"
           ],
-          "description": "Which HR system to read."
+          "description": "Which HR source to read: HiBob, a JSON fixture, a CSV file, or a Google Sheet shared with the service account."
         },
         "minPlausibleHeadcount": {
           "type": "integer",
@@ -179,6 +181,172 @@
           ],
           "additionalProperties": false,
           "description": "Required when adapter is fixture."
+        },
+        "table": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The CSV file, for adapter csv.",
+              "default": null
+            },
+            "spreadsheetId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The sheet id from its URL, for adapter sheet. Share the sheet with the service account address as a viewer.",
+              "default": null
+            },
+            "range": {
+              "type": "string",
+              "description": "The tab name, or an A1 range such as People!A1:Z. The first row is the headings.",
+              "default": "People"
+            },
+            "dateFormat": {
+              "type": "string",
+              "enum": [
+                "YYYY-MM-DD",
+                "DD/MM/YYYY",
+                "MM/DD/YYYY"
+              ],
+              "description": "The one format every date in the table is in. A value in any other format refuses the whole read.",
+              "default": "YYYY-MM-DD"
+            },
+            "maxAgeHours": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "description": "Refuse a table last changed longer ago than this. For a sheet it needs the read-only Drive scope as the service account.",
+              "default": null
+            },
+            "inScopeValues": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Values of the inScope column that mean IT provisions for this person.",
+              "default": [
+                "yes",
+                "y",
+                "true",
+                "1"
+              ]
+            },
+            "columns": {
+              "type": "object",
+              "properties": {
+                "hrisId": {
+                  "type": "string",
+                  "description": "A stable id that never changes, even when a name or address does.",
+                  "default": "Employee ID"
+                },
+                "primaryEmail": {
+                  "type": "string",
+                  "description": "The work address, as the account was created.",
+                  "default": "Work email"
+                },
+                "firstName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "First name.",
+                  "default": "First name"
+                },
+                "lastName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Last name.",
+                  "default": "Last name"
+                },
+                "displayName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Full name, if the table has one column for it.",
+                  "default": null
+                },
+                "department": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Department.",
+                  "default": "Department"
+                },
+                "jobTitle": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Job title.",
+                  "default": "Job title"
+                },
+                "managerEmail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The manager's work address: files go to them on day 6.",
+                  "default": "Manager email"
+                },
+                "personalEmail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Where a starter temporary password goes.",
+                  "default": "Personal email"
+                },
+                "startDate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "First day.",
+                  "default": "Start date"
+                },
+                "lastWorkingDay": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Last day in. Access stops the day after. A leaver keeps their row with this filled in.",
+                  "default": "Last working day"
+                },
+                "terminationDate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Contract end date, if different from the last working day.",
+                  "default": null
+                },
+                "inScope": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Whether IT provisions accounts for this person. Blank or unmapped means yes.",
+                  "default": null
+                }
+              },
+              "required": [],
+              "additionalProperties": false,
+              "default": {}
+            }
+          },
+          "required": [],
+          "additionalProperties": false,
+          "description": "Required when adapter is csv or sheet."
         }
       },
       "required": [

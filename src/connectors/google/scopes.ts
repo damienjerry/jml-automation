@@ -143,19 +143,19 @@ export const SCOPE_USES: readonly ScopeUse[] = [
     key: 'spreadsheetsReadonly',
     scope: GOOGLE_SCOPES.spreadsheetsReadonly,
     subject: 'self',
-    methods: ['readSharedSpreadsheet'],
+    methods: ['SheetHrisAdapter.fetchAll'],
     required: false,
     breaksWithout:
-      'Nothing in the leaver path. Only an optional read of a spreadsheet shared with the service account.',
+      'Only for hris.adapter sheet: the people sheet cannot be read, so no run takes place.',
   },
   {
     key: 'driveReadonly',
     scope: GOOGLE_SCOPES.driveReadonly,
     subject: 'self',
-    methods: ['readSharedFile'],
+    methods: ['SheetHrisAdapter.fetchAll'],
     required: false,
     breaksWithout:
-      'Nothing in the leaver path. Only an optional read of a file shared with the service account.',
+      'Only for hris.adapter sheet with hris.table.maxAgeHours set: the sheet age cannot be checked, so the read is refused.',
   },
 ]
 

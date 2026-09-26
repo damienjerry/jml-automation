@@ -170,9 +170,56 @@ const HiBobSchema = z
   })
   .strict()
 
+const column = (env: string, fallback: string | null, text: string) =>
+  z.string().nullable().default(fallback).describe(meta(env, text))
+
+const TableSchema = z
+  .object({
+    path: z.string().nullable().default(null).describe(meta('HRIS_TABLE_PATH', 'The CSV file, for adapter csv.')),
+    spreadsheetId: z.string().nullable().default(null).describe(meta('HRIS_TABLE_SPREADSHEET_ID', 'The sheet id from its URL, for adapter sheet. Share the sheet with the service account address as a viewer.')),
+    range: z.string().default('People').describe(meta('HRIS_TABLE_RANGE', 'The tab name, or an A1 range such as People!A1:Z. The first row is the headings.')),
+    dateFormat: z
+      .enum(['YYYY-MM-DD', 'DD/MM/YYYY', 'MM/DD/YYYY'])
+      .default('YYYY-MM-DD')
+      .describe(meta('HRIS_TABLE_DATE_FORMAT', 'The one format every date in the table is in. A value in any other format refuses the whole read.')),
+    maxAgeHours: z
+      .number()
+      .positive()
+      .nullable()
+      .default(null)
+      .describe(meta('HRIS_TABLE_MAX_AGE_HOURS', 'Refuse a table last changed longer ago than this. For a sheet it needs the read-only Drive scope as the service account.')),
+    inScopeValues: z
+      // Coerced, because YAML reads an unquoted true or 1 as a boolean or a
+      // number, and the generated file writes the defaults unquoted.
+      .array(z.coerce.string())
+      .default(['yes', 'y', 'true', '1'])
+      .describe(meta('', 'Values of the inScope column that mean IT provisions for this person.')),
+    columns: z
+      .object({
+        hrisId: z.string().default('Employee ID').describe(meta('', 'A stable id that never changes, even when a name or address does.')),
+        primaryEmail: z.string().default('Work email').describe(meta('', 'The work address, as the account was created.')),
+        firstName: column('', 'First name', 'First name.'),
+        lastName: column('', 'Last name', 'Last name.'),
+        displayName: column('', null, 'Full name, if the table has one column for it.'),
+        department: column('', 'Department', 'Department.'),
+        jobTitle: column('', 'Job title', 'Job title.'),
+        managerEmail: column('', 'Manager email', "The manager's work address: files go to them on day 6."),
+        personalEmail: column('', 'Personal email', 'Where a starter temporary password goes.'),
+        startDate: column('', 'Start date', 'First day.'),
+        lastWorkingDay: column('', 'Last working day', 'Last day in. Access stops the day after. A leaver keeps their row with this filled in.'),
+        terminationDate: column('', null, 'Contract end date, if different from the last working day.'),
+        inScope: column('', null, 'Whether IT provisions accounts for this person. Blank or unmapped means yes.'),
+      })
+      .strict()
+      .default({}),
+  })
+  .strict()
+
 const HrisSchema = z
   .object({
-    adapter: z.enum(['hibob', 'fixture']).describe(meta('HRIS_ADAPTER', 'Which HR system to read.')),
+    adapter: z
+      .enum(['hibob', 'fixture', 'csv', 'sheet'])
+      .describe(meta('HRIS_ADAPTER', 'Which HR source to read: HiBob, a JSON fixture, a CSV file, or a Google Sheet shared with the service account.')),
     minPlausibleHeadcount: z
       .number()
       .int()
@@ -198,6 +245,7 @@ const HrisSchema = z
       .strict()
       .optional()
       .describe(meta('', 'Required when adapter is fixture.')),
+    table: TableSchema.optional().describe(meta('', 'Required when adapter is csv or sheet.')),
   })
   .strict()
 
@@ -775,6 +823,12 @@ export const ALL_ARMED_ACTIONS: readonly ArmedAction[] = ARMED_ACTIONS
 
 /** The schema to parse with. Adds the cross-field rules. */
 export const ConfigSchema = ConfigObject.superRefine((cfg, ctx) => {
+  if (cfg.hris.adapter === 'csv' && !cfg.hris.table?.path) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['hris', 'table', 'path'], message: 'hris.adapter is csv, so hris.table.path must name the file.' })
+  }
+  if (cfg.hris.adapter === 'sheet' && !cfg.hris.table?.spreadsheetId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['hris', 'table', 'spreadsheetId'], message: 'hris.adapter is sheet, so hris.table.spreadsheetId must name the sheet.' })
+  }
   if (cfg.identity.adapter === 'jumpcloud' && !cfg.identity.jumpcloud) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['identity', 'jumpcloud'], message: 'identity.adapter is jumpcloud, so identity.jumpcloud (at least its apiKey) is required. For Google Workspace alone, set identity.adapter: none.' })
   }

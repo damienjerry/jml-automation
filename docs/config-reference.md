@@ -54,7 +54,7 @@ not exist.
 | `mail.senderMailbox` | `MAIL_SENDER_MAILBOX` | string | **required** | - | The mailbox outbound mail is sent AS. Delegated authority is granted for this address specifically. |
 | `mail.bcc` | `MAIL_BCC` | string[] | `[]` | - | Addresses blind-copied on every notification. |
 | `mail.managerOnDay0` | `MAIL_MANAGER_ON_DAY0` | boolean | `true` | - | Tell the leaver's manager on day 0 that offboarding has started. |
-| `hris.adapter` | `HRIS_ADAPTER` | hibob \| fixture | **required** | - | Which HR system to read. |
+| `hris.adapter` | `HRIS_ADAPTER` | hibob \| fixture \| csv \| sheet | **required** | - | Which HR source to read: HiBob, a JSON fixture, a CSV file, or a Google Sheet shared with the service account. |
 | `hris.minPlausibleHeadcount` | `HRIS_MIN_PLAUSIBLE_HEADCOUNT` | integer | **required** | - | REQUIRED, no default. A snapshot smaller than this aborts the run. A truncated read looks exactly like a company where everybody left, and the cost of that mistake is suspending the whole staff, so an adopter states their own floor rather than inheriting a guess. |
 | `hris.exitRenamePatterns` | `HRIS_EXIT_RENAME_PATTERNS` | string[] | `["\\+(exit\|leaver)@"]` | - | Regular expressions matching the address an HR system renames a leaver to. A match means the address is an alias on the same person, never a new identity. |
 | `hris.hibob.baseUrl` | `HIBOB_BASE_URL` | string | `"https://api.hibob.com/v1"` | - | HR API base URL. |
@@ -63,6 +63,25 @@ not exist.
 | `hris.hibob.pageSize` | `HIBOB_PAGE_SIZE` | integer | `200` | - | Page size for the paged read. |
 | `hris.hibob.fields` | - | value | `{}` | - | Where each field lives in the HR payload. |
 | `hris.fixture.path` | `HRIS_FIXTURE_PATH` | string | **required** | - | JSON file holding the snapshot. |
+| `hris.table.path` | `HRIS_TABLE_PATH` | string \| null | `null` | - | The CSV file, for adapter csv. |
+| `hris.table.spreadsheetId` | `HRIS_TABLE_SPREADSHEET_ID` | string \| null | `null` | - | The sheet id from its URL, for adapter sheet. Share the sheet with the service account address as a viewer. |
+| `hris.table.range` | `HRIS_TABLE_RANGE` | string | `People` | - | The tab name, or an A1 range such as People!A1:Z. The first row is the headings. |
+| `hris.table.dateFormat` | `HRIS_TABLE_DATE_FORMAT` | YYYY-MM-DD \| DD/MM/YYYY \| MM/DD/YYYY | `YYYY-MM-DD` | - | The one format every date in the table is in. A value in any other format refuses the whole read. |
+| `hris.table.maxAgeHours` | `HRIS_TABLE_MAX_AGE_HOURS` | integer \| null | `null` | - | Refuse a table last changed longer ago than this. For a sheet it needs the read-only Drive scope as the service account. |
+| `hris.table.inScopeValues` | - | string[] | `[yes, y, true, 1]` | - | Values of the inScope column that mean IT provisions for this person. |
+| `hris.table.columns.hrisId` | - | string | `"Employee ID"` | - | A stable id that never changes, even when a name or address does. |
+| `hris.table.columns.primaryEmail` | - | string | `"Work email"` | - | The work address, as the account was created. |
+| `hris.table.columns.firstName` | - | string \| null | `"First name"` | - | First name. |
+| `hris.table.columns.lastName` | - | string \| null | `"Last name"` | - | Last name. |
+| `hris.table.columns.displayName` | - | string \| null | `null` | - | Full name, if the table has one column for it. |
+| `hris.table.columns.department` | - | string \| null | `Department` | - | Department. |
+| `hris.table.columns.jobTitle` | - | string \| null | `"Job title"` | - | Job title. |
+| `hris.table.columns.managerEmail` | - | string \| null | `"Manager email"` | - | The manager's work address: files go to them on day 6. |
+| `hris.table.columns.personalEmail` | - | string \| null | `"Personal email"` | - | Where a starter temporary password goes. |
+| `hris.table.columns.startDate` | - | string \| null | `"Start date"` | - | First day. |
+| `hris.table.columns.lastWorkingDay` | - | string \| null | `"Last working day"` | - | Last day in. Access stops the day after. A leaver keeps their row with this filled in. |
+| `hris.table.columns.terminationDate` | - | string \| null | `null` | - | Contract end date, if different from the last working day. |
+| `hris.table.columns.inScope` | - | string \| null | `null` | - | Whether IT provisions accounts for this person. Blank or unmapped means yes. |
 | `store.adapter` (sqlite) | `STORE_ADAPTER` | literal "sqlite" | **required** | - | Local SQLite: the default people store. |
 | `store.path` (sqlite) | `STORE_SQLITE_PATH` | string | `./data/jml.sqlite` | - | Database file. |
 | `store.adapter` (notion) | - | literal "notion" | **required** | - | One Notion database as the people store. |

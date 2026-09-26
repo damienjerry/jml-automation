@@ -35,7 +35,7 @@ mail:
   managerOnDay0: true
 
 hris:
-  # Which HR system to read.
+  # Which HR source to read: HiBob, a JSON fixture, a CSV file, or a Google Sheet shared with the service account.
   adapter: fixture
   # REQUIRED, no default. A snapshot smaller than this aborts the run. A truncated read looks exactly like a company where everybody left, and the cost of that mistake is suspending the whole staff, so an adopter states their own floor rather than inheriting a guess.
   minPlausibleHeadcount: 25
@@ -57,6 +57,47 @@ hris:
   fixture:
     # JSON file holding the snapshot.
     path: ./src/cli/fixtures/demo.json
+  # Required when adapter is csv or sheet.
+  table:
+    # The CSV file, for adapter csv.
+    path: null
+    # The sheet id from its URL, for adapter sheet. Share the sheet with the service account address as a viewer.
+    spreadsheetId: null
+    # The tab name, or an A1 range such as People!A1:Z. The first row is the headings.
+    range: People
+    # The one format every date in the table is in. A value in any other format refuses the whole read.
+    dateFormat: YYYY-MM-DD
+    # Refuse a table last changed longer ago than this. For a sheet it needs the read-only Drive scope as the service account.
+    maxAgeHours: null
+    # Values of the inScope column that mean IT provisions for this person.
+    inScopeValues: [yes, y, true, 1]
+    columns:
+      # A stable id that never changes, even when a name or address does.
+      hrisId: "Employee ID"
+      # The work address, as the account was created.
+      primaryEmail: "Work email"
+      # First name.
+      firstName: "First name"
+      # Last name.
+      lastName: "Last name"
+      # Full name, if the table has one column for it.
+      displayName: null
+      # Department.
+      department: Department
+      # Job title.
+      jobTitle: "Job title"
+      # The manager's work address: files go to them on day 6.
+      managerEmail: "Manager email"
+      # Where a starter temporary password goes.
+      personalEmail: "Personal email"
+      # First day.
+      startDate: "Start date"
+      # Last day in. Access stops the day after. A leaver keeps their row with this filled in.
+      lastWorkingDay: "Last working day"
+      # Contract end date, if different from the last working day.
+      terminationDate: null
+      # Whether IT provisions accounts for this person. Blank or unmapped means yes.
+      inScope: null
 
 # Where person records live.
 store:

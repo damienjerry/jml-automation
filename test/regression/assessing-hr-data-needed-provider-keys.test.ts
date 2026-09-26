@@ -22,7 +22,7 @@ import { main } from '../../src/cli/index.ts'
 
 const FIXTURE = resolve('src/cli/fixtures/demo.json')
 
-async function setUp(notify: string[] = ['console']): Promise<{ config: string; env: Record<string, string> }> {
+async function setUp(notify: string[] = ['console'], hris?: Record<string, unknown>): Promise<{ config: string; env: Record<string, string> }> {
   const dir = await mkdtemp(join(tmpdir(), 'jml-report-only-'))
   const quiet = { out: () => {}, err: () => {}, env: {}, cwd: dir, setProcessExitCode: false }
   expect(await main(['init', '--dir', dir], quiet)).toBe(0)
@@ -31,13 +31,14 @@ async function setUp(notify: string[] = ['console']): Promise<{ config: string; 
     const m = /^([A-Z0-9_]+)=(.*)$/.exec(line)
     if (m?.[1] && m[2]) env[m[1]] = m[2]
   }
-  type Doc = { hris: { fixture: { path: string }; minPlausibleHeadcount: number }; store: { path: string }; audit: { jsonl: { dir: string } }; notify: { adapters: string[]; email?: Record<string, unknown> } }
+  type Doc = { hris: { fixture: { path: string }; minPlausibleHeadcount: number; [key: string]: unknown }; store: { path: string }; audit: { jsonl: { dir: string } }; notify: { adapters: string[]; email?: Record<string, unknown> } }
   const doc = parseYaml(await readFile(join(dir, 'jml.config.yaml'), 'utf8')) as Doc
   doc.hris.fixture.path = FIXTURE
   doc.hris.minPlausibleHeadcount = 1
   doc.store.path = join(dir, 'jml.sqlite')
   doc.audit.jsonl.dir = join(dir, 'audit')
   doc.notify.adapters = notify
+  if (hris) Object.assign(doc.hris, hris)
   if (notify.includes('email')) doc.notify.email = { ...(doc.notify.email ?? {}), itMailbox: 'it@example.com' }
   const config = join(dir, 'jml.config.yaml')
   await writeFile(config, stringify(doc))
@@ -60,6 +61,14 @@ describe('assessing HR data before granting provider access', () => {
       const r = await jml([...args, '--config', config], env)
       expect(r.err).not.toMatch(/JUMPCLOUD_API_KEY|GOOGLE_SERVICE_ACCOUNT_JSON/)
       expect([args.join(' '), r.code]).toEqual([args.join(' '), 0])
+    }
+  })
+
+  it('a CSV of people works the same way, with no key of any kind', async () => {
+    const { config, env } = await setUp(['console'], { adapter: 'csv', table: { path: resolve('examples/people.csv') } })
+    for (const args of [['store', 'bootstrap', '--armed'], ['sync', '--armed'], ['detect'], ['store', 'verify']]) {
+      const r = await jml([...args, '--config', config], env)
+      expect([args.join(' '), r.code, r.err]).toEqual([args.join(' '), 0, expect.not.stringMatching(/JUMPCLOUD|GOOGLE_SERVICE/)])
     }
   })
 

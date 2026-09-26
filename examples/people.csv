@@ -1,0 +1,4 @@
+Employee ID,First name,Last name,Work email,Personal email,Department,Job title,Manager email,Start date,Last working day
+E001,Alex,Morgan,alex.morgan@example.com,alex.morgan.home@example.net,Operations,Operations Manager,,2024-02-05,
+E002,Robin,Ellis,robin.ellis@example.com,robin.ellis.home@example.net,Finance,Accountant,alex.morgan@example.com,2024-06-10,2026-09-25
+E003,Sam,Rivera,sam.rivera@example.com,sam.rivera.home@example.net,Operations,Coordinator,alex.morgan@example.com,2026-10-05,

@@ -37,6 +37,9 @@ import { JumpCloudCommands } from '../../connectors/jumpcloud/commands.ts'
 import { JumpCloudDevices } from '../../connectors/jumpcloud/devices.ts'
 import { JumpCloudUsers } from '../../connectors/jumpcloud/users.ts'
 import { NoIdentityProvider } from '../../connectors/google/identity.ts'
+import { createGoogleAuth } from '../../connectors/google/index.ts'
+import { CsvHrisAdapter } from '../../hris/csv.ts'
+import { SheetHrisAdapter } from '../../hris/sheet.ts'
 import type { CommandTargeting, IdentityConnector, IdentityActivationConnector } from '../../connectors/types.ts'
 import type { DeviceOps } from '../../engine/device/preflight.ts'
 import { HiBobAdapter } from '../../hris/hibob/adapter.ts'
@@ -259,6 +262,24 @@ function buildAudit(cfg: JmlConfig, secrets: SecretRegistry, clock: Clock, http:
 }
 
 function buildHris(cfg: JmlConfig, secrets: SecretRegistry, http: HttpClient): HrisAdapter {
+  if ((cfg.hris.adapter === 'csv' || cfg.hris.adapter === 'sheet') && cfg.hris.table) {
+    const table = cfg.hris.table
+    const shared = {
+      columns: table.columns,
+      dateFormat: table.dateFormat,
+      inScopeValues: table.inScopeValues,
+      minPlausibleHeadcount: cfg.hris.minPlausibleHeadcount,
+      maxAgeHours: table.maxAgeHours,
+    }
+    if (cfg.hris.adapter === 'csv') return new CsvHrisAdapter({ ...shared, path: table.path ?? '' })
+    return new SheetHrisAdapter({
+      ...shared,
+      spreadsheetId: table.spreadsheetId ?? '',
+      range: table.range,
+      http,
+      auth: createGoogleAuth(secrets.get('google.serviceAccountJson'), { http }),
+    })
+  }
   if (cfg.hris.adapter === 'fixture') {
     return new FixtureHrisAdapter({
       path: cfg.hris.fixture?.path ?? '',
