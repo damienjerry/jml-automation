@@ -78,6 +78,7 @@ The actions to look for, in the order they happen:
 | `leaver.day0.suspend_idp` | the provider user id | the suspension on the identity provider |
 | `leaver.day0.revoke_licence` | `skuId`, one row per seat | re-assign each of those SKUs |
 | `leaver.day0.set_autoreply` | - | remove the vacation responder |
+| `leaver.day0.signout_google` | - | nothing to restore: the person signs in again and re-authorises any third-party app |
 | `leaver.day6.transfer_drive` | `recipient`, then a `transferId` | file ownership, which is now the recipient's |
 | `leaver.day6.suspend_google` | - | the suspension on the Google account |
 | `leaver.day7.delete_idp.snapshot` | `userId`, `suspended`, `providerState`, `externalIds` | nothing; this is the evidence row |

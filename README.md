@@ -88,10 +88,11 @@ back, rather than reporting that a call returned 200:
 
 ```
   Robin Ellis     day0    terminated -> offboarding
-      revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
+      revoke_licence=done(verified) set_autoreply=done(verified) signout_google=done(verified) suspend_idp=done(verified)
       identity provider account suspended, read back
       auto-reply set on the mailbox
       revoked 1 licence(s): example-standard
+      sign-out of every Google session requested (Google cannot confirm it), and 0 third-party app grant(s) revoked, read back as none left
 ```
 
 On day 7 the accounts are deleted. Two of the three go. The third is **refused**, because a
@@ -201,7 +202,7 @@ disk. `jml.config.yaml` itself never holds a credential in either case.
 | Sync | every run | Read the HR system, create and update rows, derive `hired`, `active` or `terminated`. Never touches a row the offboarding engine owns. |
 | Detect | every run | Announce joiners and leavers, and only when the set has changed. |
 | Activate | three working days before a start date, configurable | Set a temporary password with a forced reset on the staged identity account, license the Google account, wait for the mailbox, move the account into the managed organisational unit, then send the password to the personal address and the manager and the welcome to the work address. Never touches an account somebody is already using. |
-| Day 0 | the day the HR system drops somebody from the employed set | Suspend the identity provider account, set the mailbox auto-reply, revoke paid licences, tell the manager and IT. |
+| Day 0 | the day the HR system drops somebody from the employed set | Suspend the identity provider account, set the mailbox auto-reply, revoke paid licences, sign the Google account out of every session and revoke its third-party app grants, tell the manager and IT. |
 | Day 6 | 6 days after suspension, configurable | Hand the files to the manager through the Google data transfer API, then suspend the Google account. |
 | Day 7 | 7 days after suspension, configurable | Delete the identity provider account and the Google account, if every gate opens. Write a tombstone. With `leaver.deletion: never` this day is not scheduled and both accounts are kept. |
 | Ticketing | with the detector, and on a webhook | Ask the manager to raise the starter form when a joiner is detected, remind once the day before, open the activation gate when a ticket on that form arrives, and raise a leaver ticket for the platforms IT does not administer. Suptask is the reference adapter; the interface is four methods. |
@@ -294,7 +295,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 87 files each named for one of them, for example
+  and `test/regression/` holds 88 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.

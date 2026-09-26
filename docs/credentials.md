@@ -20,7 +20,7 @@ Read this before you grant anything on the strength of this page.
 
 | Claim | Status |
 | --- | --- |
-| The toolkit has run end to end against a real tenancy | **No.** The read-only half has, once, before this release: doctor, HR read, directory read, scope probes, Notion read. No write has. The connectors' write paths are driven by scripted fakes in 1548 tests, and the demo runs offline with no credentials. |
+| The toolkit has run end to end against a real tenancy | **No.** The read-only half has, once, before this release: doctor, HR read, directory read, scope probes, Notion read. No write has. The connectors' write paths are driven by scripted fakes in 1558 tests, and the demo runs offline with no credentials. |
 | The two device uninstall scripts have run on real hardware | **No.** `src/engine/device/scripts/manifest.json` records `provenOnHardware: false`, and a handover is refused on any platform whose script carries that flag until you name the machine you canaried it on. See [the canary runbook](runbooks/canary-a-device-script.md). |
 | The n8n bundle has been imported into a running n8n | **Yes, not run.** `jml n8n import` loaded it into the pinned n8n version with every credential bound; no execution has been observed. The import key needs `workflow:list`, `workflow:create` and `credential:create`, nothing more. |
 
@@ -391,6 +391,16 @@ subject kinds appear in the code:
 | `https://www.googleapis.com/auth/admin.datatransfer` | admin | `transferDrive`, `getTransferStatus` | The leaver files are never handed over, and deleting the account destroys them. |
 | `https://www.googleapis.com/auth/gmail.settings.basic` | **leaver** | `setVacationResponder` | No auto-reply is set, so mail sent to the leaver is accepted and then lost when the account goes. |
 | `https://www.googleapis.com/auth/gmail.send` | **sender mailbox** | `sendMail` | No notification leaves the toolkit, so nobody is told what happened, and no starter receives a temporary password. |
+
+### The optional sign-out scope
+
+| Scope | Subject | Used by | What breaks without it |
+| --- | --- | --- | --- |
+| `https://www.googleapis.com/auth/admin.directory.user.security` | admin | `signOutUser` | The leaver's Google sessions and third-party app grants are left in place, so Sign in with Google keeps working until the account is suspended. |
+
+Needed only when `google_signout` is armed, and `jml doctor` probes it only
+then. It lets the service account end a user's sessions and list and delete the
+tokens they have granted to other apps. It cannot read mail or files.
 
 Both `admin.directory.user` and its `.readonly` sibling are listed on purpose.
 The recipient lookup and the transfer both read the directory, and a deployment
@@ -810,6 +820,7 @@ table says what each armed action costs in permission:
 | `suspend` | JumpCloud `PUT /systemusers/{id}` (administrator role) | you want the identity account closed on the leaving date |
 | `autoreply` | Google `gmail.settings.basic`, delegated for **ordinary mailboxes** | you want mail to the leaver answered rather than accepted and lost |
 | `licence` | Google `apps.licensing` | you want paid seats released. Set `leaver.revokeLicences` to a SKU list to narrow what is touched. |
+| `google_signout` | Google `admin.directory.user.security` | you want the leaver signed out of Google on day 0, so the still-active account stops working as an identity for other apps |
 | `transfer` | Google `admin.datatransfer` plus the directory read | you want files handed over. Required before deletion unless you turn `leaver.requireTransferBeforeDelete` off, which you should not. |
 | `google_suspend` | Google `admin.directory.user` | you want the mailbox closed as well as the identity account |
 | `delete` | Google `admin.directory.user` and JumpCloud `DELETE /systemusers/{id}` | you have watched suspensions and transfers work for a while. Set `leaver.deleteGoogleUser: false` to stop at suspension so a mailbox can be archived by hand. |

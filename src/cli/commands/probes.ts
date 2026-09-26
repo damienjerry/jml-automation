@@ -141,11 +141,12 @@ export async function probeStateStore(rt: Runtime): Promise<DoctorRow> {
  */
 export async function probeGoogleScopes(
   google: NonNullable<Runtime['providers']>['google'],
+  armed: readonly string[] = [],
 ): Promise<DoctorRow[]> {
   const anchor = 'docs/credentials.md#google-workspace'
   let reports: Awaited<ReturnType<typeof google.probeScopes>>
   try {
-    reports = await google.probeScopes()
+    reports = await google.probeScopes({ armed })
   } catch (err) {
     return [
       row(

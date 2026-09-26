@@ -50,7 +50,7 @@ not exist.
 | `org.timezone` | `ORG_TIMEZONE` | string | **required** | - | IANA zone. ALL date-only arithmetic happens in it; never in UTC. |
 | `org.itTeamSignature` | `IT_TEAM_SIGNATURE` | string | **required** | - | Sign-off line on notifications sent to a person. |
 | `mode` | `JML_MODE` | dry-run \| armed | `dry-run` | - | dry-run plans and reports without touching a provider. It is the default, and the demo runs in it. |
-| `armedActions` | `JML_ARMED_ACTIONS` | suspend \| autoreply \| licence \| transfer \| google_suspend \| delete \| device_unbind \| device_handover \| activate \| joiner_licence \| ou_move \| welcome[] | `[]` | - | Which actions may really happen. An action absent from this list records not_armed rather than running, so arming happens one action at a time. |
+| `armedActions` | `JML_ARMED_ACTIONS` | suspend \| autoreply \| licence \| transfer \| google_suspend \| google_signout \| delete \| device_unbind \| device_handover \| activate \| joiner_licence \| ou_move \| welcome[] | `[]` | - | Which actions may really happen. An action absent from this list records not_armed rather than running, so arming happens one action at a time. |
 | `mail.senderMailbox` | `MAIL_SENDER_MAILBOX` | string | **required** | - | The mailbox outbound mail is sent AS. Delegated authority is granted for this address specifically. |
 | `mail.bcc` | `MAIL_BCC` | string[] | `[]` | - | Addresses blind-copied on every notification. |
 | `mail.managerOnDay0` | `MAIL_MANAGER_ON_DAY0` | boolean | `true` | - | Tell the leaver's manager on day 0 that offboarding has started. |

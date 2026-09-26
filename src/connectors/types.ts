@@ -181,6 +181,11 @@ export interface GoogleWorkspaceConnector {
   transferDrive(fromEmail: string, toEmail: string): Promise<Outcome & { transferId?: string }>
   getTransferStatus(transferId: string): Promise<{ state: string; done: boolean }>
   setVacationResponder(email: string, subject: string, body: string): Promise<Outcome>
+  /**
+   * End every session and revoke every third-party app grant. Sessions cannot
+   * be read back; the grants can, so verified means none remain.
+   */
+  signOutUser(email: string): Promise<Outcome>
   sendMail(opts: { to: string[]; bcc?: string[]; subject: string; body: string }): Promise<Outcome>
   testConnection(): Promise<ConnectionCheck>
   /** Reports per-scope authorisation, so `jml doctor` can name the missing one. */

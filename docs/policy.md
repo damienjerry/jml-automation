@@ -46,7 +46,7 @@ is in the Workspace Admin Help, under deleting a user.
 Nothing about installing this toolkit commits you to automatic deletion. A
 sound first year is:
 
-1. arm `suspend`, `autoreply` and `licence`, and watch;
+1. arm `suspend`, `autoreply`, `licence` and `google_signout`, and watch;
 2. arm `transfer` and `google_suspend`;
 3. then decide between `leaver.deletion: never`, `leaver.requireOperatorAck: true`,
    or arming `delete`.

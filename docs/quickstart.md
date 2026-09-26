@@ -491,7 +491,10 @@ no unsuspend path. If you suspend the wrong person, un-suspend them in the provi
 then `jml leaver hold --hris-id <id> --reason "..."` so no further automation touches the
 row. A hold freezes the row against every automation, including the HR sync.
 
-Add `autoreply` and `licence` next, in the same way. Both are recoverable by hand.
+Add `autoreply` and `licence` next, in the same way. Both are recoverable by hand. Then
+`google_signout`, once `admin.directory.user.security` is delegated: it ends the leaver's
+Google sessions and revokes their third-party app grants on day 0, which matters because the
+Google account itself stays active until day 6. See [access-removal.md](access-removal.md).
 
 ## 11. Arm the hand-over
 
@@ -500,6 +503,7 @@ armedActions:
   - suspend
   - autoreply
   - licence
+  - google_signout
   - transfer
   - google_suspend
 ```
@@ -527,6 +531,7 @@ armedActions:
   - suspend
   - autoreply
   - licence
+  - google_signout
   - transfer
   - google_suspend
   - delete

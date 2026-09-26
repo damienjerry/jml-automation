@@ -18,6 +18,7 @@
 export const GOOGLE_SCOPES = {
   directoryUser: 'https://www.googleapis.com/auth/admin.directory.user',
   directoryUserReadonly: 'https://www.googleapis.com/auth/admin.directory.user.readonly',
+  directoryUserSecurity: 'https://www.googleapis.com/auth/admin.directory.user.security',
   licensing: 'https://www.googleapis.com/auth/apps.licensing',
   dataTransfer: 'https://www.googleapis.com/auth/admin.datatransfer',
   gmailSettingsBasic: 'https://www.googleapis.com/auth/gmail.settings.basic',
@@ -55,6 +56,12 @@ export interface ScopeUse {
   methods: readonly string[]
   /** Required for the Phase 1 leaver path, as opposed to an optional adapter. */
   required: boolean
+  /**
+   * An optional scope that becomes required once this action is armed. `jml
+   * doctor` probes it only then, so an adopter who never arms the step is not
+   * shown a failure for a grant they do not need.
+   */
+  armedBy?: string
   /** One line, for the probe table and the credentials documentation. */
   breaksWithout: string
 }
@@ -119,6 +126,16 @@ export const SCOPE_USES: readonly ScopeUse[] = [
     methods: ['sendMail'],
     required: true,
     breaksWithout: 'No notification leaves the toolkit, so nobody is told what happened.',
+  },
+  {
+    key: 'directoryUserSecurity',
+    scope: GOOGLE_SCOPES.directoryUserSecurity,
+    subject: 'admin',
+    methods: ['signOutUser'],
+    required: false,
+    armedBy: 'google_signout',
+    breaksWithout:
+      "The leaver's Google sessions and third-party app grants are left in place, so Sign in with Google keeps working until the account is suspended.",
   },
   {
     key: 'spreadsheetsReadonly',

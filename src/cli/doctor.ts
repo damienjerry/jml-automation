@@ -141,7 +141,7 @@ export async function runDoctor(rt: Runtime, opts: DoctorOptions = {}): Promise<
         )
       }),
     )
-    rows.push(...(await probeGoogleScopes(providers.google)))
+    rows.push(...(await probeGoogleScopes(providers.google, rt.cfg.armedActions)))
   }
 
   rows.push(

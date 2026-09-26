@@ -22,7 +22,7 @@ defaults, counted from the day-0 run.
 | The Google mailbox, receiving | Sets an auto-reply | day 0 | yes | mail still arrives until day 6 |
 | The Google account, signing in | Removes the paid licence on day 0, suspends the account on day 6 | day 0, day 6 | yes | see below: the account is not suspended for six days |
 | Gmail, Drive, Calendar and the other Workspace services | Removing the licence takes them away. This is effectively a soft disable: the account still exists, so its files can still be handed over | day 0 | the licence removal is read back | nothing |
-| "Sign in with Google" into other apps, and access already granted to third-party apps | **Nothing.** The Google account is still active until day 6, so it still works as an identity, and tokens already issued keep working. The toolkit does not sign the account out or revoke tokens | not covered | no | sign the user out of all sessions on day 0 and review connected apps in the Google Admin console |
+| "Sign in with Google" into other apps, and access already granted to third-party apps | With `google_signout` armed: ends every Google session and revokes every third-party app grant. Not armed: nothing, and the still-active account works as an identity until day 6 | day 0 | the grants yes, by a fresh list that must come back empty; the sessions no, Google has no way to read them | arm it, or sign the user out by hand in the Google Admin console |
 | Files the person owns in Drive | Transfers ownership to the manager | day 6 | yes, the transfer is polled until complete | shared drives, files shared *with* them and calendar delegation are not moved |
 | Laptops bound to the account | Nothing on day 0. Deletion is refused while a machine is still bound | day 7 | yes, the gate reads the provider live | whether a suspended account can still unlock a bound machine depends on the agent and when it last checked in. Check it on your own devices |
 | Group memberships, shared mailboxes, delegated access | Nothing | not covered | no | remove by hand, or through whatever manages your groups |
@@ -42,8 +42,12 @@ any access they granted a third-party app still works. If Google sign-in goes
 through your identity provider, new sign-ins to Google itself already fail on
 day 0; a session that was open before does not.
 
-Signing the account out of every session on day 0 closes most of this. A day-0
-Google sign-out step is not implemented yet, so do it by hand for now.
+Arming `google_signout` closes this on day 0: it ends every session and revokes
+every grant, then lists the grants again and counts the step done only when
+none are left. It needs one more delegated scope,
+`admin.directory.user.security`, which `jml doctor` checks once the action is
+armed. Sessions cannot be read back from Google, so that half is reported as
+requested rather than confirmed.
 
 ## How to read the run report against this
 

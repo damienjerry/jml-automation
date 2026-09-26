@@ -21,11 +21,11 @@ import {
   type GoogleConnectorConfig,
   type GoogleCtx,
 } from './auth.ts'
-import { deleteUser, getUser, listUsers, resolveUserId, suspendUser, getMailboxState, moveToOrgUnit } from './directory.ts'
+import { deleteUser, getUser, listUsers, resolveUserId, suspendUser, getMailboxState, moveToOrgUnit, signOutUser } from './directory.ts'
 import { sendMail, setVacationResponder } from './gmail.ts'
 import { listLicences, revokeLicence, type LicenceAssignment, assignLicence } from './licensing.ts'
 import { getTransferStatus, transferDrive } from './transfer.ts'
-import { REQUIRED_SCOPE_USES, type GoogleScope } from './scopes.ts'
+import { REQUIRED_SCOPE_USES, SCOPE_USES, type GoogleScope } from './scopes.ts'
 
 export type { GoogleConnectorConfig, GoogleCtx, GoogleAuth } from './auth.ts'
 export { GoogleAuthError, createGoogleAuth } from './auth.ts'
@@ -63,7 +63,8 @@ export interface GoogleConnector extends GoogleWorkspaceConnector, GoogleProvisi
   resolveUserId(email: string): Promise<string | null>
   /** All seats this account holds, with SKU names when the provider gives them. */
   listLicenceAssignments(email: string): Promise<LicenceAssignment[]>
-  probeScopes(opts?: { mailbox?: string }): Promise<ScopeReport[]>
+  /** `armed` adds the optional scopes an armed action needs. */
+  probeScopes(opts?: { mailbox?: string; armed?: readonly string[] }): Promise<ScopeReport[]>
 }
 
 export interface GoogleConnectorDeps {
@@ -115,10 +116,11 @@ export function createGoogleConnector(
 
     setVacationResponder: (email: string, subject: string, body: string) =>
       setVacationResponder(ctx, email, subject, body),
+    signOutUser: (email: string) => signOutUser(ctx, email),
     sendMail: (opts: { to: string[]; subject: string; body: string }) => sendMail(ctx, opts),
 
     testConnection: () => testConnection(ctx),
-    probeScopes: (opts?: { mailbox?: string }) => probeScopes(ctx, opts),
+    probeScopes: (opts?: { mailbox?: string; armed?: readonly string[] }) => probeScopes(ctx, opts),
   }
 }
 
@@ -181,10 +183,12 @@ async function testConnection(ctx: GoogleCtx): Promise<ConnectionCheck> {
  */
 async function probeScopes(
   ctx: GoogleCtx,
-  opts: { mailbox?: string } = {},
+  opts: { mailbox?: string; armed?: readonly string[] } = {},
 ): Promise<ScopeReport[]> {
   const reports: ScopeReport[] = []
-  for (const use of REQUIRED_SCOPE_USES) {
+  const armed = opts.armed ?? []
+  const uses = SCOPE_USES.filter((use) => use.required || (use.armedBy !== undefined && armed.includes(use.armedBy)))
+  for (const use of uses) {
     const subject =
       use.subject === 'leaver'
         ? (opts.mailbox ?? ctx.cfg.adminEmail)
@@ -196,7 +200,8 @@ async function probeScopes(
       subject,
       status: result.status,
       ...(result.error ? { error: result.error } : {}),
-      required: use.required,
+      // Armed makes it required: the step will run, so a refusal is a failure.
+      required: true,
       neededBy: use.methods,
       breaksWithout: use.breaksWithout,
     })

@@ -76,10 +76,21 @@ removal, and what running it costs), and
 [docs/ai-adaptation-brief.md](docs/ai-adaptation-brief.md).
 
 Not done, and still true: no CSV import, no Google-only or Microsoft 365 path,
-no read-only Sheets report, no day-0 Google sign-out, and no write validated
+no read-only Sheets report, and no write validated
 against a real provider.
 
 ### Added
+
+**A day-0 Google sign-out.** Day 0 removes the licence, so Gmail and Drive go,
+but the Google account stays active until it is suspended on day 6, and an
+active account is still an identity: Sign in with Google into other apps keeps
+working, and so does every grant already given to a third-party app. The new
+`google_signout` action ends every session and revokes every grant, then lists
+the grants again and counts the step done only when none remain. Sessions
+cannot be read back from Google, so that half is reported as requested. It
+needs `admin.directory.user.security`, which `jml doctor` probes only once the
+action is armed, and a refused sign-out fails that step without holding the
+rest of day 0 back.
 
 **A guide to the idea, and to adapting it.** [docs/adapting.md](docs/adapting.md)
 names the platform mix this was built for, says what it does not do (it

@@ -79,6 +79,7 @@ const ARMED_ACTIONS = [
   'licence',
   'transfer',
   'google_suspend',
+  'google_signout',
   'delete',
   'device_unbind',
   'device_handover',

@@ -25,7 +25,7 @@ Sunday does not skip a phase.
 
 | Phase | Due | Steps, in order | Config |
 | --- | --- | --- | --- |
-| Day 0 | leaving date has passed | `suspend_idp`, `set_autoreply`, `revoke_licence` | `leaver.terminationLookbackDays` |
+| Day 0 | leaving date has passed | `suspend_idp`, `set_autoreply`, `revoke_licence`, `signout_google` | `leaver.terminationLookbackDays` |
 | Day 6 | 6 days after `suspendedAt` | `transfer_drive`, `suspend_google` | `leaver.transferDay` |
 | Day 7 | 7 days after `suspendedAt` | `delete_idp`, `delete_google` | `leaver.deleteDay` |
 
@@ -138,10 +138,11 @@ From the offline demo, which uses fake providers that record every call:
 run demo-day0  pipeline  armed  ok=true
   counts: day0=3 detect.actionable=3 detect.leaver=3 detect.potentialLeaver=1 hrisEmployed=3 hrisPeople=7 selectedDay0=3 sync.scanned=7 sync.skipped_no_email=1 sync.status_changed=4 sync.unchanged=2
   Robin Ellis     day0    terminated -> offboarding
-      revoke_licence=done(verified) set_autoreply=done(verified) suspend_idp=done(verified)
+      revoke_licence=done(verified) set_autoreply=done(verified) signout_google=done(verified) suspend_idp=done(verified)
       identity provider account suspended, read back
       auto-reply set on the mailbox
       revoked 1 licence(s): example-standard
+      sign-out of every Google session requested (Google cannot confirm it), and 0 third-party app grant(s) revoked, read back as none left
 ```
 
 `done(verified)` is the only outcome that counts. `verified` means the write was
@@ -150,6 +151,10 @@ the day-0 marker is written only when the suspension was read back: an earlier
 generation of this automation wrote its progress marker even when every step had
 failed, so a broken run looked finished and was never retried. That one and the
 rest of the catalogue are in [../incidents.md](../incidents.md).
+
+One step is only half readable. For `signout_google`, `verified` means a fresh list
+of the account's third-party grants came back empty; Google has no way to read
+sessions back, so the sign-out itself is requested, and the line says so.
 
 ## The manager email, and the dated deletion line
 
@@ -167,6 +172,7 @@ What has been done:
 - suspend_idp: identity provider account suspended, read back
 - set_autoreply: auto-reply set on the mailbox
 - revoke_licence: revoked 1 licence(s): example-standard
+- signout_google: sign-out of every Google session requested (Google cannot confirm it), and 0 third-party app grant(s) revoked, read back as none left
 ```
 
 The rest of the template says that on the transfer day the leaver's Drive

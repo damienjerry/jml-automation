@@ -35,6 +35,7 @@ describe('the assembled connector', () => {
       'transferDrive',
       'getTransferStatus',
       'setVacationResponder',
+      'signOutUser',
       'sendMail',
       'testConnection',
       'probeScopes',

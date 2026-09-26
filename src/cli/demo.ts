@@ -335,7 +335,7 @@ function demoConfigDocument(fixturePath: string, fixture: HrisFixtureFile): Reco
       itTeamSignature: 'The IT team',
     },
     mode: 'armed',
-    armedActions: ['suspend', 'autoreply', 'licence', 'transfer', 'google_suspend', 'delete', 'activate', 'joiner_licence', 'ou_move', 'welcome'],
+    armedActions: ['suspend', 'autoreply', 'licence', 'transfer', 'google_suspend', 'google_signout', 'delete', 'activate', 'joiner_licence', 'ou_move', 'welcome'],
     mail: { senderMailbox: 'it-noreply@example.com', managerOnDay0: true },
     hris: {
       adapter: 'fixture',

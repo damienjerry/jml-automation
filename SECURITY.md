@@ -17,6 +17,7 @@ software can:
 | `suspend` | Suspends a JumpCloud account. The person cannot sign in anywhere that account fronts. | Yes, by hand |
 | `autoreply` | Sets a vacation responder on a leaver's mailbox. | Yes |
 | `licence` | Deletes every paid licence assignment the account holds. | Re-assign, if seats remain |
+| `google_signout` | Ends every Google session the leaver has and revokes every grant they gave a third-party app. | Sessions: the person signs in again. Grants: the person re-authorises each app |
 | `transfer` | Starts a Google data transfer, moving a leaver's Drive files to another person. | No. The files move |
 | `google_suspend` | Suspends the Google account. | Yes, by hand |
 | `delete` | **Deletes the JumpCloud account and the Google account.** | No, past the provider's own retention window |
@@ -94,13 +95,13 @@ The whole set:
 
 ```
 npm ci
-npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1548 tests
+npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1558 tests
 node bin/jml.mjs demo
 ```
 
 `npm run gate` on this checkout: 0 identifier errors and 0 warnings, 4
 generated artefacts current, 6 workflow files valid, typecheck and lint clean,
-1548 tests across 161 files passing. `npm run docs:links` separately: 49
+1558 tests across 163 files passing. `npm run docs:links` separately: 49
 Markdown files and 127 source files, 0 broken links.
 
 ## Credentials and blast radius

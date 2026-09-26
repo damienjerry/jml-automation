@@ -236,9 +236,10 @@ implies the other.
 
 `mode: armed` with an empty `armedActions` is refused at start-up by the schema:
 "one switch that arms everything is how a rehearsal becomes a mass
-suspension". The eight actions are `suspend`, `autoreply`, `licence`,
-`transfer`, `google_suspend`, `delete`, `device_unbind` and `device_handover`,
-so you can arm suspension, watch a cycle, then arm the handover, then arm
+suspension". The leaver actions are `suspend`, `autoreply`, `licence`,
+`google_signout`, `transfer`, `google_suspend`, `delete`, `device_unbind` and
+`device_handover`, and the joiner ones `activate`, `joiner_licence`, `ou_move`
+and `welcome`, so you can arm suspension, watch a cycle, then arm the handover, then arm
 deletion, and see at each stage exactly what was declined.
 
 An unarmed leg records `not_armed` rather than vanishing, which is the

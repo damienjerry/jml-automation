@@ -121,6 +121,85 @@ export async function suspendUser(ctx: GoogleCtx, email: string): Promise<Outcom
   }
 }
 
+interface TokenListBody {
+  items?: { clientId?: string }[]
+}
+
+/**
+ * End every session, revoke every third-party grant, and confirm the grants.
+ *
+ * Removing the licence takes away Gmail and Drive, but the account stays
+ * active until it is suspended, and an active account is still an identity:
+ * "Sign in with Google" into another app works, and every token already issued
+ * to a third-party app keeps working. Sign-out resets the web and device
+ * sessions; the token deletes revoke the grants.
+ *
+ * Google gives no way to read sessions back, so the sign-out is only ever
+ * requested. The grants can be read, so the outcome is verified only when a
+ * fresh list after the deletes comes back empty. `detail.sessionsReset` says
+ * `requested` to keep the difference visible in the audit log.
+ */
+export async function signOutUser(ctx: GoogleCtx, email: string): Promise<Outcome> {
+  const signOut = await authorisedRequest(ctx, {
+    method: 'POST',
+    url: `${userUrl(email)}/signOut`,
+    scope: GOOGLE_SCOPES.directoryUserSecurity,
+    subject: ctx.cfg.adminEmail,
+    label: 'google directory sign out',
+  })
+  if (signOut.status === 404) {
+    return { ok: true, verified: true, alreadyAbsent: true, detail: { reason: 'no_google_account', email } }
+  }
+  if (!signOut.ok) return failure('signing the Google account out', signOut.status)
+
+  const before = await listTokenClients(ctx, email)
+  if (!before.ok) return failure('listing the Google account third-party grants', before.status)
+  let failed = 0
+  for (const clientId of before.clients) {
+    const del = await authorisedRequest(ctx, {
+      method: 'DELETE',
+      url: `${userUrl(email)}/tokens/${encodeURIComponent(clientId)}`,
+      scope: GOOGLE_SCOPES.directoryUserSecurity,
+      subject: ctx.cfg.adminEmail,
+      label: 'google directory revoke token',
+    })
+    // A 404 means the grant went between the list and the delete.
+    if (!del.ok && del.status !== 404) failed += 1
+  }
+
+  const after = await listTokenClients(ctx, email)
+  if (!after.ok) {
+    return {
+      ok: false,
+      verified: false,
+      error: `the Google account grants could not be read back after revoking them (status ${after.status})`,
+      retryable: true,
+    }
+  }
+  const remaining = after.clients.length
+  return {
+    ok: remaining === 0,
+    verified: remaining === 0,
+    ...(remaining === 0 ? {} : { error: `${remaining} third-party grant(s) are still in place after revoking` }),
+    detail: { sessionsReset: 'requested', grantsRevoked: before.clients.length - failed, grantsRemaining: remaining },
+    ...(remaining === 0 ? {} : { retryable: true }),
+  }
+}
+
+async function listTokenClients(ctx: GoogleCtx, email: string): Promise<{ ok: boolean; status: number; clients: string[] }> {
+  const response = await authorisedRequest(ctx, {
+    method: 'GET',
+    url: `${userUrl(email)}/tokens`,
+    scope: GOOGLE_SCOPES.directoryUserSecurity,
+    subject: ctx.cfg.adminEmail,
+    label: 'google directory list tokens',
+  })
+  if (!response.ok) return { ok: false, status: response.status, clients: [] }
+  const items = response.json<TokenListBody>()?.items ?? []
+  const clients = items.map((item) => item.clientId).filter((id): id is string => typeof id === 'string' && id.length > 0)
+  return { ok: true, status: response.status, clients }
+}
+
 /**
  * Delete an account, then confirm it is gone.
  *

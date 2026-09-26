@@ -364,6 +364,45 @@ const revokeLicences: Leg = {
   },
 }
 
+const signOutGoogle: Leg = {
+  name: 'signout_google',
+  phase: 'day0',
+  action: 'google_signout',
+  async run(deps, ctx) {
+    const at = deps.clock.nowIso()
+    const pre = await prepare(deps, ctx, signOutGoogle, ctx.googleAccount, {
+      at,
+      absent: 'not_applicable',
+      absentNote: 'no Google account, so there was nothing to sign out',
+      planned: (user) => `would sign ${user.email} out of every Google session and revoke its third-party app grants`,
+      declined: 'the Google sign-out is not in armedActions, so existing sessions and app grants were left in place',
+    })
+    if (!pre.go) return pre.halt
+
+    // The licence is gone by now, so Gmail and Drive already are. What this
+    // closes is the account as an identity: Sign in with Google into other
+    // apps, and grants already given to them, which last until day 6 otherwise.
+    const email = pre.user.email
+    const outcome = await auditedCall(
+      deps,
+      ctx,
+      { action: 'leaver.day0.signout_google', target: 'google', detail: {} },
+      () => deps.google.signOutUser(email),
+    )
+    const record = legFrom(outcome, { at, previous: previous(ctx, 'signout_google') })
+    const revoked = typeof outcome.detail?.['grantsRevoked'] === 'number' ? outcome.detail['grantsRevoked'] : 0
+    return result(
+      'signout_google',
+      record,
+      verdict(
+        record,
+        `sign-out of every Google session requested (Google cannot confirm it), and ${revoked} third-party app grant(s) revoked, read back as none left`,
+        'the Google sign-out failed',
+      ),
+    )
+  },
+}
+
 function skus(licences: readonly { skuId: string }[]): string {
   return licences.map((l) => l.skuId).join(', ')
 }
@@ -631,7 +670,7 @@ const deleteGoogle: Leg = {
   },
 }
 
-export const DAY0_LEGS: readonly Leg[] = [suspendIdp, setAutoreply, revokeLicences]
+export const DAY0_LEGS: readonly Leg[] = [suspendIdp, setAutoreply, revokeLicences, signOutGoogle]
 export const DAY6_LEGS: readonly Leg[] = [transferDrive, suspendGoogle]
 export const DAY7_LEGS: readonly Leg[] = [deleteIdp, deleteGoogle]
 

@@ -21,7 +21,9 @@ const RUN = { dryRun: false, actor: { kind: 'system' as const, id: 'system:leave
 
 describe('the leg tables', () => {
   it('run in the order the days depend on', () => {
-    expect(DAY0_LEGS.map((l) => l.name)).toEqual(['suspend_idp', 'set_autoreply', 'revoke_licence'])
+    // The sign-out comes last on day 0: the licence is already gone by then, so
+    // what it closes is the account as an identity for other apps.
+    expect(DAY0_LEGS.map((l) => l.name)).toEqual(['suspend_idp', 'set_autoreply', 'revoke_licence', 'signout_google'])
     // The hand-over comes before the Google suspension: suspending first is
     // harmless, but a transfer that has not started when the account closes
     // needs a person either way, so the file step goes first.
@@ -30,7 +32,7 @@ describe('the leg tables', () => {
   })
 
   it('names the armed action each one needs', () => {
-    expect(DAY0_LEGS.map((l) => l.action)).toEqual(['suspend', 'autoreply', 'licence'])
+    expect(DAY0_LEGS.map((l) => l.action)).toEqual(['suspend', 'autoreply', 'licence', 'google_signout'])
     expect(DAY7_LEGS.every((l) => l.action === 'delete')).toBe(true)
   })
 })

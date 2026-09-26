@@ -212,4 +212,9 @@ function checkGoogleKey(text: string, say: (l: string) => void): string {
 function printScopes(say: (l: string) => void): void {
   say('  scopes to delegate (Admin console, Security, API controls, Domain-wide delegation), exactly as written:')
   for (const use of SCOPE_USES.filter((u) => u.required)) say(`    ${use.scope}`)
+  const optional = SCOPE_USES.filter((u) => !u.required && u.armedBy)
+  if (optional.length > 0) {
+    say('  and only if you will arm the step that needs it:')
+    for (const use of optional) say(`    ${use.scope}   (${use.armedBy})`)
+  }
 }
