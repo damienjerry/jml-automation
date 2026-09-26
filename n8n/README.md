@@ -1,6 +1,6 @@
 # The n8n bundle
 
-Five workflows that drive the toolkit. They are the front door: n8n is the
+Six workflows that drive the toolkit. They are the front door: n8n is the
 runtime most IT teams already run, and a schedule with a visible execution list
 is easier to trust than a cron line on a box.
 

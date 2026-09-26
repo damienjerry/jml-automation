@@ -1,11 +1,17 @@
-# automating-it-on-and-offboarding
+# jml-automation
+
+**JML** is joiner, mover, leaver: the identity-management term for everything IT
+does when somebody starts, changes role, or leaves. Audits, security
+questionnaires and larger companies use it, and a small IT team that speaks it
+has an easier time with all three. This repository automates it, with your HR
+system as the source of truth.
 
 Joiner, mover and leaver automation for JumpCloud and Google Workspace, driven by your HR
 system. The HR system is the source of truth: when somebody appears in it, the toolkit
 records them and announces the joiner; when the HR system drops them from the employed set,
 the toolkit suspends their identity provider account, sets an auto-reply, revokes the paid
 licence, hands their files to their manager on day 6, and deletes both accounts on day 7.
-It is a command line tool, an optional authenticated HTTP sidecar, and five n8n workflows
+It is a command line tool, an optional authenticated HTTP sidecar, and six n8n workflows
 that contain no logic.
 
 It deletes accounts. Read the demo below before you read anything else, then read
@@ -14,8 +20,8 @@ It deletes accounts. Read the demo below before you read anything else, then rea
 ## Run the demo first. No credentials, no network
 
 ```
-git clone https://github.com/damienjerry/automating-it-on-and-offboarding.git
-cd automating-it-on-and-offboarding
+git clone https://github.com/damienjerry/jml-automation.git
+cd jml-automation
 npm ci
 npm run build
 node bin/jml.mjs demo
@@ -257,7 +263,7 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | Audit: JSONL | always on | Hash-chained, one file per day. |
 | Audit: log aggregator push | optional, off | Push endpoint plus an auth header. |
 | HTTP sidecar | optional | Bearer token, at least 32 bytes, compared in constant time. |
-| n8n bundle | optional | Five workflows, no logic, no credentials, no URLs. |
+| n8n bundle | optional | Six workflows, no logic, no credentials, no URLs. |
 | Azure, Slack SCIM | reserved | Interfaces only. Start-up refuses if a credential is set. |
 
 ## Documentation

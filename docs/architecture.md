@@ -1,7 +1,7 @@
 # Architecture
 
 Three pieces. A TypeScript library that holds every decision, an authenticated
-HTTP sidecar that exposes a few of them, and five n8n workflows that do nothing
+HTTP sidecar that exposes a few of them, and six n8n workflows that do nothing
 but call the sidecar on a schedule and post the result.
 
 ```

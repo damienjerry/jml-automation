@@ -239,8 +239,8 @@ export function walkSchema(): Walked {
     fields,
     jsonSchema: {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
-      $id: 'https://github.com/damienjerry/automating-it-on-and-offboarding/schema/jml.config.schema.json',
-      title: 'automating-it-on-and-offboarding configuration',
+      $id: 'https://github.com/damienjerry/jml-automation/schema/jml.config.schema.json',
+      title: 'jml-automation configuration',
       description: HEADER,
       ...jsonSchema,
     },

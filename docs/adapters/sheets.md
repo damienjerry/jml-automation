@@ -135,7 +135,7 @@ adapter can be tested in one line
 ([`src/store/conformance.ts`](../../src/store/conformance.ts)):
 
 ```
-import { describePeopleStoreConformance } from 'automating-it-on-and-offboarding/store/conformance'
+import { describePeopleStoreConformance } from 'jml-automation/store/conformance'
 
 describePeopleStoreConformance({
   name: 'sheets',
