@@ -44,7 +44,7 @@ function googleKeyFile(dir: string): string {
 function fullRunAnswers(keyPath: string): string[] {
   return [
     // configuration
-    'Example Organisation', 'example.com', 'legacy.example.com', 'Europe/London', '', 'admin@example.com', '',
+    'Example Organisation', 'example.com', 'legacy.example.com', 'Europe/London', '', 'admin@example.com', '', '',
     'hibob', '5', 'sqlite', 'y', 'GEXAMPLE01',
     // credentials: HiBob id, HiBob token, JumpCloud, Google, Slack
     'paste', SECRETS.hibobUser,
@@ -183,7 +183,7 @@ describe('jml setup', () => {
 
   it('stops at a failing doctor when asked, and keeps what it had done', async () => {
     const dir = checkout()
-    const answers = fullRunAnswers(googleKeyFile(dir)).slice(0, 22).concat(['stop'])
+    const answers = fullRunAnswers(googleKeyFile(dir)).slice(0, 23).concat(['stop'])
     const h = harness(answers, { doctorOk: false })
     expect(await setupCommand(h.io, { dir }, h.deps)).toBe(1)
     expect(h.output()).toContain('FAIL  HR system: HTTP 401')
@@ -220,7 +220,7 @@ describe('jml setup', () => {
     const dir = checkout()
     const answers = fullRunAnswers(googleKeyFile(dir))
     // After the credentials: carry on at doctor, then bootstrap and n8n as normal.
-    const h = harness([...answers.slice(0, 22), 'continue', ...answers.slice(22)], { doctorOk: false })
+    const h = harness([...answers.slice(0, 23), 'continue', ...answers.slice(23)], { doctorOk: false })
     expect(await setupCommand(h.io, { dir }, h.deps)).toBe(1)
     expect(h.output()).toContain('Setup finished INCOMPLETE')
     expect(h.output()).not.toContain('Setup is complete')
@@ -269,7 +269,7 @@ describe('jml setup', () => {
     const dir = checkout()
     // First run, command line only, every credential pasted or read from a file.
     const answers = fullRunAnswers(googleKeyFile(dir)).slice(0, -1)
-    answers.splice(14, 2, 'paste', 'hibob-token-pasted-not-real')
+    answers.splice(15, 2, 'paste', 'hibob-token-pasted-not-real')
     const first = harness(answers, { dockerUp: false })
     expect(await setupCommand(first.io, { dir, noDocker: true }, first.deps)).toBe(0)
     expect(readFileSync(join(dir, '.env'), 'utf8')).toContain('hibob-token-pasted-not-real')
@@ -287,12 +287,34 @@ describe('jml setup', () => {
   it('says plainly that the old value stays when the operator keeps it', async () => {
     const dir = checkout()
     const answers = fullRunAnswers(googleKeyFile(dir)).slice(0, -1)
-    answers.splice(14, 2, 'paste', 'hibob-token-pasted-not-real')
+    answers.splice(15, 2, 'paste', 'hibob-token-pasted-not-real')
     const first = harness(answers, { dockerUp: false })
     await setupCommand(first.io, { dir, noDocker: true }, first.deps)
     const redo = harness(['keep', 'op', 'op://Vault/item/field', 'n', 'keep', 'keep', 'keep', 'y'], { dockerUp: false })
     await setupCommand(redo.io, { dir, noDocker: true, from: 'credentials' }, redo.deps)
     expect(redo.output()).toContain('stays in .env in plain text')
     expect(readFileSync(join(dir, '.env'), 'utf8')).toContain('hibob-token-pasted-not-real')
+  })
+
+  it('sets up 1.0b: Google alone and a people sheet, asking for no identity provider key', async () => {
+    const dir = checkout()
+    const answers = [
+      'Example Organisation', 'example.com', '', 'Europe/London', '', 'admin@example.com', '',
+      'none', 'sheet', 'sheet-id-for-the-test-0123456789', '', '', '5', 'sqlite', 'n',
+      // credentials: the Google key only
+      'file', googleKeyFile(dir),
+      // bootstrap
+      'y',
+    ]
+    const h = harness(answers, { dockerUp: false })
+    expect(await setupCommand(h.io, { dir, noDocker: true }, h.deps), h.output()).toBe(0)
+    const config = join(dir, 'jml.config.yaml')
+    expect(await getConfig(config, ['identity', 'adapter'])).toBe('none')
+    expect(await getConfig(config, ['hris', 'adapter'])).toBe('sheet')
+    expect(await getConfig(config, ['hris', 'table', 'spreadsheetId'])).toBe('sheet-id-for-the-test-0123456789')
+    expect(h.output()).not.toContain('JumpCloud API key')
+    expect(h.output()).toContain('share the sheet with the service account')
+    const scopes = h.output().split('and only if you will arm')[0] ?? ''
+    expect(scopes).toContain('https://www.googleapis.com/auth/admin.directory.user.security')
   })
 })

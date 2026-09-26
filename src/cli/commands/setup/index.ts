@@ -365,10 +365,12 @@ async function n8n(c: Ctx): Promise<'done' | 'stop'> {
 }
 
 async function answersFromConfig(configPath: string): Promise<Answers> {
-  const hris = (await getConfig(configPath, ['hris', 'adapter'])) === 'hibob' ? 'hibob' : 'fixture'
+  const rawHris = await getConfig(configPath, ['hris', 'adapter'])
+  const hris = rawHris === 'hibob' || rawHris === 'csv' || rawHris === 'sheet' ? rawHris : 'fixture'
+  const identity = (await getConfig(configPath, ['identity', 'adapter'])) === 'none' ? 'none' : 'jumpcloud'
   const store = (await getConfig(configPath, ['store', 'adapter'])) === 'notion' ? 'notion' : 'sqlite'
   const adapters = await getConfig(configPath, ['notify', 'adapters'])
-  return { hris, store, slack: Array.isArray(adapters) && adapters.includes('slack') }
+  return { identity, hris, store, slack: Array.isArray(adapters) && adapters.includes('slack') }
 }
 
 async function opRead(d: SetupDeps, ref: string): Promise<{ ok: boolean; value: string; error: string }> {

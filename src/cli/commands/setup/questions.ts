@@ -22,7 +22,8 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const DOMAIN = /^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i
 
 export interface Answers {
-  hris: 'hibob' | 'fixture'
+  identity: 'jumpcloud' | 'none'
+  hris: 'hibob' | 'fixture' | 'csv' | 'sheet'
   store: 'sqlite' | 'notion'
   slack: boolean
 }
@@ -61,11 +62,40 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
   say('  Messages are sent AS the next mailbox, by impersonation, so it must be a real user rather than an alias or a group.')
   const sender = await p.ask('Mailbox notifications are sent as', { default: admin, validate: (a) => (EMAIL.test(a) ? null : 'an email address') })
 
+  say('\nIs there an identity provider in front of Google?')
+  say('  JumpCloud (setup 1.0a) also manages devices and remote support, and blocks a deletion while a laptop is still bound.')
+  say('  None (setup 1.0b): the Google account is the only account. Your HR system or you create it; the toolkit does the rest. No device inventory is checked.')
+  const identity = await p.choose('Identity provider', [
+    { value: 'jumpcloud', label: 'JumpCloud (1.0a)' },
+    { value: 'none', label: 'none: Google Workspace alone (1.0b)' },
+  ], 'jumpcloud')
+
   say('\nThe HR system is the source of truth.')
   const hris = await p.choose('HR system', [
     { value: 'hibob', label: 'HiBob' },
+    { value: 'sheet', label: 'a Google Sheet of people, kept up to date by a person or an HR report' },
+    { value: 'csv', label: 'a CSV file, exported from any HR system' },
     { value: 'fixture', label: 'the offline demo file (no HR credentials; for a rehearsal)' },
   ], 'hibob')
+  const table: [readonly (string | number)[], unknown][] = []
+  if (hris === 'sheet' || hris === 'csv') {
+    say('  Headings in the first row; defaults match examples/people.csv. A leaver keeps their row with a last working day filled in.')
+    if (hris === 'sheet') {
+      const id = await p.ask('Sheet id (the long part of its URL between /d/ and /edit)', { validate: (a) => (/^[A-Za-z0-9_-]{20,}$/.test(a) ? null : 'the id from the sheet URL') })
+      const range = await p.ask('Tab holding the people', { default: 'People' })
+      say('  Share the sheet with the service account address as a viewer; it is printed with the Google key below.')
+      table.push([['hris', 'table', 'spreadsheetId'], id], [['hris', 'table', 'range'], range])
+    } else {
+      const path = await p.ask('Path to the CSV file', { validate: (a) => (a ? null : 'required') })
+      table.push([['hris', 'table', 'path'], path])
+    }
+    const format = await p.choose('Date format used in the table', [
+      { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+      { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
+      { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+    ], 'YYYY-MM-DD')
+    table.push([['hris', 'table', 'dateFormat'], format])
+  }
   say('  A read smaller than this floor aborts the run: a truncated read looks exactly like everybody leaving.')
   const floor = await p.ask('Fewest employed people a real read could ever return', { validate: (a) => (/^\d+$/.test(a) && Number(a) > 0 ? null : 'a whole number above 0') })
 
@@ -83,6 +113,8 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
     [['google', 'adminEmail'], admin],
     [['mail', 'senderMailbox'], sender],
     [['hris', 'adapter'], hris],
+    ...table,
+    [['identity', 'adapter'], identity],
     [['hris', 'minPlausibleHeadcount'], Number(floor)],
     [['mode'], 'dry-run'],
     [['armedActions'], []],
@@ -102,7 +134,7 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
   }
   await setConfig(configPath, values)
   say('\nwrote jml.config.yaml. Mode is dry-run and nothing is armed: every run plans and reports until you arm actions one at a time.')
-  return { hris, store, slack }
+  return { identity, hris, store, slack }
 }
 
 interface Needed {
@@ -123,8 +155,10 @@ export function neededCredentials(a: Answers): Needed[] {
       { key: 'HIBOB_SERVICE_TOKEN', path: ['hris', 'hibob', 'serviceToken'], what: 'HiBob service user token', minimum: 'the token of that same service user', docs: 'docs/credentials.md#the-hr-system', kind: 'text' },
     )
   }
+  if (a.identity === 'jumpcloud') {
+    out.push({ key: 'JUMPCLOUD_API_KEY', path: ['identity', 'jumpcloud', 'apiKey'], what: 'JumpCloud API key', minimum: "the key inherits its admin's role; a read-only admin is enough until you arm anything", docs: 'docs/credentials.md#jumpcloud', kind: 'text' })
+  }
   out.push(
-    { key: 'JUMPCLOUD_API_KEY', path: ['identity', 'jumpcloud', 'apiKey'], what: 'JumpCloud API key', minimum: "the key inherits its admin's role; a read-only admin is enough until you arm anything", docs: 'docs/credentials.md#jumpcloud', kind: 'text' },
     { key: 'GOOGLE_SERVICE_ACCOUNT_JSON', path: ['google', 'serviceAccountJson'], what: 'Google service account key (JSON file)', minimum: 'domain-wide delegation for exactly the scopes printed below, granted one by one in the Admin console', docs: 'docs/credentials.md#google-workspace', kind: 'google-json' },
   )
   if (a.store === 'notion') out.push({ key: 'NOTION_API_KEY', path: ['store', 'token'], what: 'Notion internal integration token', minimum: 'an integration shared with the people database only', docs: 'docs/adapters/notion.md', kind: 'text' })
@@ -142,7 +176,7 @@ export async function askCredentials(d: CredentialDeps, answers: Answers): Promi
     d.say(`\n${need.what}`)
     d.say(`  minimum access: ${need.minimum}`)
     d.say(`  details: ${need.docs}`)
-    if (need.kind === 'google-json') printScopes(d.say)
+    if (need.kind === 'google-json') printScopes(d.say, answers)
     const have = Boolean(d.env[need.key])
     const known = d.state.references[need.key]
     const options = [
@@ -209,10 +243,16 @@ function checkGoogleKey(text: string, say: (l: string) => void): string {
   return JSON.stringify(parsed)
 }
 
-function printScopes(say: (l: string) => void): void {
+function printScopes(say: (l: string) => void, answers: Answers): void {
   say('  scopes to delegate (Admin console, Security, API controls, Domain-wide delegation), exactly as written:')
-  for (const use of SCOPE_USES.filter((u) => u.required)) say(`    ${use.scope}`)
-  const optional = SCOPE_USES.filter((u) => !u.required && u.armedBy)
+  // With no identity provider, closing the Google account on day 0 ends its
+  // sessions, which needs the security scope, so it is not optional there.
+  const closesGoogle = answers.identity === 'none'
+  for (const use of SCOPE_USES.filter((u) => u.required || (closesGoogle && u.armedBy?.includes('google_close')))) say(`    ${use.scope}`)
+  if (answers.hris === 'sheet') {
+    say('  and for the people sheet, no delegation at all: share the sheet with the service account address above as a viewer.')
+  }
+  const optional = SCOPE_USES.filter((u) => !u.required && u.armedBy && !(closesGoogle && u.armedBy.includes('google_close')))
   if (optional.length > 0) {
     say('  and only if you will arm the step that needs it:')
     for (const use of optional) say(`    ${use.scope}   (${(use.armedBy ?? []).filter((a) => a !== 'google_close').join(', ')}, and suspend when there is no identity provider)`)
