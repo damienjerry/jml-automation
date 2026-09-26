@@ -15,6 +15,7 @@ split is the whole design, and most of this page is about why.
 | `workflows/jml-leaver-manual.json` | form | `POST /v1/leavers/run` |
 | `workflows/jml-device-disposition.json` | form | `POST /v1/devices/disposition` |
 | `workflows/jml-on-error.json` | error trigger | nothing; it posts the failure |
+| `workflows/jml-ticket-inbound.json` | webhook, header auth | `POST /v1/tickets/inbound` |
 
 ## Why there is no logic here
 
@@ -40,7 +41,7 @@ all of it can, so the workflows here are wiring and nothing else.
 
 ## Import order
 
-Import `jml-on-error.json` first. The other four name it as their error
+Import `jml-on-error.json` first. The others name it as their error
 workflow, and n8n stores that reference as an id, so the target has to exist
 before the reference means anything.
 
@@ -49,8 +50,9 @@ before the reference means anything.
 3. `jml-pipeline.json`
 4. `jml-leaver-manual.json`
 5. `jml-device-disposition.json`
+6. `jml-ticket-inbound.json`
 
-Then, for each of the four: **Settings, Error Workflow, pick `jml-on-error`**.
+Then, for each of the others: **Settings, Error Workflow, pick `jml-on-error`**.
 The shipped files carry the string `jml-on-error` as a placeholder because a
 workflow id belongs to one instance and means nothing on another. Until you
 pick it, a failure in that workflow alerts nobody, which is the state the
