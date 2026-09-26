@@ -25,7 +25,7 @@ This is worth knowing rather than guessing at, because the opposite arrangement
 caused a real outage in the automation this was ported from. A container
 snapshotted its environment once at start and every scheduled job inside it read
 that snapshot, so a rotated key was correct in the file and stale in the process
-for three days, and the errors it produced were swallowed as "nothing to
+for days, and the errors it produced were swallowed as "nothing to
 report".
 
 ## What the configuration holds, and what it does not

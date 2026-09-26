@@ -5,7 +5,7 @@
  * Where one node feeds several branches, the platform runs them in order of
  * their position, topmost first, and an error anywhere ends the whole
  * execution. In the estate this toolkit replaces, adding a chat-delivery check
- * to fifteen workflows put a node that can throw at the top of the canvas, so a
+ * to every workflow put a node that can throw at the top of the canvas, so a
  * rejected post also stopped the audit push and the user notifications on the
  * sibling branches. Those branches had been the reliable half.
  *

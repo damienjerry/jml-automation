@@ -1,6 +1,6 @@
 /**
- * On the first run against a real tenant, 102 of the 150 people on the books
- * were joiner candidates, and the run reported 97 of them held over the
+ * On the first run against a real tenant, most of the people on the books were
+ * joiner candidates, and the run reported nearly all of them held over the
  * per-run cap of five, for ever.
  *
  * A fresh people store holds no activation marker for anybody, and the
@@ -8,7 +8,7 @@
  * in-scope record was a starter whose account had never been activated. With
  * the gate at `none` and `activate` armed that is a temporary password issued
  * to five long-serving people per run; with a ticketing adapter wired in, it
- * is a starter-form nudge to a hundred managers. Somebody who started longer
+ * is a starter-form nudge to most of the managers in the company. Somebody who started longer
  * ago than `joiner.graceDays` with no activation recorded is now an existing
  * employee to the selection, to the detect step and to the manager nudge, and
  * only naming them with --hris-id activates them.

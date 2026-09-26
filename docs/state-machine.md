@@ -14,7 +14,7 @@ the regression test that holds the guard in place is linked.
 Two things to be clear about before you trust any of it:
 
 - **No write in this toolkit has ever run against a real tenant.** The reads
-  and the derivations below were checked against one live estate on 2026-09-25
+  and the derivations below were checked against one live estate before this release
   and agreed with its own records; the effects (suspend, transfer, delete,
   activate) are covered by tests and an offline demo only.
 - The two device uninstall scripts have never run on real hardware. Their
@@ -348,7 +348,7 @@ Guards:
 
 ## Who IT provisions for
 
-An HR system holds people who never get a work account: drivers, hub staff,
+An HR system holds people who never get a work account: frontline staff,
 contractors on their own kit. The HR system usually knows which is which, in a
 field IT can read. The toolkit reads it into `inScope` and leans one way when it
 cannot: a person wrongly in scope costs a lookup, a person wrongly out of scope

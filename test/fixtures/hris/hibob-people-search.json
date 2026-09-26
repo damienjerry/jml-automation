@@ -48,8 +48,8 @@
       "surname": "Vale",
       "work": {
         "department": "Operations",
-        "title": "Depot Operative",
-        "site": "Northern Depot",
+        "title": "Site Operative",
+        "site": "Northern Site",
         "startDate": "2025-10-06",
         "reportsTo": { "email": "jane.doe@example.com", "displayName": "Jane Doe" }
       },
@@ -65,7 +65,7 @@
       "work": {
         "department": "Commercial",
         "title": "Account Manager",
-        "site": "Northern Depot",
+        "site": "Northern Site",
         "startDate": "2021-09-13",
         "reportsTo": { "email": "jane.doe@example.com", "displayName": "Jane Doe" }
       },
@@ -81,7 +81,7 @@
       "work": {
         "department": "Commercial",
         "title": "Field Sales",
-        "site": "Northern Depot",
+        "site": "Northern Site",
         "startDate": "2020-02-24",
         "reportsTo": { "email": "jane.doe@example.com", "displayName": "Jane Doe" }
       },

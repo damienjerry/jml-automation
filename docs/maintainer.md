@@ -108,7 +108,7 @@ Step 2 is not optional and it is not a nicety. Without it, every historic
 leaver in your HR system looks like a brand new termination on the first run.
 That exact failure is the first entry in
 [incidents.md](incidents.md#pruned-tombstones-caused-a-mass-re-fire): several
-hundred long-closed departures were treated as fresh, and five schedules had
+hundred long-closed departures were treated as fresh, and the schedules had
 to be turned off by hand.
 
 `jml store verify` prints the tombstone count and the exact day-0 selection.

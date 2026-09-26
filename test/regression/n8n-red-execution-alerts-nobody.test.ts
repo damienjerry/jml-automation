@@ -3,8 +3,8 @@
  *
  * In the estate this toolkit replaces, not one workflow named an error
  * workflow, so a red execution was visible only to somebody already looking at
- * the executions list. Nobody looks at 07:00. A daily job failed on the same
- * step for three months and was found by accident.
+ * the executions list, and nobody looks at a job that usually works. A daily
+ * job failed on the same step for months and was found by accident.
  *
  * Two halves, and both are enforced. The four working workflows must name the
  * error workflow. The error workflow itself must not name one, because it would

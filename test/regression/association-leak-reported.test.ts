@@ -6,9 +6,8 @@
  * attached after a run gets swept up by the next firing of that command,
  * whoever asked for it and whatever it was for. In the estate this was ported
  * from that happened repeatedly: a foreground timeout between the attach and
- * the detach left machines bound, and one laptop was restarted every day for
- * eleven days by a scheduled job that had nothing to do with it. The person
- * using it could not work out how to stop it.
+ * the detach left machines bound, and a laptop was restarted repeatedly by a
+ * scheduled job that had nothing to do with it.
  *
  * The connector detaches in a `finally`, re-reads the associations, and throws
  * when the machine may still be attached. It throws deliberately, even when

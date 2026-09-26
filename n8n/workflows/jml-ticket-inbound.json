@@ -24,7 +24,12 @@
         "responseMode": "onReceived",
         "options": {}
       },
-      "notes": "Point the ticketing system's ticket-created webhook here, scoped to the new-starter form. The toolkit checks the form id again, so a wrongly scoped trigger costs a 'ignored' answer rather than an opened gate."
+      "notes": "Point the ticketing system's ticket-created webhook here, scoped to the new-starter form. The toolkit checks the form id again, so a wrongly scoped trigger costs a 'ignored' answer rather than an opened gate.",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "JML Inbound Webhook"
+        }
+      }
     },
     {
       "name": "Hand the ticket to the toolkit",

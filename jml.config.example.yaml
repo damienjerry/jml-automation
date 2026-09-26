@@ -185,7 +185,7 @@ ticketing:
   # Raise a ticket when a leaver becomes a day-0 candidate, so the platforms IT does not administer have somewhere to be worked through.
   leaverTicket: true
   # One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder.
-  formInstruction: "In Slack, run /suptask and choose the New Starter IT Request form."
+  formInstruction: "In Slack, run /suptask and choose the new-starter form."
 
 ownerNotifications:
   # Tell each platform owner in the register when somebody leaves.

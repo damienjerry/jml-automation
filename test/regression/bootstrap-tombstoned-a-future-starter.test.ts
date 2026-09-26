@@ -1,6 +1,6 @@
 /**
- * The first bootstrap against a real HR tenant tombstoned four people who had
- * not started yet.
+ * A bootstrap against a real HR tenant tombstoned every person who had not
+ * started yet.
  *
  * The HR system keeps a starter off the employed list until their first day,
  * and the bootstrap read "not on the employed list" as "historic leaver". The
@@ -16,7 +16,7 @@ import { deriveHrisStatus } from '../../src/hris/status.ts'
 import { bootstrapTombstones } from '../../src/store/bootstrap.ts'
 import { MemoryPeopleStore } from '../../src/store/memory/store.ts'
 
-const TODAY = '2026-09-25'
+const TODAY = '2026-03-10'
 
 const LEFT_LONG_AGO: HrisPerson = {
   hrisId: 'hr-left',
@@ -30,7 +30,7 @@ const STARTS_MONDAY: HrisPerson = {
   hrisId: 'hr-starter',
   primaryEmail: 'john.doe@example.com',
   displayName: 'John Doe',
-  startDate: '2026-09-28',
+  startDate: '2026-03-16',
   terminationDate: null,
 }
 
@@ -76,7 +76,7 @@ describe('a starter who has not started yet', () => {
     // system does not list them as employed. That is a leaver.
     const people = new MemoryPeopleStore()
     await people.init()
-    const report = await bootstrapTombstones({ people, snapshot: snapshot(), today: '2026-10-05' })
+    const report = await bootstrapTombstones({ people, snapshot: snapshot(), today: '2026-03-23' })
     expect(report.skippedHired).toBe(0)
     expect(report.tombstoned).toBe(2)
   })

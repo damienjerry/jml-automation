@@ -8,7 +8,7 @@
  * as an HR read does, and the sync created a row for each of them. Every one
  * derived to "terminated", every one had an empty Day-0 marker, and the run
  * that followed treated several hundred closed accounts as brand new
- * departures. Five schedules had to be turned off by hand.
+ * departures. The schedules had to be turned off by hand.
  *
  * The fix is one line in the sync, and it is the most important line in the
  * package: a row is never CREATED with the derived status terminated. A leaver

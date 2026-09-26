@@ -717,7 +717,7 @@
         "formInstruction": {
           "type": "string",
           "description": "One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder.",
-          "default": "In Slack, run /suptask and choose the New Starter IT Request form."
+          "default": "In Slack, run /suptask and choose the new-starter form."
         }
       },
       "required": [],

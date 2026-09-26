@@ -132,8 +132,8 @@ Watch for these in the report, in this order:
 - `delete_record`: only reached when all three above passed.
 - `warnings`: an association-leak warning means the command may still be
   attached to that machine. Detach it before anything else fires that command.
-  A leaked attachment on a restart command once restarted somebody's laptop
-  daily for eleven days.
+  A leaked attachment on a restart command once restarted a laptop repeatedly
+  for days.
 
 ## Step 5: check the machine yourself
 

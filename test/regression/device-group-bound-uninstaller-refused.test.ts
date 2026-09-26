@@ -4,10 +4,10 @@
  *
  * A trigger fires on every association the command holds, and it ignores any
  * list of targets in the request body. In the estate this was ported from an
- * installer had been left attached to a group of thirty-odd machines, so a
- * seven-device push produced fourteen results and nobody noticed until the
- * counts were compared. Another command carried sixty-six stale device
- * associations. On an installer that is a puzzle; on an uninstaller it is an
+ * installer had been left attached to a whole device group, so a push aimed
+ * at a handful of machines produced twice as many results as targets and
+ * nobody noticed until the counts were compared. Another command carried
+ * dozens of stale device associations. On an installer that is a puzzle; on an uninstaller it is an
  * outage.
  *
  * The connector refuses these itself, and there is a regression test for that.

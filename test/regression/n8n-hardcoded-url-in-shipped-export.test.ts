@@ -4,7 +4,7 @@
  *
  * The workflows this bundle replaces were full of literal addresses: an
  * internal service on a private network, a chat channel id, a tunnel hostname
- * belonging to one person's own domain. Each was harmless where it was written
+ * on a domain the organisation did not control. Each was harmless where it was written
  * and each is a live endpoint owned by a stranger once the file is shared. The
  * chat ids were the worst of it, because a wrong-but-valid channel id succeeds:
  * the post lands, just not where the sender expected.

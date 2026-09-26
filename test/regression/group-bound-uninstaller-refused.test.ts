@@ -3,9 +3,9 @@
  *
  * A trigger fires on every association a command holds, so a command attached
  * to a device group runs on every member of that group. In the estate this was
- * ported from, an installer left attached to a group of thirty-odd machines
- * turned a seven-device push into fourteen results, and nobody noticed until
- * the counts were compared. The same shape on an uninstaller strips monitoring
+ * ported from, an installer left attached to a whole device group turned a
+ * push aimed at a handful of machines into twice as many results, and nobody
+ * noticed until the counts were compared. The same shape on an uninstaller strips monitoring
  * from the whole fleet in one call.
  *
  * The rule: refuse before anything is attached and before anything is fired.

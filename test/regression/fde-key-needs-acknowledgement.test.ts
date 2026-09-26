@@ -5,7 +5,7 @@
  * Deleting a device record deletes the recovery key the provider holds for that
  * machine. In the estate this was ported from that mattered twice: a leaver's
  * laptop was about to be handed over with its key still escrowed and nowhere
- * else, and three encrypted machines were found unlocking without
+ * else, and encrypted machines were found unlocking without
  * authentication while the provider's own "encrypted, key present" field said
  * everything was fine.
  *

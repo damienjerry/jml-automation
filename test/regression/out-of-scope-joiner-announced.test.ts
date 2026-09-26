@@ -2,7 +2,7 @@
  * Every HR record was announced as a joiner, including people who never get a
  * work account.
  *
- * The HR system holds drivers, hub staff and contractors on their own kit
+ * The HR system holds frontline staff, seasonal workers and contractors on their own kit
  * alongside the people IT provisions for. Treating each of them as a joiner
  * announced accounts that would never be created and, once activation exists,
  * would try to activate them. The HR system already knows who is in scope; the

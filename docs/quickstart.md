@@ -5,9 +5,8 @@ step exists so that the first real run cannot mistake your HR history for a hund
 departures, and the staged arming exists because each stage is reversible by hand and the
 next one is less so.
 
-`jml doctor` has passed against one real tenant (a shadow run, 2026-09-25); that
-transcript names the tenant, so it is not reproduced here. Every output below is
-real output from the offline paths.
+`jml doctor` has passed against one real tenant, in a shadow run before this
+release. Every output below is real output from the offline paths.
 
 | Step | Command | Touches a provider? |
 | --- | --- | --- |

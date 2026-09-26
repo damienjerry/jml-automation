@@ -8,8 +8,8 @@
  * run is recorded as failed, somebody retries it, and now two runs are
  * attaching and detaching the same command on the same machine. In the estate
  * this was ported from, a device left attached to a command was swept up by
- * every later run of it, and one laptop was restarted daily for eleven days by
- * a job that had nothing to do with it.
+ * every later run of it, and a laptop was restarted repeatedly by a job that
+ * had nothing to do with it.
  *
  * So no route waits for work. Starting a run answers immediately with a run
  * id, and the caller polls.

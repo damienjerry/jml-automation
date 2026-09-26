@@ -93,7 +93,7 @@ node bin/jml.mjs demo
 
 ## Two things worth knowing before changing anything
 
-- **Only reads have run against a real tenant** (one shadow run, 2026-09-25:
+- **Only reads have run against a real tenant** (one shadow run before this release:
   doctor, HR read, directory read, Google scope probes, Notion read-only). No
   write has, and neither device uninstall script has run on real hardware. See
   the closing section of [SECURITY.md](SECURITY.md).

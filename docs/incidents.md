@@ -33,7 +33,7 @@ offboarding had happened. The next HR read included leavers, as an HR read
 does; the sync created a row for each one; every one derived to "terminated"
 with an empty day-0 marker; and the run that followed treated several hundred
 long-closed departures as brand new. Accounts that had been closed for years
-began to be suspended again. Five schedules had to be turned off by hand and
+began to be suspended again. The schedules had to be turned off by hand and
 the removed rows re-created.
 
 **Why it was not noticed.** Nothing counted anything. The migration reported
@@ -186,7 +186,7 @@ Held by [access-open-until-contract-end.test.ts](../test/regression/access-open-
 
 ### Every HR record was treated as needing accounts
 
-The HR system holds drivers, hub staff and contractors on their own kit
+The HR system holds frontline staff, seasonal workers and contractors on their own kit
 alongside the people IT provisions for. The sync treated each record as
 somebody needing a work account, so every one of them was announced as a
 joiner and, once activation exists, would have been activated.
@@ -691,9 +691,9 @@ it.
 
 A command trigger fires on **every** association the command holds, and it
 ignores any list of targets in the request body. An installer had been left
-attached to a group of thirty-odd machines, so a seven-device push produced
-fourteen results, and nobody noticed until the counts were compared. Another
-command carried sixty-six stale device associations. On an installer that is a
+attached to a whole device group, so a push aimed at a handful of machines
+produced twice as many results as targets, and nobody noticed until the counts
+were compared. Another command carried dozens of stale device associations. On an installer that is a
 puzzle. On an uninstaller it strips monitoring from the whole fleet in one
 call.
 
@@ -724,8 +724,8 @@ Held by [collateral-on-uninstaller-refused.test.ts](../test/regression/collatera
 The detach was the last statement of a happy path rather than a `finally`. A
 read-back that threw, or a foreground timeout, returned with the command still
 attached to a laptop. That machine then took the command every time anything
-else fired it: one laptop was restarted daily for over a week before the cause
-was found, and the person using it could not work out how to stop it. The same
+else fired it: a laptop was restarted repeatedly by jobs that had nothing to
+do with it before the cause was found. The same
 shape on an uninstaller would have stripped its agents.
 
 **Rules now in force.** Detach in a `finally`, whatever happened. Prove the
@@ -746,8 +746,8 @@ The hand-over fired the uninstall command, slept a blind two minutes, and
 deleted the device record. Its own docstring promised a last-contact check
 that was never implemented. When the uninstall had not in fact run, the record
 went anyway, and with it the only channel that could reach the machine and the
-escrowed disk-encryption key. One laptop went on reporting telemetry for weeks
-afterwards, and the eventual remedy was dropping its data at the collector.
+escrowed disk-encryption key. The machine went on reporting telemetry
+afterwards, with no channel left to reach it.
 
 **Rule now in force.** The order is fixed and the tests assert the order
 rather than the end state: uninstall, receipt, silence, and only then the
@@ -804,7 +804,7 @@ Procedure: [runbooks/canary-a-device-script.md](runbooks/canary-a-device-script.
 
 Deleting a device record deletes the disk-encryption recovery key the provider
 holds for that machine. That mattered twice: a leaver's laptop was about to be
-handed over with its key escrowed nowhere else, and three encrypted machines
+handed over with its key escrowed nowhere else, and encrypted machines
 were found to require no authentication at boot while the provider's own
 "encrypted, key present" field said everything was fine.
 
@@ -992,11 +992,10 @@ Held by [init-writes-an-unloadable-config.test.ts](../test/regression/init-write
 
 ### A chat post that reached nobody while the run recorded a success
 
-The chat API answers HTTP 200 and puts the failure in the body. Three
+The chat API answers HTTP 200 and puts the failure in the body. Several
 scheduled workflows posted nothing for weeks because the transport status was
-checked and the body was not, so a manager summary, a weekly licence report
-and a role-change alert all went quietly missing while every execution was
-green.
+checked and the body was not, so their reports went quietly missing while
+every execution was green.
 
 **Rule now in force.** A 2xx alone is not delivery. `delivered` is true only
 when the body also says `ok: true`, and an undelivered notification makes the
@@ -1006,8 +1005,8 @@ Held by [slack-ok-false.test.ts](../test/regression/slack-ok-false.test.ts).
 
 ### A standing problem announced on every run
 
-Blocked leavers were re-evaluated three times a day and the same list posted
-each time, because there was no notion of a change. Two hundred identical
+Blocked leavers were re-evaluated on every run and the same list posted
+each time, because there was no notion of a change. Hundreds of identical
 posts trained everybody to skip the channel, so the day the list actually
 changed looked like all the others. The note was also never cleared when the
 blockage resolved.
@@ -1016,7 +1015,7 @@ Two earlier attempts at a fix are pinned as well, because both looked correct
 and neither worked: keying the gate on the rendered message, which carried
 today's date and so changed every day; and keying the weekly reminder on the
 weekday alone, which is true for every run of that weekday, so the fix
-produced a day of half-hourly posts.
+produced a whole day of repeat posts.
 
 **Rules now in force.** The fingerprint is over the **set** of things being
 reported, never over a timestamp and never over a field the toolkit writes
@@ -1047,8 +1046,8 @@ Held by [n8n-export-carries-static-data.test.ts](../test/regression/n8n-export-c
 ### A shipped workflow pointing at somebody else's host
 
 The workflows this bundle replaces were full of literal addresses: an internal
-service on a private network, a chat channel id, a tunnel hostname belonging
-to one person's own domain. Each was harmless where it was written and each is
+service on a private network, a chat channel id, a tunnel hostname on a
+domain the organisation did not control. Each was harmless where it was written and each is
 a live endpoint owned by a stranger once the file is shared. The chat ids were
 the worst of it, because a wrong-but-valid channel id succeeds: the post
 lands, and not where the sender expected.
@@ -1063,8 +1062,9 @@ Held by [n8n-hardcoded-url-in-shipped-export.test.ts](../test/regression/n8n-har
 ### A failed scheduled run that alerted nobody
 
 Not one workflow named an error workflow, so a red execution was visible only
-to somebody already looking at the executions list. Nobody looks at 07:00. A
-daily job failed on the same step for three months and was found by accident.
+to somebody already looking at the executions list, and nobody looks at a job
+that usually works. A daily job failed on the same step for months and was
+found by accident.
 
 **Rule now in force.** The four working workflows must name the error
 workflow. The error workflow itself must not name one, because it would name
@@ -1078,7 +1078,7 @@ Held by [n8n-red-execution-alerts-nobody.test.ts](../test/regression/n8n-red-exe
 
 Where one node feeds several branches, the platform runs them in order of
 their position, topmost first, and an error anywhere ends the whole execution.
-Adding a chat-delivery check to fifteen workflows put a node that can throw at
+Adding a chat-delivery check to every workflow put a node that can throw at
 the top of the canvas, so a rejected post also stopped the audit push and the
 user notifications on the sibling branches. Those branches had been the
 reliable half.
@@ -1177,7 +1177,7 @@ week in which nothing went wrong.
 ## The first run against a real tenant
 
 Everything above was ported from a private automation and covered by tests
-against hand-written doubles. On 2026-09-25 the read-only half was pointed at
+against hand-written doubles. Before this release the read-only half was pointed at
 a real HR system, identity provider, Google Workspace and a Notion database
 for the first time. It found five defects in an afternoon that 1466 passing
 tests had not. Each is now a regression test.
@@ -1195,7 +1195,7 @@ case before any default applies.
 
 The HR system keeps a starter off the employed list until their first day.
 The bootstrap read "not on the employed list" as "historic leaver" and wrote a
-terminal tombstone for four future starters; the next sync then warned that
+terminal tombstone for every future starter; the next sync then warned that
 each was tombstoned while employed, and the only remedy it could offer was a
 new HR record. The sync had always read a future start date before the
 employed set. That derivation now lives in one place and the bootstrap uses it.
@@ -1208,11 +1208,11 @@ Under `--json` it now writes to stderr, with the log lines.
 ### Every employee was a joiner candidate
 
 A fresh people store holds no activation marker for anybody, and the joiner
-selection had no lower bound on the start date, so 102 of 150 people on the
+selection had no lower bound on the start date, so most of the people on the
 books were starters whose account had never been activated. The run capped at
-five and reported 97 held over the cap, for ever. With the gate at `none` that
+five and held the rest over the cap, for ever. With the gate at `none` that
 is a temporary password issued to five long-serving people per run; with a
-ticketing adapter wired in it is a starter-form nudge to a hundred managers.
+ticketing adapter wired in it is a starter-form nudge to most of the managers in the company.
 `joiner.graceDays` now bounds the selection, the detect step and the nudge;
 naming a person with `--hris-id` still looks at them.
 

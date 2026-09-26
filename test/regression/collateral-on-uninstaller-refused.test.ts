@@ -3,7 +3,7 @@
  *
  * Stale associations accumulate. A run that timed out, a console experiment, an
  * older automation that never detached: in the estate this was ported from one
- * command had sixty-six machines still attached to it. Firing that command
+ * command had dozens of machines still attached to it. Firing that command
  * would have run its script on all of them.
  *
  * The device handover flow in this toolkit only ever fires an uninstaller, so

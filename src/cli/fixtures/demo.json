@@ -90,7 +90,7 @@
       "lastName": "Marlowe",
       "department": "Commercial",
       "jobTitle": "Account Manager",
-      "site": "Northern Depot",
+      "site": "Northern Site",
       "managerEmail": "jane.doe@example.com",
       "startDate": "2021-09-13",
       "terminationDate": "2026-01-12"
@@ -103,7 +103,7 @@
       "lastName": "Nakamura",
       "department": "Commercial",
       "jobTitle": "Field Sales",
-      "site": "Northern Depot",
+      "site": "Northern Site",
       "managerEmail": "jane.doe@example.com",
       "startDate": "2020-02-24",
       "terminationDate": "2025-08-29"
@@ -115,8 +115,8 @@
       "firstName": "Morgan",
       "lastName": "Vale",
       "department": "Operations",
-      "jobTitle": "Depot Operative",
-      "site": "Northern Depot",
+      "jobTitle": "Site Operative",
+      "site": "Northern Site",
       "managerEmail": "jane.doe@example.com",
       "startDate": "2025-10-06",
       "terminationDate": null

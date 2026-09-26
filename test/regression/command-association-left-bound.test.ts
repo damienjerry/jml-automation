@@ -4,8 +4,8 @@
  * In the automation this was ported from, the detach was the last statement of
  * a happy path rather than a `finally`. A read-back that threw, or a foreground
  * timeout, therefore returned with the command still attached to a laptop. That
- * machine then took the command every time anything else fired it: one laptop
- * was restarted daily for over a week before the cause was found, and the same
+ * machine then took the command every time anything else fired it: a laptop
+ * was restarted repeatedly before the cause was found, and the same
  * shape on an uninstaller would have stripped its agents.
  *
  * The rules this file protects: detach in a `finally` whatever happened, prove

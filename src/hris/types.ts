@@ -59,7 +59,7 @@ export interface HrisPerson {
   /**
    * Whether this person is somebody IT provisions accounts for.
    *
-   * Many HR systems hold people who never get a work account: drivers, hub
+   * Many HR systems hold people who never get a work account: frontline
    * staff, contractors on their own kit. Treating every HR record as needing
    * accounts announces a joiner for each of them and looks up accounts that
    * were never created. `false` keeps them out of joiner announcements and, in

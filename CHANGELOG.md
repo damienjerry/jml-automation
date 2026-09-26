@@ -17,8 +17,8 @@ it, wait for the mailbox, and send the messages. Nothing is armed by default.
 somebody who started longer ago than that with no activation recorded is an
 existing employee to the selection, to the detect step and to the manager
 nudge. Found on the first run against a real tenant, where a fresh store made
-102 of 150 employees into starters and the run held 97 of them over the per-run
-cap for ever. `--hris-id` still activates a named person regardless.
+most of the employed set into starters and the run held nearly all of them over
+the per-run cap for ever. `--hris-id` still activates a named person regardless.
 
 **Notion people store.** One database, one row per person, single-writer
 under the pipeline lease, read-verify-write on every status change, full
@@ -172,8 +172,8 @@ workflow validation, typecheck, lint and the test suite.
 
 Read this before arming anything.
 
-- **Only the read-only half has run against a real tenant.** One shadow run on
-  2026-09-25 proved `jml doctor`, the HR read, the bootstrap, the dry-run sync
+- **Only the read-only half has run against a real tenant.** One shadow run before
+  this release proved `jml doctor`, the HR read, the bootstrap, the dry-run sync
   and selection, and the Notion adapter as a reader, and found five defects the
   test suite had not (recorded above under Added and in
   `docs/incidents.md`). Every write path is still exercised only against a

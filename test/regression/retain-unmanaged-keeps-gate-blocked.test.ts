@@ -4,9 +4,8 @@
  *
  * A leaver kept their laptop. The device record was deleted to tidy up the
  * fleet view, which removed the machine from our sight and not from the
- * network: it carried on shipping telemetry for weeks, and because the record
- * was the only command channel, there was no way left to stop it. The remedy
- * in the end was dropping its data at the collector.
+ * network: it carried on shipping telemetry, and because the record was the
+ * only command channel, there was no way left to stop it.
  *
  * So the disposition that says "they are keeping it and we cannot reach it"
  * writes NOTHING, and the day-7 deletion block STAYS BLOCKED. It is a report,

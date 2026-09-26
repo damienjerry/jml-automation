@@ -136,10 +136,10 @@ it is not overridable.
   identity account and the unlicensed Google account. The toolkit takes over from there:
   activation, licence, mailbox, organisational unit and the messages. If your HR system
   does not create accounts, the joiner path has nothing to activate.
-- **Only the read-only half has run against a real tenant.** One shadow run, on
-  2026-09-25: `jml doctor` passed against a live HR system, identity provider and Google
+- **Only the read-only half has run against a real tenant.** One shadow run, before
+  this release: `jml doctor` passed against a live HR system, identity provider and Google
   Workspace, the bootstrap and two dry cycles agreed with the estate's own records, and the
-  Notion adapter read a 700-row people database in read-only mode. It found five defects
+  Notion adapter read a live people database in read-only mode. It found five defects
   that 1466 passing tests had not, all fixed and now covered. **No write has ever run
   against a real provider**: not a suspension, a licence change, a transfer, a deletion,
   an activation or a sent message.

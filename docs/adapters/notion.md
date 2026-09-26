@@ -18,7 +18,7 @@ store:
 
 `jml store verify` works against it, and it passes the same conformance suite
 as the SQLite store, driven by an in-memory fake of the Notion API in the tests.
-It has been read against one real workspace: a 710-row people database owned by
+It has been read against one real workspace: a people database owned by
 another automation, in read-only mode, with the counts agreeing with the HR
 system. It has not written to a real workspace.
 

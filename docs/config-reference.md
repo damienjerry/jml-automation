@@ -126,7 +126,7 @@ not exist.
 | `ticketing.nudgeManager` | - | boolean | `true` | - | Ask the manager to raise the starter form when a joiner is detected and the gate is closed. Once per person. |
 | `ticketing.dayBeforeReminder` | - | boolean | `true` | - | Remind the manager once, the day before the start date, if the gate is still closed. |
 | `ticketing.leaverTicket` | - | boolean | `true` | - | Raise a ticket when a leaver becomes a day-0 candidate, so the platforms IT does not administer have somewhere to be worked through. |
-| `ticketing.formInstruction` | - | string | `"In Slack, run /suptask and choose the New Starter IT Request form."` | - | One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder. |
+| `ticketing.formInstruction` | - | string | `"In Slack, run /suptask and choose the new-starter form."` | - | One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder. |
 | `ownerNotifications.enabled` | `OWNER_NOTIFICATIONS` | boolean | `false` | - | Tell each platform owner in the register when somebody leaves. |
 | `ownerNotifications.goLiveDate` | `OWNER_NOTIFICATIONS_GO_LIVE` | string \| null | `null` | - | Required when enabled. Nobody whose leaving date is before this is ever notified, so switching the feature on cannot blast every owner about every leaver in the history. |
 | `ownerNotifications.lookbackDays` | - | integer | `14` | - | A leaver older than this is not picked up, so a register that gains an owner later does not reopen old departures. |

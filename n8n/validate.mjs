@@ -2,7 +2,7 @@
 /**
  * Gate for the shipped n8n workflow bundle.
  *
- * The five files in n8n/workflows are hand-authored, not exported from a
+ * The files in n8n/workflows are hand-authored, not exported from a
  * running instance, and every rule below exists because an export that looked
  * fine caused a failure somebody had to diagnose in production:
  *
@@ -64,12 +64,41 @@ const FORBIDDEN_TOP_LEVEL = [
 ]
 const FORBIDDEN_NODE_LEVEL = ['id', 'webhookId', 'createdAt', 'updatedAt']
 
+/**
+ * Settings n8n writes that describe the instance rather than the workflow: its
+ * timezone, who may call it, and its own bookkeeping. Each fingerprints the
+ * estate an export came from.
+ */
+export const FORBIDDEN_SETTINGS = ['timezone', 'callerIds', 'callerPolicy', 'timeSavedPerExecution', 'saveManualExecutions']
+
+/**
+ * The credential names the bundle ships, by credential type. An export carries
+ * whatever the instance called them, which is usually the name of a live
+ * system; the bundle ships these instead and n8n binds them by name on import.
+ */
+export const CANONICAL_CREDENTIAL_NAMES = {
+  httpHeaderAuth: ['JML Toolkit API', 'JML Inbound Webhook'],
+  httpBasicAuth: ['JML Form Access'],
+  slackApi: ['JML Slack Alerts'],
+}
+
+/** A resource-locator value that still carries the cache n8n fills in from a live account. */
+export function findLocatorCaches(value, path = 'parameters', out = []) {
+  if (Array.isArray(value)) value.forEach((v, i) => findLocatorCaches(v, path + '[' + i + ']', out))
+  else if (value && typeof value === 'object') {
+    for (const key of ['cachedResultName', 'cachedResultUrl']) if (key in value) out.push(path + '.' + key)
+    for (const [k, v] of Object.entries(value)) findLocatorCaches(v, path + '.' + k, out)
+  }
+  return out
+}
+
 const IS = {
   http: (n) => n.type === 'n8n-nodes-base.httpRequest',
   slack: (n) => n.type === 'n8n-nodes-base.slack',
   if: (n) => n.type === 'n8n-nodes-base.if',
   wait: (n) => n.type === 'n8n-nodes-base.wait',
   form: (n) => n.type === 'n8n-nodes-base.formTrigger',
+  webhook: (n) => n.type === 'n8n-nodes-base.webhook',
   errorTrigger: (n) => n.type === 'n8n-nodes-base.errorTrigger',
   terminal: (n) => n.type === 'n8n-nodes-base.noOp' || n.type === 'n8n-nodes-base.stopAndError',
   stop: (n) => n.type === 'n8n-nodes-base.stopAndError',
@@ -155,6 +184,9 @@ export function validateWorkflow(doc, label = 'workflow') {
   if (doc.active !== false) {
     add('shipped-inactive', 'active must be false so importing the bundle cannot arm a schedule before it has been read')
   }
+  for (const field of FORBIDDEN_SETTINGS) {
+    if (doc.settings && field in doc.settings) add('instance-settings', `settings.${field} describes the instance the export came from; remove it`)
+  }
   if (doc.settings?.executionOrder !== 'v1') {
     add('execution-order', 'settings.executionOrder must be "v1"; branch order differs under v0')
   }
@@ -188,8 +220,22 @@ export function validateWorkflow(doc, label = 'workflow') {
       }
     }
 
-    if (IS.form(node) && (node.parameters?.authentication ?? 'none') === 'none') {
-      add('form-authenticated', `${where} is an open form; anyone who can reach n8n could run it`)
+    if ((IS.form(node) || IS.webhook(node)) && (node.parameters?.authentication ?? 'none') === 'none') {
+      add('form-authenticated', `${where} is an open ${IS.form(node) ? 'form' : 'webhook'}; anyone who can reach n8n could run it`)
+    }
+    if (IS.webhook(node) && (node.parameters?.authentication ?? 'none') !== 'none' && Object.keys(node.credentials ?? {}).length === 0) {
+      add('form-authenticated', `${where} asks for authentication but names no credential, so it imports unbound`)
+    }
+    if (IS.form(node) && node.parameters?.path) {
+      add('no-form-path', `${where} ships a fixed form path; n8n assigns one on activation, and a public path is a URL everybody knows`)
+    }
+    for (const [kind, cred] of Object.entries(node.credentials ?? {})) {
+      const allowed = CANONICAL_CREDENTIAL_NAMES[kind]
+      if (!allowed) add('credential-name', `${where} uses credential type ${kind}, which the bundle does not ship`)
+      else if (!allowed.includes(cred?.name)) add('credential-name', `${where} names credential ${kind} "${cred?.name}"; ship one of ${allowed.join(', ')}`)
+    }
+    for (const hit of findLocatorCaches(node.parameters)) {
+      add('no-locator-cache', `${where} carries ${hit}, a channel or resource name cached from a live account`)
     }
 
     if (IS.http(node)) {

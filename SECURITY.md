@@ -191,7 +191,7 @@ there because the opposite behaviour caused a recorded incident.
 Stated here rather than in a footnote, because a sceptical reader is right to
 ask.
 
-- **Only reads have run against a real tenant.** One shadow run on 2026-09-25:
+- **Only reads have run against a real tenant.** One shadow run before this release:
   `jml doctor`, the HR read, the identity directory read, the Google scope
   probes and the Notion adapter in read-only mode. No write has. Every write
   path is exercised against a scripted HTTP double

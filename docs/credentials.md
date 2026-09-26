@@ -20,7 +20,7 @@ Read this before you grant anything on the strength of this page.
 
 | Claim | Status |
 | --- | --- |
-| The toolkit has run end to end against a real tenancy | **No.** The read-only half has, once (2026-09-25): doctor, HR read, directory read, scope probes, Notion read. No write has. The connectors' write paths are driven by scripted fakes in 1502 tests, and the demo runs offline with no credentials. |
+| The toolkit has run end to end against a real tenancy | **No.** The read-only half has, once, before this release: doctor, HR read, directory read, scope probes, Notion read. No write has. The connectors' write paths are driven by scripted fakes in 1502 tests, and the demo runs offline with no credentials. |
 | The two device uninstall scripts have run on real hardware | **No.** `src/engine/device/scripts/manifest.json` records `provenOnHardware: false`, and a handover is refused on any platform whose script carries that flag until you name the machine you canaried it on. See [the canary runbook](runbooks/canary-a-device-script.md). |
 | The n8n bundle has been imported into a running n8n | **No.** The exports validate and scrub; no instance has loaded them. |
 
@@ -157,8 +157,8 @@ twice per sync. There is no write path, no field update, no document upload and
 no planned feature that would add one.
 
 Say this out loud because an existing service user may already hold write
-permission for something else. In the estate this came from, the same service
-user wrote custom fields for an asset sync. That was a separate consumer. Do
+permission for something else, such as writing custom fields for an asset
+sync. That is a separate consumer. Do
 not grant this toolkit write permission on its behalf, and if you are reusing an
 over-privileged service user, know that the extra permission is not a
 requirement of anything here.
@@ -178,9 +178,9 @@ People read, on **active and inactive** employees, covering these fields:
 | Manager | `work.reportsTo.email`, `work.reportsTo.displayName` | the day-0 manager mail and the Drive transfer recipient | the transfer has no recipient and the row parks |
 | Leaving date | `internal.terminationDate`, then `employment.terminationDate` | the entire leaver schedule | nobody is ever detected as leaving |
 
-Time-off and leave endpoints are never called. In the estate this came from
-those endpoints returned empty for every range at this permission level, and a
-balance read returned 403, so no code here may assert anything about leave.
+Time-off and leave endpoints are never called. At this permission level they
+can return empty for every range, and a balance read can return 403, so no
+code here may assert anything about leave.
 
 ### Why inactive people are non-negotiable
 
@@ -533,9 +533,8 @@ grant you can see, revoke and audit from the document itself. A domain-wide
 delegation for `spreadsheets` or `drive.readonly` is a grant over everything in
 the tenancy, approved by somebody who may not be you, recorded on a console page
 nobody visits. For reading one sheet, the resource share is both smaller and
-easier to withdraw. In the estate this came from, neither account had
-`drive.readonly` delegated at all, and the sheet-writing work was done by a
-service account with the sheet shared to it as Editor.
+easier to withdraw: a sheet shared with the service account directly needs no
+`drive.readonly` delegation at all.
 
 **Be clear about what Phase 1 does with this.** No code path calls
 `readSharedSpreadsheet` or `readSharedFile`. The two store adapters that would
@@ -581,8 +580,8 @@ them by habit:
 | `users:read.email` | you want a manager looked up by address for a direct message | widens what a leaked token can enumerate |
 | `reactions:write` | you want a checklist reaction | cosmetic |
 
-`channels:read` and `groups:read` are deliberately **not** requested. The estate
-this came from granted them with no confirmed caller, and widening conversation
+`channels:read` and `groups:read` are deliberately **not** requested. Bots
+commonly hold them with no confirmed caller, and widening conversation
 reads on a bot that also holds `users:read.email` increases what a leaked token
 exposes for no benefit here.
 

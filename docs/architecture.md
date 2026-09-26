@@ -28,7 +28,7 @@ but call the sidecar on a schedule and post the result.
 ```
 
 Only the read-only half of this toolkit has run against a real tenant (one
-shadow run, 2026-09-25), no write has, and the n8n bundle has never been
+shadow run before this release), no write has, and the n8n bundle has never been
 imported into a running n8n instance. The claims below are about the code and
 its tests.
 
@@ -54,7 +54,7 @@ rather than bad luck:
 
 - the task-runner sandbox has no global `fetch`, and its HTTP helper discards
   the body of a non-2xx response, so a 401 read as a network error for hours;
-- a chat post that answered `200` with `ok:false` was believed by three
+- a chat post that answered `200` with `ok:false` was believed by several
   workflows for weeks, because nothing checked the body;
 - an expression written into a raw JSON body was sent as literal characters, so
   a channel id arrived as the text of the expression;
@@ -120,8 +120,8 @@ report.
 
 ## Why one process rather than several schedules
 
-The arrangement this was ported from had five schedules whose ordering lived in
-a comment: the HR sync ran fifteen minutes before the offboarding engine, so
+The arrangement this was ported from had several schedules whose ordering lived
+in a comment: the HR sync ran a few minutes before the offboarding engine, so
 that a leaver flipped to terminated in the morning was visible to the same
 day's day-0 run.
 
@@ -143,8 +143,8 @@ with no expiry is a lock somebody has to clear by hand at three in the morning.
 **A second concurrent run is a skip, not a failure.** It reports the skip and
 exits 0, both on the CLI and as HTTP 409. A schedule that overlaps itself is
 normal operation, and turning it into a red run teaches people to ignore red
-runs. The same shape once queued the same device restart four times in three
-minutes because four overlapping runs each read the same pending row.
+runs. The same shape once queued the same device restart several times in a
+few minutes because overlapping runs each read the same pending row.
 
 ## The store split
 

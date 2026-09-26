@@ -494,7 +494,7 @@ describe('the later phases', () => {
 describe('the run report', () => {
   it('is not ok when a notification could not be delivered, and counts it', async () => {
     // A chat API answering 200 with a failure in the body is what silently
-    // stopped three workflows posting for weeks.
+    // stopped several workflows posting for weeks.
     const h = harness({ armed: true, notifier: new CapturingNotifier(false) })
     const report = await runLeaverEngine(h.deps, RUN)
 

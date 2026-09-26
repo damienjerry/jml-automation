@@ -8,6 +8,8 @@
 # the identifier gate exists to keep out of a public repository. The generated
 # example says both files are gitignored, so they are.
 /jml.config.yaml
+/jml.config.*.yaml
+!/jml.config.example.yaml
 # Literal strings an operator never wants published. A committed denylist
 # would publish the very names it exists to block.
 tools/lint/denylist.local.txt

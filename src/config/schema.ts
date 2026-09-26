@@ -419,7 +419,7 @@ const TicketingSchema = z
     leaverTicket: z.boolean().default(true).describe(meta('', 'Raise a ticket when a leaver becomes a day-0 candidate, so the platforms IT does not administer have somewhere to be worked through.')),
     formInstruction: z
       .string()
-      .default('In Slack, run /suptask and choose the New Starter IT Request form.')
+      .default('In Slack, run /suptask and choose the new-starter form.')
       .describe(meta('', 'One sentence telling a manager how to raise the starter form. Printed in the nudge and the reminder.')),
   })
   .strict()

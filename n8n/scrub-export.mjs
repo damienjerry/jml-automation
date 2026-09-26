@@ -24,7 +24,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 
-import { ERROR_WORKFLOW_NAME, validateWorkflow } from './validate.mjs'
+import { CANONICAL_CREDENTIAL_NAMES, ERROR_WORKFLOW_NAME, FORBIDDEN_SETTINGS, validateWorkflow } from './validate.mjs'
 
 const TOP_LEVEL_TO_DROP = [
   'id', 'versionId', 'staticData', 'pinData', 'meta', 'tags', 'shared',
@@ -52,6 +52,21 @@ export function parseArgs(argv) {
   return opts
 }
 
+/** Remove the channel and resource names n8n caches from a live account. */
+function dropLocatorCaches(value, nodeName, removed) {
+  if (Array.isArray(value)) return value.map((v) => dropLocatorCaches(v, nodeName, removed))
+  if (!value || typeof value !== 'object') return value
+  const out = {}
+  for (const [k, v] of Object.entries(value)) {
+    if (k === 'cachedResultName' || k === 'cachedResultUrl') {
+      removed.push(`node "${nodeName}" ${k}`)
+      continue
+    }
+    out[k] = dropLocatorCaches(v, nodeName, removed)
+  }
+  return out
+}
+
 /**
  * Returns the scrubbed workflow and the list of what was taken out, so the
  * maintainer reviews the removals rather than trusting them.
@@ -75,6 +90,12 @@ export function scrub(doc) {
   const hasErrorTrigger = (clean.nodes ?? []).some((n) => n?.type === 'n8n-nodes-base.errorTrigger')
   const settings = { ...(clean.settings ?? {}) }
   settings.executionOrder = 'v1'
+  for (const field of FORBIDDEN_SETTINGS) {
+    if (field in settings) {
+      removed.push(`settings.${field}`)
+      delete settings[field]
+    }
+  }
   if (hasErrorTrigger) {
     if ('errorWorkflow' in settings) {
       removed.push('settings.errorWorkflow (an error workflow must not name itself)')
@@ -96,11 +117,23 @@ export function scrub(doc) {
         delete out[field]
       }
     }
+    if (out.type === 'n8n-nodes-base.formTrigger' && out.parameters?.path) {
+      removed.push(`node "${node.name}" form path`)
+      out.parameters = { ...out.parameters }
+      delete out.parameters.path
+    }
+    if (out.parameters) out.parameters = dropLocatorCaches(out.parameters, node.name, removed)
     if (out.credentials) {
       const credentials = {}
       for (const [kind, cred] of Object.entries(out.credentials)) {
         if (cred && 'id' in cred) removed.push(`node "${node.name}" credential ${kind} id`)
-        credentials[kind] = { name: cred?.name ?? kind }
+        // An instance names credentials after its live systems. The bundle
+        // ships its own names; a type with several (header auth) keeps a name
+        // only when it is already one of them, and takes the first otherwise.
+        const allowed = CANONICAL_CREDENTIAL_NAMES[kind]
+        const name = allowed ? (allowed.includes(cred?.name) ? cred.name : allowed[0]) : (cred?.name ?? kind)
+        if (name !== cred?.name) removed.push(`node "${node.name}" credential ${kind} name (renamed to "${name}")`)
+        credentials[kind] = { name }
       }
       out.credentials = credentials
     }

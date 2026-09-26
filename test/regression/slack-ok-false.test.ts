@@ -2,11 +2,10 @@
  * Failure this prevents: a chat post that reached nobody while the run recorded
  * a success.
  *
- * The API answers HTTP 200 and puts the failure in the body. Three scheduled
+ * The API answers HTTP 200 and puts the failure in the body. Several scheduled
  * workflows in the automation this toolkit replaces posted nothing for weeks
- * because the transport status was checked and the body was not, so a manager
- * summary, a weekly licence report and a role-change alert all went quietly
- * missing while every execution was green.
+ * because the transport status was checked and the body was not, so their
+ * reports went quietly missing while every execution was green.
  *
  * The rule: a 2xx alone is not delivery. `delivered` is true only when the body
  * also says `ok: true`, and an undelivered notification makes the run not ok,

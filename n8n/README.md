@@ -24,7 +24,7 @@ choice rather than bad luck:
 
 - the task-runner sandbox has no global `fetch`, and its HTTP helper discards
   the body of a non-2xx response, so a 401 read as a network error for hours;
-- a chat post that answered `200` with `ok:false` was believed by three
+- a chat post that answered `200` with `ok:false` was believed by several
   workflows for weeks, because nothing checked the body;
 - an expression written into a raw JSON body was sent as literal characters,
   so a channel id arrived as the text `={{ $json.channel }}`;
@@ -106,10 +106,14 @@ them on import by name.
 
 `JML Form Access` is not optional. A form trigger is reachable by anyone who
 can reach n8n, and these two forms suspend accounts and remove device records.
-The estate this came from had an open webhook doing the same work.
+The inbound ticket webhook is authenticated the same way, with its own header
+credential, `JML Inbound Webhook`, so the ticketing tool never holds the token
+that drives the sidecar.
 
-The bundle also ships no form path. n8n assigns one when the workflow is
-activated, and you read the URL off the trigger node. A fixed path in a public
+The bundle ships no form path. n8n assigns one when the workflow is activated,
+and you read the URL off the trigger node. The one fixed path is the inbound
+ticket webhook's, `jml-ticket-inbound`, because the ticketing tool has to be
+given it in advance; the header credential is what guards it. A fixed path in a public
 repository is a URL everybody already knows, and a form URL behaves like a
 shared secret whatever else guards it.
 
@@ -254,7 +258,7 @@ working schedule from one that has never fired.
    the restore took.
 
 Why this is worth the four minutes: a scheduled job in the estate this came from
-ran a broken build for three months and nobody noticed, because nothing
+ran a broken build for months and nobody noticed, because nothing
 distinguished "ran and found nothing to do" from "never ran". Hosted schedulers
 also throttle frequent schedules silently, so a two-minute cron that never fires
 is itself useful information about the instance you are on.
@@ -272,8 +276,10 @@ node n8n/scrub-export.mjs export.json --out n8n/workflows/jml-doctor.json
 npm run validate:workflows
 ```
 
-The scrub tool strips the instance metadata an export carries: credential ids,
-node ids, webhook paths, `pinData`, and `staticData`, which is a snapshot of
+The scrub tool strips the instance metadata an export carries: credential ids
+(and renames credentials to the bundle's names), node ids, webhook ids, form
+paths, instance settings such as the timezone and caller policy, the channel
+names a chat node caches, `pinData`, and `staticData`, which is a snapshot of
 whatever the workflow last handled. It refuses to write anything if the
 identifier gate or the validator still object, because a scrub that half worked
 leaves a file that looks scrubbed.
