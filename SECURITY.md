@@ -69,7 +69,12 @@ against your own checkout.
 | Every outbound call goes through one client | `grep -rn "fetch(\|node:https" src \| grep -v src/core/http.ts` returns nothing. ESLint enforces it: see [eslint.config.mjs](eslint.config.mjs) |
 | The only hosts contacted are vendor APIs | `grep -rno "https://[a-z0-9.-]*" src \| grep -v googleapis.com/auth` lists the HR API, JumpCloud, four Google hosts, Slack, and two literals that are never fetched (a JSON Schema `$schema` and `$id` in [src/config/generate.ts](src/config/generate.ts)) |
 | Two runtime dependencies, no transitive ones | `npm ls --omit=dev --all` prints `yaml` and `zod` and nothing else |
-| Credentials are never written anywhere by the toolkit | `jml.config.yaml` is mounted read-only in [docker-compose.yml](docker-compose.yml); nothing in `src/` writes to a credential path. `jml config show` prints references and lengths only |
+| The configuration file never holds a credential | every secret field accepts only `env:`, `file:` or `op://` references, and a literal value is refused at start-up. `jml config show` prints references and lengths only |
+| Where `jml setup` does write credentials, it says so | with Docker it writes values to `.env` in **plain text**, mode 600, because the sidecar container cannot run the 1Password CLI; without Docker a 1Password reference stays a reference and the value never reaches disk. [test/unit/setup-wizard.test.ts](test/unit/setup-wizard.test.ts) covers both |
+| Opening a people store never writes to it | [test/regression/opening-a-notion-store-changed-its-schema.test.ts](test/regression/opening-a-notion-store-changed-its-schema.test.ts). A Notion schema changes only through `jml store migrate --armed` |
+| The container build runs no dependency install script, and never sees your credentials | the [Dockerfile](Dockerfile) uses `npm ci --ignore-scripts`; [.dockerignore](.dockerignore) keeps `.env`, `jml.config.yaml`, `data/`, `audit/` and key files out of the build context |
+| The installer builds nothing you have not had the chance to check | it prints the commit and waits for a yes; `JML_REF` pins a tag or a commit. `--yes` skips the question once you have |
+| No known vulnerability in any dependency | `npm audit` reports 0, development dependencies included |
 | A secret is unprintable by construction | [src/config/secrets.ts](src/config/secrets.ts): the value lives in a closure, `toString`, `toJSON` and the Node inspect hook all return `[redacted]` |
 | Interpolating a secret is a lint error | [eslint.config.mjs](eslint.config.mjs), rule `no-restricted-syntax`. `npm run lint` |
 | Everything emitted passes through a redaction registry | [src/config/redact.ts](src/config/redact.ts). Registered in plain, percent-encoded and base64 forms, since a credential in a URL or a basic-auth header arrives encoded |
@@ -89,13 +94,13 @@ The whole set:
 
 ```
 npm ci
-npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1528 tests
+npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1535 tests
 node bin/jml.mjs demo
 ```
 
 `npm run gate` on this checkout: 0 identifier errors and 0 warnings, 4
 generated artefacts current, 6 workflow files valid, typecheck and lint clean,
-1528 tests across 157 files passing. `npm run docs:links` separately: 44
+1535 tests across 158 files passing. `npm run docs:links` separately: 44
 Markdown files and 127 source files, 0 broken links.
 
 ## Credentials and blast radius

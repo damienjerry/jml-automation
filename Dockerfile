@@ -13,9 +13,12 @@ FROM node@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa3
 WORKDIR /build
 
 # The lockfile is copied on its own so a change to the source does not
-# reinstall every dependency.
+# reinstall every dependency. --ignore-scripts, as in install.sh: no
+# dependency runs code in the builder. The build needs only the TypeScript
+# compiler and the repository's own copy script, neither of which has an
+# install step.
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY tsconfig.json ./
 COPY src ./src
@@ -25,7 +28,7 @@ RUN npm run build
 # Drop everything that only exists to build and test. The runtime image then
 # carries no compiler, no test runner and no linter, which is both smaller and
 # a smaller thing to have to patch.
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev --ignore-scripts
 
 FROM node@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runtime
 

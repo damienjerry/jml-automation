@@ -67,7 +67,7 @@ interface Harness {
   n8n: FakeN8n
 }
 
-function harness(answers: string[], opts: { doctorOk?: boolean; dockerUp?: boolean } = {}): Harness {
+function harness(answers: string[], opts: { doctorOk?: boolean; dockerUp?: boolean; verifyCode?: number } = {}): Harness {
   let out = ''
   const io: CliIo = { out: (t) => (out += t), err: (t) => (out += t), env: {}, cwd: '/' }
   const jmlCalls: string[][] = []
@@ -91,7 +91,7 @@ function harness(answers: string[], opts: { doctorOk?: boolean; dockerUp?: boole
       const armed = argv.includes('--armed')
       return { code: 0, out: JSON.stringify({ scanned: 10, tombstoned: 6, skippedActive: 3, skippedHired: 1, day0SelectionAfter: 0, warnings: [], ok: true, dryRun: !armed }) }
     }
-    if (argv[0] === 'store' && argv[1] === 'verify') return { code: 0, out: 'departed 6\nday-0 today 0\n' }
+    if (argv[0] === 'store' && argv[1] === 'verify') return { code: opts.verifyCode ?? 0, out: 'departed 6\nday-0 today 0\n' }
     return { code: 2, out: 'unexpected ' + argv.join(' ') }
   }
   return {
@@ -213,5 +213,45 @@ describe('jml setup', () => {
     expect(await setupCommand(h.io, { dir, dryRun: true }, h.deps)).toBe(0)
     expect(h.output()).toMatch(/1\. prerequisites[\s\S]*7\. n8n/)
     expect(readdirSync(dir).sort()).toEqual(['n8n'])
+  })
+
+  it('carrying on past a failing doctor finishes as incomplete, not complete', async () => {
+    const dir = checkout()
+    const answers = fullRunAnswers(googleKeyFile(dir))
+    // After the credentials: carry on at doctor, then bootstrap and n8n as normal.
+    const h = harness([...answers.slice(0, 22), 'continue', ...answers.slice(22)], { doctorOk: false })
+    expect(await setupCommand(h.io, { dir }, h.deps)).toBe(1)
+    expect(h.output()).toContain('Setup finished INCOMPLETE')
+    expect(h.output()).not.toContain('Setup is complete')
+    expect(JSON.parse(readFileSync(join(dir, 'data', 'setup-state.json'), 'utf8')).overrides).toEqual(['doctor'])
+  })
+
+  it('stops when jml store verify fails, rather than moving on to Docker', async () => {
+    const dir = checkout()
+    const h = harness(fullRunAnswers(googleKeyFile(dir)), { verifyCode: 1 })
+    expect(await setupCommand(h.io, { dir }, h.deps)).toBe(1)
+    expect(h.output()).toContain('jml store verify did not pass')
+    const state = JSON.parse(readFileSync(join(dir, 'data', 'setup-state.json'), 'utf8'))
+    expect(state.completed).not.toContain('bootstrap')
+    expect(h.n8n.requests).toEqual([])
+  })
+
+  it('without Docker, a 1Password reference stays a reference and its value never reaches disk', async () => {
+    const dir = checkout()
+    const h = harness(fullRunAnswers(googleKeyFile(dir)).slice(0, -1), { dockerUp: false })
+    expect(await setupCommand(h.io, { dir, noDocker: true }, h.deps)).toBe(0)
+    expect(await getConfig(join(dir, 'jml.config.yaml'), ['hris', 'hibob', 'serviceToken'])).toBe('op://Vault/item/field')
+    expect(await getConfig(join(dir, 'jml.config.yaml'), ['identity', 'jumpcloud', 'apiKey'])).toBe('env:JUMPCLOUD_API_KEY')
+    const env = parseEnv(readFileSync(join(dir, '.env'), 'utf8'))
+    expect(env['HIBOB_SERVICE_TOKEN'] ?? '').toBe('')
+    expect(readFileSync(join(dir, '.env'), 'utf8')).not.toContain(SECRETS.hibobTokenFromOp)
+  })
+
+  it('with Docker, says plainly that values are copied into plain-text .env', async () => {
+    const dir = checkout()
+    const h = harness(fullRunAnswers(googleKeyFile(dir)))
+    await setupCommand(h.io, { dir }, h.deps)
+    expect(h.output()).toMatch(/plain text, mode 600/)
+    expect(await getConfig(join(dir, 'jml.config.yaml'), ['hris', 'hibob', 'serviceToken'])).toBe('env:HIBOB_SERVICE_TOKEN')
   })
 })

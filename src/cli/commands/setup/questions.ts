@@ -33,6 +33,14 @@ export interface CredentialDeps {
   envPath: string
   env: Record<string, string>
   state: SetupState
+  configPath: string
+  /**
+   * True when nothing runs in a container (--no-docker). A 1Password
+   * reference is then kept as a reference in jml.config.yaml and the value
+   * never touches the disk. With Docker the sidecar cannot run the `op` CLI,
+   * so the value has to be copied into .env.
+   */
+  keepReferences: boolean
   /** Runs `op read`. Returns stdout, which is never printed. */
   opRead(ref: string): Promise<{ ok: boolean; value: string; error: string }>
 }
@@ -99,6 +107,8 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
 
 interface Needed {
   key: string
+  /** Where jml.config.yaml references this credential. */
+  path: readonly string[]
   what: string
   minimum: string
   docs: string
@@ -109,21 +119,25 @@ export function neededCredentials(a: Answers): Needed[] {
   const out: Needed[] = []
   if (a.hris === 'hibob') {
     out.push(
-      { key: 'HIBOB_SERVICE_USER_ID', what: 'HiBob service user id', minimum: 'a service user with READ access to the people fields listed in the docs; the toolkit never writes to HiBob', docs: 'docs/credentials.md#the-hr-system', kind: 'text' },
-      { key: 'HIBOB_SERVICE_TOKEN', what: 'HiBob service user token', minimum: 'the token of that same service user', docs: 'docs/credentials.md#the-hr-system', kind: 'text' },
+      { key: 'HIBOB_SERVICE_USER_ID', path: ['hris', 'hibob', 'serviceUserId'], what: 'HiBob service user id', minimum: 'a service user with READ access to the people fields listed in the docs; the toolkit never writes to HiBob', docs: 'docs/credentials.md#the-hr-system', kind: 'text' },
+      { key: 'HIBOB_SERVICE_TOKEN', path: ['hris', 'hibob', 'serviceToken'], what: 'HiBob service user token', minimum: 'the token of that same service user', docs: 'docs/credentials.md#the-hr-system', kind: 'text' },
     )
   }
   out.push(
-    { key: 'JUMPCLOUD_API_KEY', what: 'JumpCloud API key', minimum: "the key inherits its admin's role; a read-only admin is enough until you arm anything", docs: 'docs/credentials.md#jumpcloud', kind: 'text' },
-    { key: 'GOOGLE_SERVICE_ACCOUNT_JSON', what: 'Google service account key (JSON file)', minimum: 'domain-wide delegation for exactly the scopes printed below, granted one by one in the Admin console', docs: 'docs/credentials.md#google-workspace', kind: 'google-json' },
+    { key: 'JUMPCLOUD_API_KEY', path: ['identity', 'jumpcloud', 'apiKey'], what: 'JumpCloud API key', minimum: "the key inherits its admin's role; a read-only admin is enough until you arm anything", docs: 'docs/credentials.md#jumpcloud', kind: 'text' },
+    { key: 'GOOGLE_SERVICE_ACCOUNT_JSON', path: ['google', 'serviceAccountJson'], what: 'Google service account key (JSON file)', minimum: 'domain-wide delegation for exactly the scopes printed below, granted one by one in the Admin console', docs: 'docs/credentials.md#google-workspace', kind: 'google-json' },
   )
-  if (a.store === 'notion') out.push({ key: 'NOTION_API_KEY', what: 'Notion internal integration token', minimum: 'an integration shared with the people database only', docs: 'docs/adapters/notion.md', kind: 'text' })
-  if (a.slack) out.push({ key: 'SLACK_BOT_TOKEN', what: 'Slack bot token (xoxb-...)', minimum: 'chat:write, invited to the channel; nothing that reads conversations', docs: 'docs/credentials.md#slack', kind: 'text' })
+  if (a.store === 'notion') out.push({ key: 'NOTION_API_KEY', path: ['store', 'token'], what: 'Notion internal integration token', minimum: 'an integration shared with the people database only', docs: 'docs/adapters/notion.md', kind: 'text' })
+  if (a.slack) out.push({ key: 'SLACK_BOT_TOKEN', path: ['notify', 'slack', 'botToken'], what: 'Slack bot token (xoxb-...)', minimum: 'chat:write, invited to the channel; nothing that reads conversations', docs: 'docs/credentials.md#slack', kind: 'text' })
   return out
 }
 
 export async function askCredentials(d: CredentialDeps, answers: Answers): Promise<void> {
-  d.say('\nCredentials. Each value is written to .env (mode 600) and nowhere else, and is never printed.')
+  d.say(
+    d.keepReferences
+      ? '\nCredentials. A 1Password reference stays a reference in jml.config.yaml and the value never touches the disk. A pasted value or key file is written to .env (mode 600, plain text). Nothing is printed.'
+      : '\nCredentials. Values are written to .env in plain text, mode 600, because the sidecar container reads them from there and cannot run the 1Password CLI. A 1Password reference is read once and its value copied in; the reference is kept so a rotation is one re-run. Nothing is printed.',
+  )
   for (const need of neededCredentials(answers)) {
     d.say(`\n${need.what}`)
     d.say(`  minimum access: ${need.minimum}`)
@@ -144,8 +158,15 @@ export async function askCredentials(d: CredentialDeps, answers: Answers): Promi
       const ref = how === 'refresh' && known ? known : await d.prompter.ask('  1Password reference', { validate: (a) => (/^op:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+$/.test(a) ? null : 'op://vault/item/field') })
       const read = await d.opRead(ref)
       if (!read.ok || !read.value) throw new Error(`could not read ${ref}: ${read.error || 'empty value'}`)
-      value = read.value
       d.state.references[need.key] = ref
+      if (d.keepReferences) {
+        // Read once to prove the reference resolves, then keep only the reference.
+        if (need.kind === 'google-json') checkGoogleKey(read.value, d.say)
+        await setConfig(d.configPath, [[need.path, ref]])
+        d.say(`  jml.config.yaml now references ${ref} (${read.value.trim().length} characters); nothing was written to disk`)
+        continue
+      }
+      value = read.value
     } else if (how === 'file') {
       const path = await d.prompter.ask('  path to the JSON key file')
       value = await readFile(path.replace(/^~(?=\/)/, process.env['HOME'] ?? '~'), 'utf8')
@@ -155,8 +176,11 @@ export async function askCredentials(d: CredentialDeps, answers: Answers): Promi
     if (need.kind === 'google-json') value = checkGoogleKey(value, d.say)
     if (!value.trim()) throw new Error(`${need.what} is empty`)
     await setEnv(d.envPath, need.key, value.trim())
+    // The configuration points at the environment variable, whatever an
+    // earlier run set it to.
+    await setConfig(d.configPath, [[need.path, 'env:' + need.key]])
     d.env[need.key] = value.trim()
-    d.say(`  stored ${need.key} in .env (${value.trim().length} characters)`)
+    d.say(`  stored ${need.key} in .env, plain text, mode 600 (${value.trim().length} characters)`)
   }
 }
 

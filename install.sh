@@ -7,8 +7,9 @@
 #
 #   1. checks for git, Node 22.13 or newer, and Docker (it offers to install
 #      Node and Docker Desktop with Homebrew, and does nothing without a yes)
-#   2. clones the repository, or updates an existing clone, and prints the
-#      exact commit it will build, so you can compare it with GitHub
+#   2. clones the repository, or updates an existing clone, prints the exact
+#      commit it will build, and STOPS until you say yes: nothing is installed
+#      or built from code you have not had the chance to compare with GitHub
 #   3. installs dependencies with --ignore-scripts, so no third-party package
 #      runs code on this machine during the install
 #   4. builds from the source you just cloned (the TypeScript compiler, and the
@@ -23,11 +24,13 @@
 # Options:
 #   --dry-run     print every command instead of running it
 #   --no-docker   set up the command line tool only, without Docker and n8n
+#   --yes         build without asking, once you have checked the commit
 #   --help
 #
 # Environment:
 #   JML_DIR       where to clone (default: ~/jml-automation)
-#   JML_REF       branch or tag to build (default: main)
+#   JML_REF       branch, tag or full commit to build (default: main). A branch
+#                 moves after you read it; pin a tag or a commit you reviewed.
 #   JML_REPO_URL  repository to clone
 
 set -euo pipefail
@@ -37,6 +40,7 @@ DIR="${JML_DIR:-$HOME/jml-automation}"
 REF="${JML_REF:-main}"
 DRY=0
 NO_DOCKER=0
+ASSUME_YES=0
 
 usage() { sed -n '3,33p' "$0" | sed 's/^# \{0,1\}//'; }
 
@@ -44,6 +48,7 @@ for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY=1 ;;
     --no-docker) NO_DOCKER=1 ;;
+    --yes) ASSUME_YES=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $arg (try --help)" >&2; exit 2 ;;
   esac
@@ -122,12 +127,21 @@ elif [ -e "$DIR" ]; then
   note "$DIR exists and is not a git clone. Move it, or set JML_DIR, and run this again."
   exit 1
 else
-  run git clone --branch "$REF" "$REPO_URL" "$DIR"
+  # Clone then check out, so JML_REF can be a branch, a tag or a full commit.
+  run git clone "$REPO_URL" "$DIR"
+  run git -C "$DIR" checkout "$REF"
 fi
 if [ "$DRY" -eq 0 ]; then
   SHA="$(git -C "$DIR" rev-parse HEAD)"
-  note "building commit $SHA"
-  note "compare it with ${REPO_URL%.git}/commit/$SHA before you go on"
+  note "about to install dependencies for and build commit $SHA"
+  note "compare it with ${REPO_URL%.git}/commit/$SHA"
+  if git -C "$DIR" symbolic-ref -q HEAD >/dev/null; then
+    note "that is the tip of a branch, which can move; set JML_REF to this commit to pin exactly what you checked"
+  fi
+  if [ "$ASSUME_YES" -eq 0 ] && ! yes_to "Build this commit?"; then
+    note "Nothing was installed or built. The clone is in $DIR for you to read."
+    exit 0
+  fi
 fi
 
 say "3. dependencies (no package install scripts run)"

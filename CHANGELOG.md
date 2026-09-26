@@ -11,6 +11,26 @@ store, and on the leaving date suspend access, hand over files, and delete
 accounts. Phase 1b adds the joiner half: activate the staged account, license
 it, wait for the mailbox, and send the messages. Nothing is armed by default.
 
+### Fixed after an outside review
+
+An independent review before publishing found six things, all fixed:
+
+- **Opening a Notion store could change its schema**, on every command
+  including `jml doctor` and dry runs. It now only reads; `jml store migrate
+  --armed` is the one schema change.
+- **The docs said credentials are never written.** `jml setup` writes them to
+  `.env` in plain text when Docker is used. The docs now say exactly that,
+  and without Docker a 1Password reference stays a reference.
+- **The container build ran dependency install scripts** and had no
+  `.dockerignore`. Both fixed.
+- **Development dependencies carried known vulnerabilities.** Vitest 2 to 5;
+  `npm audit` reports 0.
+- **Setup could carry on past a failed check.** A `doctor` override is
+  recorded and the run finishes as incomplete; a failed bootstrap or verify
+  stops it.
+- **The installer built without pausing.** It now waits for a yes after
+  printing the commit, and builds a pinned tag or commit.
+
 ### Added
 
 **A Mac installer.** `install.sh` checks for Node 22 and Docker, installs
@@ -209,7 +229,7 @@ Read this before arming anything.
 - **The Google Sheets credential pattern is documented from earlier private
   use**; that adapter does not ship.
 
-Test coverage is not evidence about your tenant. 1528 tests across 157 files
+Test coverage is not evidence about your tenant. 1535 tests across 158 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v0.1.0

@@ -19,6 +19,7 @@
 import { mkdir } from 'node:fs/promises'
 import { openDatabase } from '../../store/sqlite/store.ts'
 import { bootstrapTombstones, verifyStore, type BootstrapReport } from '../../store/bootstrap.ts'
+import { NotionPeopleStore } from '../../store/notion/store.ts'
 import { CliError, openRuntime, statePath, type CliIo } from './context.ts'
 
 export interface StoreCommandOptions {
@@ -77,6 +78,22 @@ export async function storeCommand(io: CliIo, opts: StoreCommandOptions): Promis
             ].join('\n'),
       )
       return report.ok ? 0 : 1
+    }
+
+    if (opts.action === 'migrate' && rt.store instanceof NotionPeopleStore) {
+      // The one command that changes a Notion schema, and only when armed.
+      const missing = rt.store.missingProperties()
+      if (missing.length === 0) {
+        io.out('the Notion database already has every mapped property; nothing to add\n')
+        return 0
+      }
+      if (opts.armed !== true) {
+        io.out('REHEARSAL (nothing was changed). The Notion database lacks ' + missing.length + ' mapped propert' + (missing.length === 1 ? 'y' : 'ies') + ':\n' + missing.map((m) => '  ' + m).join('\n') + '\nRun again with --armed to add them. Nothing is removed or retyped.\n')
+        return 0
+      }
+      const added = await rt.store.ensureSchema()
+      io.out('added ' + added.length + ' propert' + (added.length === 1 ? 'y' : 'ies') + ' to the Notion database: ' + added.join(', ') + '\n')
+      return 0
     }
 
     if (opts.action === 'migrate') {

@@ -120,6 +120,10 @@ export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial
     d.prompter.close()
   }
 
+  if (state.overrides.length > 0) {
+    say(`\nSetup finished INCOMPLETE: you carried on past ${state.overrides.join(', ')}. Nothing is armed. Fix it and run jml setup --from ${state.overrides[0]}.`)
+    return 1
+  }
   say('\nSetup is complete, and nothing is armed.')
   say('  Next: open n8n, run jml-doctor and jml-pipeline once by hand, read what they would do, then activate them.')
   say('  Arming happens one action at a time in jml.config.yaml; docs/quickstart.md sections 10 to 12 walk through it.')
@@ -157,7 +161,7 @@ async function runStep(step: StepName, c: Ctx): Promise<'done' | 'stop'> {
     case 'credentials': {
       const env = await readEnv(c.envPath)
       await askCredentials(
-        { prompter: c.d.prompter, say: c.say, envPath: c.envPath, env, state: c.state, opRead: (ref) => opRead(c.d, ref) },
+        { prompter: c.d.prompter, say: c.say, envPath: c.envPath, env, state: c.state, configPath: c.configPath, keepReferences: c.noDocker, opRead: (ref) => opRead(c.d, ref) },
         await answersFromConfig(c.configPath),
       )
       return 'done'
@@ -216,46 +220,80 @@ async function doctor(c: Ctx): Promise<'done' | 'stop'> {
         c.say(`  ${row.skipped ? 'skip' : row.ok ? 'pass' : 'FAIL'}  ${row.name}: ${row.detail}`)
         if (!row.ok) c.say(`        ${row.remediation ? row.remediation + ' ' : ''}see ${row.docsAnchor}`)
       }
-      if (report.ok) {
+      if (report.ok && res.code === 0) {
         c.say('every check passed')
+        c.state.overrides = c.state.overrides.filter((o) => o !== 'doctor')
         return 'done'
       }
     }
     const next = await c.d.prompter.choose('Not every check passed.', [
       { value: 'retry', label: 'fix it (for example in the Google Admin console) and check again' },
       { value: 'credentials', label: 'enter the credentials again' },
-      { value: 'continue', label: 'carry on anyway' },
+      { value: 'continue', label: 'carry on anyway (recorded: setup will finish as incomplete until doctor passes)' },
       { value: 'stop', label: 'stop here and come back later' },
     ], 'retry')
     if (next === 'stop') return 'stop'
-    if (next === 'continue') return 'done'
+    if (next === 'continue') {
+      if (!c.state.overrides.includes('doctor')) c.state.overrides.push('doctor')
+      return 'done'
+    }
     if (next === 'credentials') {
-      await askCredentials({ prompter: c.d.prompter, say: c.say, envPath: c.envPath, env: await readEnv(c.envPath), state: c.state, opRead: (ref) => opRead(c.d, ref) }, await answersFromConfig(c.configPath))
+      await askCredentials({ prompter: c.d.prompter, say: c.say, envPath: c.envPath, env: await readEnv(c.envPath), state: c.state, configPath: c.configPath, keepReferences: c.noDocker, opRead: (ref) => opRead(c.d, ref) }, await answersFromConfig(c.configPath))
     }
   }
 }
 
 async function bootstrap(c: Ctx): Promise<'done' | 'stop'> {
   const env = await readEnv(c.envPath)
+  const adapter = await getConfig(c.configPath, ['store', 'adapter'])
+  const where = adapter === 'notion' ? 'your Notion people database' : 'the local SQLite file'
+  if (adapter === 'notion') {
+    if ((await getConfig(c.configPath, ['store', 'readOnly'])) === true) {
+      c.say('The Notion store is read-only, so there is nothing to bootstrap: the automation that owns the database already holds its leavers. Skipped.')
+      return 'done'
+    }
+    // The only schema change this toolkit makes to a Notion database, shown before it happens.
+    const plan = await c.d.jml(['store', 'migrate', '--config', c.configPath], env)
+    if (plan.code !== 0) {
+      c.say('could not read the Notion database schema:\n' + plan.out.slice(0, 2000))
+      return 'stop'
+    }
+    c.say(plan.out.trimEnd())
+    if (!/already has every mapped property/.test(plan.out)) {
+      if (!(await c.d.prompter.confirm('Add those properties to the Notion database? Nothing is removed or retyped.', false))) return 'stop'
+      const applied = await c.d.jml(['store', 'migrate', '--config', c.configPath, '--armed'], env)
+      c.say(applied.out.trimEnd())
+      if (applied.code !== 0) return 'stop'
+    }
+  }
   c.say('Every person the HR system lists as not employed becomes a tombstone, so the first real run cannot mistake a historic leaver for a new one.')
   const rehearsal = await c.d.jml(['store', 'bootstrap', '--config', c.configPath, '--json'], env)
   const r = parseJson<{ scanned: number; tombstoned: number; skippedActive: number; skippedHired: number; day0SelectionAfter: number; warnings: string[]; ok: boolean }>(rehearsal.out)
-  if (!r) {
+  if (!r || rehearsal.code > 1) {
     c.say('the rehearsal did not return a report:\n' + rehearsal.out.slice(0, 2000))
     return 'stop'
   }
   c.say(`  rehearsal: ${r.scanned} people read, ${r.tombstoned} would become tombstones, ${r.skippedActive} employed and ${r.skippedHired ?? 0} not yet started left alone`)
   for (const w of r.warnings.slice(0, 10)) c.say(`  warning: ${w}`)
-  if (!(await c.d.prompter.confirm('Write those tombstones to your local people store?', true))) return 'stop'
+  if (!r.ok) {
+    // Somebody would still be selected for offboarding. Not a reason to stop
+    // writing tombstones, but the operator must see it and say yes to it.
+    c.say(`  ${r.day0SelectionAfter} person(s) would still be selected for offboarding after the bootstrap. Read them with jml store verify before arming anything.`)
+  }
+  if (!(await c.d.prompter.confirm(`Write those tombstones to ${where}?`, r.ok))) return 'stop'
   const armed = await c.d.jml(['store', 'bootstrap', '--config', c.configPath, '--armed', '--json'], env)
   const a = parseJson<{ tombstoned: number; day0SelectionAfter: number; ok: boolean }>(armed.out)
-  if (!a) {
-    c.say('the bootstrap did not return a report:\n' + armed.out.slice(0, 2000))
+  if (!a || armed.code > 1) {
+    c.say('the bootstrap did not complete:\n' + armed.out.slice(0, 2000))
     return 'stop'
   }
   c.say(`  wrote ${a.tombstoned} tombstones; ${a.day0SelectionAfter} people would start offboarding today${a.day0SelectionAfter > 0 ? ' (read them with jml store verify before arming anything)' : ''}`)
   const verify = await c.d.jml(['store', 'verify', '--config', c.configPath], env)
   c.say(verify.out.trimEnd())
+  if (verify.code !== 0) {
+    c.say('jml store verify did not pass, so setup stops here.')
+    return 'stop'
+  }
   return 'done'
 }
 

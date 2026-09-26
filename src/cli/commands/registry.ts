@@ -305,7 +305,9 @@ export const COMMANDS: readonly CommandSpec[] = [
   storeSpec('verify', 'print the exact day-0 selection and tombstone count', [
     'Run it on both sides of a migration and compare the numbers, not the impression.',
   ]),
-  storeSpec('migrate', 'apply any pending store migration and report what the schema holds'),
+  storeSpec('migrate', 'apply any pending store migration and report what the schema holds', [
+    'On a Notion store this is the only command that changes the database: it lists the mapped properties the database lacks, and adds them with --armed.',
+  ]),
   storeSpec('backup', 'write a consistent copy of the people and state databases'),
   {
     path: ['audit', 'tail'],

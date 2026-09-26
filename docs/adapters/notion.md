@@ -36,8 +36,14 @@ properties, and for status, hold, the suspension date and the note the column
 is what the engine reads, so ticking Hold in Notion stops the engine. Everything
 structured that nobody edits by hand (aliases, account ids, leg records,
 activation markers, review reasons) is one JSON property, `JML State`, split
-across rich-text chunks. `init` adds any mapped property the database lacks
-and refuses one that exists with the wrong type; it never removes or retypes.
+across rich-text chunks.
+
+**Opening the store never changes the database.** It reads the schema,
+refuses a mapped property with a type it cannot use, and records any mapped
+property the database lacks. A missing property reads as empty and every write
+refuses until you run `jml store migrate`, which lists what is missing, and
+`jml store migrate --armed`, which adds it. That is the only schema change this
+adapter ever makes; nothing is removed or retyped.
 
 ## You probably do not need this
 

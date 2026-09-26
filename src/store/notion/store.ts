@@ -7,9 +7,10 @@
  * back. That is the most a document store can offer, and it is why the local
  * state store is never Notion.
  *
- * There is no delete and no prune, as on every adapter. `init()` adds any
- * mapped property the database lacks and refuses one that exists with the
- * wrong type; it never removes or retypes anything.
+ * There is no delete and no prune, as on every adapter. `init()` only reads
+ * the schema; `ensureSchema()`, called by `jml store migrate --armed` and
+ * nothing else, adds a mapped property the database lacks. Nothing removes or
+ * retypes a property.
  */
 
 import { SystemClock, type Clock } from '../../core/clock.ts'
@@ -45,6 +46,8 @@ export class NotionPeopleStore implements PeopleStore {
   private readonly readOnly: boolean
   /** The live type of each mapped property, so a select column is written as one. */
   private types: NotionPropertyTypes = {}
+  /** Mapped properties the database lacks, found by init(). */
+  private missing: string[] = []
   private readonly clock: Clock
   /** Page ids by HR id, filled by every read so a write does not need a query first. */
   private readonly pageIds = new Map<string, string>()
@@ -63,6 +66,15 @@ export class NotionPeopleStore implements PeopleStore {
     return this.writeCount
   }
 
+  /**
+   * Read the database schema. Never changes it.
+   *
+   * Opening a store happens on every command, `jml doctor` and every dry run
+   * included, so it must not write. A mapped property the database lacks is
+   * recorded, read as empty, and every write refuses until
+   * `jml store migrate --armed` adds it. A property with a type this adapter
+   * cannot use is refused outright.
+   */
   async init(): Promise<void> {
     const db = await this.client.getDatabase(this.databaseId)
     const gaps = schemaGaps(db, this.map)
@@ -71,16 +83,30 @@ export class NotionPeopleStore implements PeopleStore {
       const detail = gaps.wrongType.map((g) => `"${g.name}" is ${g.have}, needs ${g.want}`).join('; ')
       throw new Error(`the Notion database has mapped properties of the wrong type: ${detail}. Remap them in store.properties or change the property type in Notion.`)
     }
-    // Read-only means read-only for the schema as well. A missing property
-    // reads as empty, which is the right answer for a database this toolkit
-    // does not own.
-    if (this.readOnly) return
-    if (gaps.missing.length > 0) {
-      // Additive only. The title property cannot be added after the fact and
-      // is always present, so it never appears here.
-      const additions = Object.fromEntries(gaps.missing.filter((k) => k !== 'title').map((k) => [this.map[k], propertyDefinition(k, this.statuses)]))
-      if (Object.keys(additions).length > 0) await this.client.addDatabaseProperties(this.databaseId, additions)
+    // The title property cannot be added after the fact and always exists.
+    this.missing = gaps.missing.filter((k) => k !== 'title').map((k) => this.map[k])
+  }
+
+  /** Mapped properties the database lacks, by their Notion name. Empty once migrated. */
+  missingProperties(): readonly string[] {
+    return [...this.missing]
+  }
+
+  /**
+   * Add the mapped properties the database lacks. Additive only: nothing is
+   * removed or retyped. The only schema write this adapter makes, and only
+   * `jml store migrate --armed` calls it. Returns what was added.
+   */
+  async ensureSchema(): Promise<string[]> {
+    if (this.readOnly) throw new Error('store.readOnly is true, so the Notion database schema is never changed.')
+    const db = await this.client.getDatabase(this.databaseId)
+    const gaps = schemaGaps(db, this.map)
+    const keys = gaps.missing.filter((k) => k !== 'title')
+    if (keys.length > 0) {
+      await this.client.addDatabaseProperties(this.databaseId, Object.fromEntries(keys.map((k) => [this.map[k], propertyDefinition(k, this.statuses)])))
     }
+    await this.init()
+    return keys.map((k) => this.map[k])
   }
 
   async get(hrisId: string): Promise<Person | null> {
@@ -156,6 +182,9 @@ export class NotionPeopleStore implements PeopleStore {
   private async write(person: Person, pageId: string | null): Promise<void> {
     if (this.readOnly) {
       throw new Error(`store.readOnly is true, so the Notion database is never written (refused a write for ${person.hrisId}). Clear readOnly once this toolkit owns the database.`)
+    }
+    if (this.missing.length > 0) {
+      throw new Error(`the Notion database lacks ${this.missing.join(', ')}, so nothing is written until \`jml store migrate --armed\` adds them (refused a write for ${person.hrisId}).`)
     }
     const properties = toProperties(person, this.map, this.statuses, this.types)
     const page = pageId ? await this.client.updatePage(pageId, properties) : await this.client.createPage(this.databaseId, properties)

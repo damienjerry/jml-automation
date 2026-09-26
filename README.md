@@ -135,13 +135,21 @@ cd jml-automation
 ```
 
 It checks for Node 22 and Docker (offering Homebrew, and doing nothing without a yes),
-installs dependencies with `--ignore-scripts` so no third-party package runs code on your
-machine, builds from the source you cloned, and hands over to `jml setup`. That asks for your
+clones, prints the exact commit and **stops until you say yes**, then installs dependencies
+with `--ignore-scripts` so no third-party package runs code on your machine, builds from the
+source you cloned, and hands over to `jml setup`. `main` moves; set `JML_REF` to a tag or a
+commit you have read to build exactly that. That asks for your
 organisation, HR system and people store; asks for each credential and prints its minimum
 access; runs `jml doctor` until every check passes; rehearses the tombstone bootstrap before
 writing it; starts the sidecar and n8n with Docker Compose; and imports the six workflows with
 their credentials over the n8n API. It resumes where it stopped, and nothing is armed at the
 end. `./install.sh --no-docker` sets up the command line tool alone.
+
+**Where your credentials end up.** With Docker, every value is written to `.env` in plain
+text, mode 600, because the sidecar container reads it from there and cannot run the
+1Password CLI; a 1Password reference is read once and its value copied in. Without Docker, a
+1Password reference stays a reference in `jml.config.yaml` and the value never touches the
+disk. `jml.config.yaml` itself never holds a credential in either case.
 
 ## What it does
 
@@ -269,7 +277,7 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | HR adapter: HiBob | required, or write your own | Read-only. No write, no time-off endpoints. |
 | HR adapter: JSON fixture | ships | Rehearse the sync, the detection and the store commands offline against a file. It is what `jml init` selects, so a first run cannot read a real HR system by accident. See [docs/adapters/hris-fixture.md](docs/adapters/hris-fixture.md). |
 | People store: SQLite | default | Transactional. `node:sqlite`, no native module. |
-| People store: Notion | optional | One Notion database, one row per person. Single-writer under the pipeline lease; `init` adds missing properties and never removes one. Passes the same conformance suite as SQLite. |
+| People store: Notion | optional | One Notion database, one row per person. Single-writer under the pipeline lease; opening it never changes the database, and only `jml store migrate --armed` adds a missing property. Passes the same conformance suite as SQLite. |
 | People store: Sheets | interface only | Not shipped in this release. |
 | People store: memory | demo and dry-run only | Nothing persists. |
 | Identity provider: JumpCloud | required | Users, device bindings, commands, command results. |

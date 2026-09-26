@@ -86,10 +86,12 @@ export interface SetupState {
   references: Record<string, string>
   /** n8n credential ids from an earlier import, so a re-run does not duplicate them. */
   n8nCredentialIds: Record<string, string>
+  /** Checks the operator chose to carry on past. Setup does not report complete while any remain. */
+  overrides: string[]
 }
 
 export function emptyState(): SetupState {
-  return { version: 1, completed: [], references: {}, n8nCredentialIds: {} }
+  return { version: 1, completed: [], references: {}, n8nCredentialIds: {}, overrides: [] }
 }
 
 export async function loadState(path: string): Promise<SetupState> {

@@ -1,0 +1,37 @@
+# What Docker may send to the builder. The build copies only package.json,
+# the lockfile, tsconfig.json, src, tools, bin, schema and n8n, but Docker sends
+# the whole context first, so anything not excluded here reaches the builder
+# even though it never reaches the image. Credentials and people data must
+# never be in that set.
+
+# Credentials and configuration with real values
+.env
+.env.*
+!.env.example
+jml.config.yaml
+jml.config.*.yaml
+!jml.config.example.yaml
+secrets/
+*.pem
+*.key
+service-account*.json
+credentials.json
+tools/lint/denylist.local.txt
+
+# People data, state and the audit log
+data/
+audit/
+*.sqlite
+*.sqlite3
+*.db
+
+# Nothing the build needs
+.git/
+node_modules/
+dist/
+coverage/
+test/
+docs/
+.github/
+*.md
+!n8n/README.md

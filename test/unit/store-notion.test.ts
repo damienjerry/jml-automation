@@ -2,9 +2,28 @@ import { describe, expect, it } from 'vitest'
 import { describePeopleStoreConformance, samplePerson } from '../../src/store/conformance.ts'
 import { NotionClient } from '../../src/store/notion/client.ts'
 import { NotionPeopleStore } from '../../src/store/notion/store.ts'
+import { PROPERTY_TYPES, resolvePropertyMap, resolveStatusValues, type NotionPropertyMap } from '../../src/store/notion/schema.ts'
 import { FakeNotion } from '../helpers/fake-notion.ts'
 
+/**
+ * Give a fake database every mapped property it lacks, as `jml store migrate
+ * --armed` would. Opening a store never adds them itself, so the tests that
+ * exercise reads and writes start from a migrated database.
+ */
+function provision(fake: FakeNotion): FakeNotion {
+  const map = resolvePropertyMap()
+  const statuses = resolveStatusValues()
+  for (const key of Object.keys(map) as (keyof NotionPropertyMap)[]) {
+    const name = map[key]
+    if (fake.database.properties[name]) continue
+    const type = PROPERTY_TYPES[key][0]!
+    fake.database.properties[name] = type === 'select' ? { type, select: { options: Object.values(statuses).map((n) => ({ name: n })) } } : { type }
+  }
+  return fake
+}
+
 function make(fake = new FakeNotion()) {
+  provision(fake)
   const client = new NotionClient({ http: fake.http(), token: { use: (fn) => fn('notion-token-not-real') } })
   return { fake, store: new NotionPeopleStore({ client, databaseId: fake.database.id }) }
 }
@@ -19,16 +38,22 @@ describePeopleStoreConformance({
 })
 
 describe('the Notion store on its own', () => {
-  it('adds every mapped property the database lacks, and nothing else', async () => {
-    const { fake, store } = make()
+  it('adds the mapped properties a database lacks only through ensureSchema, and nothing else', async () => {
+    const fake = new FakeNotion()
+    const client = new NotionClient({ http: fake.http(), token: { use: (fn) => fn('notion-token-not-real') } })
+    const store = new NotionPeopleStore({ client, databaseId: fake.database.id })
     await store.init()
+    expect(store.missingProperties()).toContain('JML State')
+    expect(await store.ensureSchema()).toContain('JML State')
     const names = Object.keys(fake.database.properties).sort()
     expect(names).toContain('JML State')
     expect(names).toContain('Offboarding Hold')
     expect(fake.database.properties['Status']?.type).toBe('select')
     expect(fake.database.properties['Status']?.select?.options.map((o) => o.name)).toEqual(['Hired', 'Active', 'Terminated', 'Offboarding', 'Departed'])
-    // A second init finds nothing missing and touches the schema no further.
+    expect(store.missingProperties()).toEqual([])
+    // Nothing left to add, and a second open touches the schema no further.
     const before = fake.requests.length
+    expect(await store.ensureSchema()).toEqual([])
     await store.init()
     expect(fake.requests.slice(before).filter((r) => r.method === 'PATCH')).toEqual([])
   })
