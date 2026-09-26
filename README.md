@@ -1,5 +1,16 @@
 # jml-automation
 
+> **Experimental.** A reference toolkit, not a product. Setup 1.0a's read-only
+> half has run against one real tenant; no write, in either setup, has ever run
+> against a real provider, and setup 1.0b has never run against a real tenant
+> at all. Read what was tested below before you rely on any of it.
+
+**Why it exists.** So that one IT person, or a small IT team, can automate
+joiners and leavers themselves, without paying for a lifecycle product or for
+tools they do not otherwise need. It is shared as a working example to copy,
+run and change, and the docs explain every step and safety rule so the idea
+can be rebuilt on whatever you already use.
+
 An HR-driven account lifecycle toolkit for Google Workspace. It reads your HR
 system, or a spreadsheet of people, every day. When somebody leaves, it closes
 their sign-in, sets an auto-reply, removes their paid licence, signs them out,

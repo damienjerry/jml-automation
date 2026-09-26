@@ -6,6 +6,10 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.1.0] - 2026-09-26: setup 1.0b
 
+Experimental, like 1.0.0: shared so a single IT person or a small team can
+automate joiners and leavers without paying for a lifecycle product or tools
+they do not otherwise need. Setup 1.0b has never run against a real tenant.
+
 Released as `v1.0b`. It holds both setups: 1.0a (HiBob, JumpCloud and Google
 Workspace, unchanged) and 1.0b (Google Workspace alone, with any HR source).
 The package version is 1.1.0 because npm needs a semantic version; the setup

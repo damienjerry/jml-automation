@@ -1,5 +1,10 @@
 # The idea, and how to make it fit your stack
 
+This is experimental reference code, shared so that a single IT person or a
+small team can build this automation without paying for a lifecycle product or
+for tools they do not otherwise need. Nothing here has been proven by writes
+against a real provider; treat every armed step as something you are testing.
+
 This repository is two things. It is a working tool for one exact mix of
 platforms, and it is a worked example of an idea that fits almost any mix. If
 you run the same platforms, the work is mostly configuration: your credentials,
