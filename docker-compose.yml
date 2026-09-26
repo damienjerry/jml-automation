@@ -14,12 +14,12 @@
 # private network and from nowhere else. Publishing it would put an endpoint
 # that can delete accounts on your host interface, behind one bearer token.
 
-name: jml-toolkit
+name: automating-it-on-and-offboarding
 
 services:
   jml:
     build: .
-    image: jml-toolkit:local
+    image: automating-it-on-and-offboarding:local
     restart: unless-stopped
     env_file: .env
     environment:

@@ -1,4 +1,4 @@
-# gitleaks config for jml-toolkit.
+# gitleaks config for automating-it-on-and-offboarding.
 # The public repo must contain no credential of any kind. This extends the
 # default rule set with the vendor key shapes this toolkit touches.
 [extend]

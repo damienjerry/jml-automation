@@ -30,8 +30,8 @@ release. Every output below is real output from the offline paths.
 ## 1. Run the demo
 
 ```
-git clone <this-repository> jml-toolkit
-cd jml-toolkit
+git clone https://github.com/damienjerry/automating-it-on-and-offboarding.git
+cd automating-it-on-and-offboarding
 npm ci
 npm run build
 node bin/jml.mjs demo

@@ -1,4 +1,4 @@
-# jml-toolkit
+# automating-it-on-and-offboarding
 
 Joiner, mover and leaver automation for JumpCloud and Google Workspace, driven by your HR
 system. The HR system is the source of truth: when somebody appears in it, the toolkit
@@ -14,8 +14,8 @@ It deletes accounts. Read the demo below before you read anything else, then rea
 ## Run the demo first. No credentials, no network
 
 ```
-git clone <this-repository> jml-toolkit
-cd jml-toolkit
+git clone https://github.com/damienjerry/automating-it-on-and-offboarding.git
+cd automating-it-on-and-offboarding
 npm ci
 npm run build
 node bin/jml.mjs demo

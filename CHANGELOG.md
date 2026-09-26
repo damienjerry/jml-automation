@@ -196,4 +196,4 @@ Read this before arming anything.
 Test coverage is not evidence about your tenant. 1457 tests across 149 files
 pass on this checkout, and every one of them runs against a fake.
 
-[0.1.0]: https://github.com/jml-toolkit/jml-toolkit/releases/tag/v0.1.0
+[0.1.0]: https://github.com/damienjerry/automating-it-on-and-offboarding/releases/tag/v0.1.0

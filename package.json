@@ -1,7 +1,15 @@
 {
-  "name": "jml-toolkit",
+  "name": "automating-it-on-and-offboarding",
   "version": "0.1.0",
   "description": "HRIS-driven joiner/mover/leaver automation for JumpCloud and Google Workspace: provision on hire, suspend, transfer and delete on the leaving date.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/damienjerry/automating-it-on-and-offboarding.git"
+  },
+  "homepage": "https://github.com/damienjerry/automating-it-on-and-offboarding#readme",
+  "bugs": {
+    "url": "https://github.com/damienjerry/automating-it-on-and-offboarding/issues"
+  },
   "license": "MIT",
   "type": "module",
   "engines": {
