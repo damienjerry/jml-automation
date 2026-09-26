@@ -122,6 +122,27 @@ list read as "nothing to block on", and one failed read deleted the account. Tha
 `leaver.deviceGate.failClosed` in [docs/config-reference.md](docs/config-reference.md), and
 it is not overridable.
 
+## Install on a Mac
+
+When the demo makes sense, the installer takes a Mac from nothing to a scheduled first
+dry run. Read `install.sh` before you run it: it is short, it prints every command before it
+runs it, and `--dry-run` prints them without running any.
+
+```
+git clone https://github.com/damienjerry/jml-automation.git
+cd jml-automation
+./install.sh
+```
+
+It checks for Node 22 and Docker (offering Homebrew, and doing nothing without a yes),
+installs dependencies with `--ignore-scripts` so no third-party package runs code on your
+machine, builds from the source you cloned, and hands over to `jml setup`. That asks for your
+organisation, HR system and people store; asks for each credential and prints its minimum
+access; runs `jml doctor` until every check passes; rehearses the tombstone bootstrap before
+writing it; starts the sidecar and n8n with Docker Compose; and imports the six workflows with
+their credentials over the n8n API. It resumes where it stopped, and nothing is armed at the
+end. `./install.sh --no-docker` sets up the command line tool alone.
+
 ## What it does
 
 | Phase | When | What runs |
@@ -162,9 +183,6 @@ it is not overridable.
   exist.
 - **No Linux device handover.** A handover on a Linux machine is refused rather than being
   sent the Windows script.
-- **`jml n8n import` does not work in this release.** It runs `n8n/import.mjs`, which does
-  not ship, and says so with an exit code of 2. Import the five files by hand through the
-  n8n editor, in the order [n8n/README.md](n8n/README.md) gives.
 - **Self-hosted n8n only.** The bundle needs form triggers, environment variables and a
   private network to the sidecar.
 

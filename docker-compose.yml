@@ -50,6 +50,10 @@ services:
       JML_API_TOKEN: ${JML_API_TOKEN:?set JML_API_TOKEN in .env, or run `jml init` to generate one}
       # By service name on the private network, so no host port is involved.
       JML_API_URL: http://jml:8787
+      # Anything but the exact string false is a dry run, so unset is safe.
+      JML_DRY_RUN: ${JML_DRY_RUN:-true}
+      # The channel the workflows post to. Not a secret; read from .env.
+      SLACK_JML_CHANNEL_ID: ${SLACK_JML_CHANNEL_ID:-}
       GENERIC_TIMEZONE: ${ORG_TIMEZONE:-Europe/London}
       TZ: ${ORG_TIMEZONE:-Europe/London}
       # Executions are the record of what was asked for and when. Keeping only

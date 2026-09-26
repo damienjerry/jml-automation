@@ -28,8 +28,8 @@ but call the sidecar on a schedule and post the result.
 ```
 
 Only the read-only half of this toolkit has run against a real tenant (one
-shadow run before this release), no write has, and the n8n bundle has never been
-imported into a running n8n instance. The claims below are about the code and
+shadow run before this release), no write has, and the n8n bundle has been
+imported into a real n8n but never executed. The claims below are about the code and
 its tests.
 
 ## What runs where

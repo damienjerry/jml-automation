@@ -19,7 +19,8 @@ import { deviceCommand } from './device.ts'
 import { generateCommand, initCommand } from './init.ts'
 import { leaverCommand, type LeaverCommandOptions } from './leaver.ts'
 import { joinerCommand, type JoinerCommandOptions } from './joiner.ts'
-import { n8nCommand } from './n8n.ts'
+import { n8nCommand, n8nImportCommand } from './n8n.ts'
+import { setupCommand } from './setup/index.ts'
 import { runCommand } from './run.ts'
 import { serveCommand } from './serve.ts'
 import { storeCommand, type StoreCommandOptions } from './store.ts'
@@ -175,6 +176,24 @@ function storeSpec(action: StoreCommandOptions['action'], summary: string, notes
 
 export const COMMANDS: readonly CommandSpec[] = [
   {
+    path: ['setup'],
+    summary: 'guided install: configuration, credentials, doctor, bootstrap, Docker and n8n, resumable',
+    value: ['from', 'dir', 'n8n-url'],
+    bool: ['dry-run', 'no-docker'],
+    notes: [
+      'Nothing is armed at the end. --dry-run prints every step and writes nothing.',
+      'Steps: prerequisites, configuration, credentials, doctor, bootstrap, compose, n8n. --from <step> redoes one and those after it.',
+    ],
+    run: (io, args) =>
+      setupCommand(io, {
+        ...(value(args, 'dir') ? { dir: value(args, 'dir') } : {}),
+        ...(value(args, 'from') ? { from: value(args, 'from') } : {}),
+        ...(value(args, 'n8n-url') ? { n8nUrl: value(args, 'n8n-url') } : {}),
+        dryRun: bool(args, 'dry-run'),
+        noDocker: bool(args, 'no-docker'),
+      }),
+  },
+  {
     path: ['init'],
     summary: 'write jml.config.yaml and .env, with a random sidecar token',
     value: ['dir'],
@@ -313,9 +332,13 @@ export const COMMANDS: readonly CommandSpec[] = [
   },
   {
     path: ['n8n', 'import'],
-    summary: 'import the shipped workflow bundle into a running automation tool',
-    passthrough: true,
-    run: (io, args) => n8nCommand(io, { action: 'import', rest: args.rest }),
+    summary: 'create the n8n credentials and import the workflow bundle, all inactive, over the n8n API',
+    value: ['url'],
+    notes: [
+      'Reads N8N_API_KEY from the environment, and the credential values from .env.',
+      'Idempotent: a workflow that already exists by name is left exactly as it is.',
+    ],
+    run: (io, args) => n8nImportCommand(io, { ...(value(args, 'url') ? { url: value(args, 'url') } : {}) }),
   },
   {
     path: ['serve'],

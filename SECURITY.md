@@ -79,19 +79,24 @@ against your own checkout.
 | Audit rows store addresses as a salted hash when `audit.minimisePii` is on | [test/regression/audit-log-keeps-addresses-in-clear.test.ts](test/regression/audit-log-keeps-addresses-in-clear.test.ts) |
 | A dry run writes nothing at all, including the toolkit's own bookkeeping | [test/regression/dry-run-writes-the-tombstone-baseline.test.ts](test/regression/dry-run-writes-the-tombstone-baseline.test.ts) |
 | The demo makes no network call and writes no file | `node bin/jml.mjs demo`. It needs no credentials and no configuration |
+| The installer runs no dependency's install script | `grep -n "npm ci" install.sh` shows `--ignore-scripts`. The build needs only the TypeScript compiler and the repository's own copy script |
+| The installer contacts only GitHub, the npm registry, and Homebrew if you say yes | read [install.sh](install.sh); every command is printed before it runs, and `./install.sh --dry-run` prints them all without running any |
+| `jml setup` never prints a secret, and writes values to `.env` only | [test/unit/setup-wizard.test.ts](test/unit/setup-wizard.test.ts) asserts no credential, including one read from 1Password, appears in its output, the config file or its state file |
+| `jml setup` runs two external programs and no others | `grep -n "shell('" src/cli/commands/setup/index.ts` shows `docker` and `op`; `op` runs only for a 1Password reference you typed |
+| The n8n import sends secrets only to your n8n's credential endpoint | [test/unit/n8n-import.test.ts](test/unit/n8n-import.test.ts). The API key it needs is scoped to `workflow:list`, `workflow:create` and `credential:create` |
 
 The whole set:
 
 ```
 npm ci
-npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1457 tests
+npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1528 tests
 node bin/jml.mjs demo
 ```
 
 `npm run gate` on this checkout: 0 identifier errors and 0 warnings, 4
-generated artefacts current, 5 workflow files valid, typecheck and lint clean,
-1457 tests across 149 files passing. `npm run docs:links` separately: 32
-Markdown files and 99 source files, 0 broken links.
+generated artefacts current, 6 workflow files valid, typecheck and lint clean,
+1528 tests across 157 files passing. `npm run docs:links` separately: 44
+Markdown files and 127 source files, 0 broken links.
 
 ## Credentials and blast radius
 
@@ -206,9 +211,10 @@ ask.
   strings, launchd labels and paths were inferred. A hand-over on an unproven
   platform is refused unless you name the machine you canaried it on, and the
   refusal names the runbook.
-- **The n8n bundle has never been imported into a running n8n.** The five
-  workflow files are hand-authored and validated by a gate that checks their
-  structure. No execution has been observed.
+- **The n8n bundle has been imported, not run.** It was imported into a real n8n of the pinned version by `jml n8n import` (six workflows inactive, the error workflow and every credential bound by id); no execution has been observed.
+- **The installer has not run end to end on a fresh Mac.** `install.sh` runs
+  in dry run and passes shellcheck; `jml setup` runs end to end against fakes.
+  The Compose step has never started the real containers.
 - **No Linux uninstall script ships.** A hand-over on a Linux machine is
   refused rather than being sent the Windows script.
 

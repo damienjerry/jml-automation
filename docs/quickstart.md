@@ -571,20 +571,18 @@ publishes **no** port: it is reachable at `http://jml:8787` on a private network
 nowhere else. Publishing it would put an endpoint that can delete accounts on your host
 interface behind one bearer token.
 
-Import the five workflow files through the n8n editor, in the order
-[n8n/README.md](../n8n/README.md) gives. `jml n8n import` does not work in this release and
-tells you so:
+Import the bundle over the n8n API. In n8n, open Settings, n8n API, and create a key with
+exactly three scopes: `workflow:list`, `workflow:create` and `credential:create`. Then:
 
 ```
-cannot find n8n/import.mjs. These scripts live in the repository rather than in the installed package, so run this from a clone. If the file is not in your checkout either, this release does not ship it and the workflow bundle documents doing that step by hand.
-see n8n/README.md
+N8N_API_KEY=<the key> node bin/jml.mjs n8n import
 ```
 
-Import `jml-on-error.json` first. The other four name it as their error workflow and n8n
-stores that reference as an id, so the target has to exist before the reference means
-anything. Then, for each of the four: Settings, Error Workflow, pick `jml-on-error`. Until
-you do, a failure in that workflow alerts nobody, which is the state the original estate was
-in for its whole life.
+It creates the four credentials from `.env` (generate the inbound token and the form login
+first with `jml setup`, or set `JML_INBOUND_WEBHOOK_TOKEN`, `N8N_FORM_USER` and
+`N8N_FORM_PASSWORD` yourself), creates `jml-on-error` first, and creates the other five
+already bound to it and to their credentials by id. Run it again and nothing is duplicated:
+a workflow that exists by name is left exactly as it is. `jml setup` runs this step for you.
 
 Everything imports inactive on purpose. Read a workflow, run it once by hand, then activate
 it.

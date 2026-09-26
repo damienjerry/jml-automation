@@ -13,6 +13,20 @@ it, wait for the mailbox, and send the messages. Nothing is armed by default.
 
 ### Added
 
+**A Mac installer.** `install.sh` checks for Node 22 and Docker, installs
+dependencies with `--ignore-scripts`, builds from the clone and hands over to
+`jml setup`, a resumable wizard: configuration, credentials with their minimum
+access printed, `jml doctor` until it passes, a rehearsed tombstone bootstrap,
+Docker Compose, and the n8n import. It prints every step with `--dry-run`,
+never prints a secret, and arms nothing.
+
+**`jml n8n import` works.** It creates the four n8n credentials and the six
+workflows over the n8n API, error workflow first, everything bound by id and
+created inactive, and is idempotent by name. It needs an API key with three
+scopes: `workflow:list`, `workflow:create`, `credential:create`. Run against a
+real instance, it found that n8n's Slack credential schema requires an empty
+`notice` field, which no fake would have known.
+
 **A grace period on the joiner side.** `joiner.graceDays` (default 7):
 somebody who started longer ago than that with no activation recorded is an
 existing employee to the selection, to the detect step and to the manager
@@ -152,8 +166,8 @@ workflow validation, typecheck, lint and the test suite.
 
 ### Not in this release
 
-- **Joiners and movers.** Phase 1 creates no accounts and changes no
-  attributes. `jml detect` announces joiners; nothing acts on them.
+- **Movers.** A role change updates the person's record and nothing else: no
+  group, licence or access is changed because somebody moved.
 - **The Microsoft Graph leg and Slack SCIM deactivation.** Interfaces only.
   `legs.azure` and `legs.slackScim` are literal `false`, and start-up refuses
   if `AZURE_CLIENT_SECRET` or `SLACK_SCIM_TOKEN` is set, because a credential
@@ -187,13 +201,15 @@ Read this before arming anything.
   hand-over on an unproven platform is refused unless the operator names the
   machine they canaried it on: see
   [docs/runbooks/canary-a-device-script.md](docs/runbooks/canary-a-device-script.md).
-- **The n8n bundle has never been imported into a running n8n.** The five
-  files are validated for structure; no execution has been observed.
-- **The Google Sheets and Notion credential patterns are documented from
-  earlier private use, not from this code**, which does not ship those
-  adapters.
+- **The n8n bundle has been imported, not run.** It was imported into a real n8n of the pinned version by `jml n8n import` (six workflows inactive, the error workflow and every credential bound by id); no execution has been observed.
+- **The installer has not run end to end on a fresh Mac.** `install.sh` has
+  run in dry run and passes shellcheck; `jml setup` runs end to end against
+  fakes of `jml`, the shell and n8n. Its Compose step has never started the
+  real containers.
+- **The Google Sheets credential pattern is documented from earlier private
+  use**; that adapter does not ship.
 
-Test coverage is not evidence about your tenant. 1457 tests across 149 files
+Test coverage is not evidence about your tenant. 1528 tests across 157 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v0.1.0

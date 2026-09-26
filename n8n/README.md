@@ -39,7 +39,15 @@ None of that can be typechecked, unit-tested or secret-scanned. In the sidecar
 all of it can, so the workflows here are wiring and nothing else.
 `npm run validate:workflows` rejects a Code node outright.
 
-## Import order
+## Import
+
+`jml n8n import` (or the last step of `jml setup`) does all of this over the n8n API, with a
+key scoped to `workflow:list`, `workflow:create` and `credential:create` and nothing else. It
+has been run against a real instance of the pinned n8n version: six workflows created
+inactive, the error workflow named by id in the other five, every credential bound by id.
+The rest of this section is the same thing by hand.
+
+### By hand
 
 Import `jml-on-error.json` first. The others name it as their error
 workflow, and n8n stores that reference as an id, so the target has to exist
