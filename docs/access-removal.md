@@ -21,7 +21,8 @@ defaults, counted from the day-0 run.
 | New sign-ins to apps federated through the identity provider (SSO) | Nothing directly. They fail because the identity provider refuses the sign-in | day 0 | no | an app's own session can outlive the suspension until it expires; end it in the app if it matters |
 | The Google mailbox, receiving | Sets an auto-reply | day 0 | yes | mail still arrives until day 6 |
 | The Google account, signing in | Removes the paid licence on day 0, suspends the account on day 6 | day 0, day 6 | yes | see below: the account is not suspended for six days |
-| Existing Google sessions, mobile sync, app passwords, third-party app grants | **Nothing.** The toolkit does not sign the account out or revoke tokens | not covered | no | if you need them gone on day 0, use the Google Admin console: sign the user out and reset their sign-in cookies, and review app passwords and connected apps |
+| Gmail, Drive, Calendar and the other Workspace services | Removing the licence takes them away. This is effectively a soft disable: the account still exists, so its files can still be handed over | day 0 | the licence removal is read back | nothing |
+| "Sign in with Google" into other apps, and access already granted to third-party apps | **Nothing.** The Google account is still active until day 6, so it still works as an identity, and tokens already issued keep working. The toolkit does not sign the account out or revoke tokens | not covered | no | sign the user out of all sessions on day 0 and review connected apps in the Google Admin console |
 | Files the person owns in Drive | Transfers ownership to the manager | day 6 | yes, the transfer is polled until complete | shared drives, files shared *with* them and calendar delegation are not moved |
 | Laptops bound to the account | Nothing on day 0. Deletion is refused while a machine is still bound | day 7 | yes, the gate reads the provider live | whether a suspended account can still unlock a bound machine depends on the agent and when it last checked in. Check it on your own devices |
 | Group memberships, shared mailboxes, delegated access | Nothing | not covered | no | remove by hand, or through whatever manages your groups |
@@ -29,17 +30,20 @@ defaults, counted from the day-0 run.
 | Personal API tokens, SSH keys, VPN profiles, shared passwords | Nothing | not covered | no | yours |
 | Microsoft 365, Entra ID, Slack SCIM | Nothing. The interfaces exist and are not implemented; start-up refuses a credential for them | not covered | no | yours |
 
-### The six-day Google window
+### The six days before the Google account is suspended
 
-The day-0 run does not suspend the Google account. That is the order this was
-built around: the file transfer runs on day 6 and the account is suspended after
-it. If Google sign-in goes through your identity provider, new Google web
-sign-ins fail from day 0 because the identity provider refuses them. Sessions
-that already exist, phones already syncing mail, and app passwords carry on
-until day 6 or until Google's own licence removal stops the service.
+The day-0 run removes the licence and leaves the account active; the account is
+suspended on day 6, after the files are handed over. Without a licence the
+Workspace services stop, so the mailbox and Drive are out of reach from day 0.
 
-If that window is not acceptable for your organisation, sign the account out by
-hand on day 0 for now. A day-0 Google sign-out step is not implemented.
+What the account can still do in those six days is be an identity. Any other
+app the person signed in to with "Sign in with Google" still accepts them, and
+any access they granted a third-party app still works. If Google sign-in goes
+through your identity provider, new sign-ins to Google itself already fail on
+day 0; a session that was open before does not.
+
+Signing the account out of every session on day 0 closes most of this. A day-0
+Google sign-out step is not implemented yet, so do it by hand for now.
 
 ## How to read the run report against this
 

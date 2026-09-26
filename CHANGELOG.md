@@ -69,8 +69,8 @@ the larger product gaps it named are listed at the end.
 New pages: [docs/policy.md](docs/policy.md) (the leaver decisions to make before
 arming, including what the toolkit does not check, such as a manager who has
 also left), [docs/access-removal.md](docs/access-removal.md) (route by route,
-what a suspension removes and what it does not, including the six days the
-Google account stays unsuspended), [docs/operating.md](docs/operating.md)
+what a suspension removes and what it does not, including what an unsuspended but unlicensed
+Google account can still do), [docs/operating.md](docs/operating.md)
 (daily checks, stopping, a backup and restore exercised on test data, updates,
 removal, and what running it costs), and
 [docs/ai-adaptation-brief.md](docs/ai-adaptation-brief.md).
