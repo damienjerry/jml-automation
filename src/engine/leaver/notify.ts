@@ -81,6 +81,30 @@ export function offboardDates(person: Person, deps: LeaverDeps, today: string): 
   }
 }
 
+/**
+ * What the messages say about deletion, from the policy in force.
+ *
+ * The wording for automatic deletion is the long-standing text. Under
+ * `leaver.deletion: never` the messages must not tell a manager the accounts
+ * will be gone on a date, because they will not.
+ */
+export function deletionPlan(cfg: LeaverDeps['cfg'], deleteOn: string, style: 'manager' | 'it' | 'ticket'): string {
+  const never = cfg.leaver.deletion === 'never'
+  if (style === 'manager') {
+    return never
+      ? '- Their accounts are then kept, not deleted. IT will close them by hand when they\n  are no longer needed.'
+      : `- On ${deleteOn} their accounts are deleted permanently. After that date their\n  mail and any file still owned by their account cannot be recovered.\n\nIf you need anything else from their account, ask before ${deleteOn}. Once the\naccounts are gone there is nothing left to recover from.`
+  }
+  if (style === 'ticket') {
+    return never ? 'accounts are then kept; deletion is off (leaver.deletion: never)' : `${deleteOn}: accounts deleted, if every gate opens`
+  }
+  return never
+    ? 'Deletion is off (leaver.deletion: never): the accounts are kept after the hand-over. Close them by hand, then run `jml leaver tombstone`.'
+    : cfg.identity.adapter === 'none'
+      ? `Deletion is due ${deleteOn}, and is refused until the transfer has completed.`
+      : `Deletion is due ${deleteOn}, and is refused\nuntil the transfer has completed and no device is still bound to this person.`
+}
+
 /** One bullet per leg, in the order the legs ran. */
 export function describeLegs(legs: readonly LegResult[]): string {
   if (legs.length === 0) return '- nothing to do'
@@ -157,7 +181,7 @@ export async function notifyDay0(
       suspendedOn: dates.suspendedOn,
       actionsTaken,
       transferOn: dates.transferOn,
-      deleteOn: dates.deleteOn,
+      deletionPlan: deletionPlan(deps.cfg, dates.deleteOn, 'manager'),
       itTeamSignature: deps.cfg.org.itTeamSignature,
     })
     results.push(
@@ -177,7 +201,7 @@ export async function notifyDay0(
     managerStatus: orElse(person.managerEmail, 'no manager address in the HR record'),
     actionsTaken,
     transferOn: dates.transferOn,
-    deleteOn: dates.deleteOn,
+    deletionPlan: deletionPlan(deps.cfg, dates.deleteOn, 'it'),
   })
   results.push(
     await send(deps, ctx, {
@@ -204,7 +228,7 @@ export async function notifyDay6(
     transferStatus: orElse(transfer?.note, 'no hand-over was attempted'),
     transferRecipient: orElse(person.offboarding?.transferRecipient, 'nobody yet'),
     googleStatus: orElse(google?.note, 'no Google step was attempted'),
-    deleteOn: offboardDates(person, deps, today).deleteOn,
+    deletionPlan: deletionPlan(deps.cfg, offboardDates(person, deps, today).deleteOn, 'it'),
   })
   return collect([
     await send(deps, ctx, {

@@ -21,7 +21,7 @@
  * things the engine had already decided were worth saying.
  */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Notification, NotificationResult, Notifier } from './types.ts'
@@ -151,13 +151,53 @@ export class TemplateError extends Error {
   readonly code = 'template_error'
 }
 
-/** Read a template from disk, once per process. */
+let overrideDir: string | null = null
+
+/**
+ * Use your own wording for some or all messages.
+ *
+ * A file in `dir` named like a built-in template (`day0-manager.md`) replaces
+ * it; every other message keeps the built-in text. Checked here, at start-up,
+ * rather than when the message is first sent: an override naming a placeholder
+ * the toolkit does not supply would otherwise throw in the middle of a run,
+ * and a misspelt file name would silently change nothing. Returns the problems;
+ * the caller refuses to start on any.
+ */
+export function useTemplateOverrides(dir: string | null): string[] {
+  cache.clear()
+  overrideDir = null
+  if (!dir) return []
+  let files: string[]
+  try {
+    files = readdirSync(dir).filter((f) => f.endsWith('.md'))
+  } catch (err) {
+    return [`notify.templatesDir ${dir} could not be read: ${err instanceof Error ? err.message : String(err)}`]
+  }
+  const problems: string[] = []
+  for (const file of files) {
+    const name = file.slice(0, -3)
+    if (!(TEMPLATE_NAMES as readonly string[]).includes(name)) {
+      problems.push(`${file} is not a message this toolkit sends. The names are: ${TEMPLATE_NAMES.join(', ')}`)
+      continue
+    }
+    const offered = new Set(placeholdersIn(readFileSync(join(TEMPLATE_DIR, file), 'utf8')))
+    const unknown = placeholdersIn(readFileSync(join(dir, file), 'utf8')).filter((p) => !offered.has(p))
+    if (unknown.length > 0) {
+      problems.push(`${file} uses ${unknown.map((p) => '${' + p + '}').join(', ')}, which this message does not supply. It can use: ${[...offered].map((p) => '${' + p + '}').join(', ')}`)
+    }
+  }
+  if (problems.length === 0) overrideDir = dir
+  return problems
+}
+
+/** Read a template from disk, once per process: your override if there is one, else the built-in. */
 export function loadTemplate(name: TemplateName): string {
   const cached = cache.get(name)
   if (cached !== undefined) return cached
   let text: string
   try {
-    text = readFileSync(join(TEMPLATE_DIR, `${name}.md`), 'utf8')
+    const own = overrideDir ? join(overrideDir, `${name}.md`) : null
+    text = own && existsSync(own) ? readFileSync(own, 'utf8') : readFileSync(join(TEMPLATE_DIR, `${name}.md`), 'utf8')
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     throw new TemplateError(`could not read the ${name} template: ${message}`)

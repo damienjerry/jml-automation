@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { deletionPlan } from '../../src/engine/leaver/notify.ts'
+import { leaverConfig } from '../fixtures/leaver/harness.ts'
 import {
   loadTemplate,
   placeholdersIn,
@@ -62,12 +64,20 @@ describe('the notification templates', () => {
         'actionsTaken',
         'suspendedOn',
         'transferOn',
-        'deleteOn',
+        'deletionPlan',
         'itTeamSignature',
       ]),
     )
     expect(text).toMatch(/transferred to you/)
-    expect(text).toMatch(/deleted permanently/)
+  })
+
+  it('tells the manager the deletion date, or that the accounts are kept, by the policy in force', () => {
+    const automatic = deletionPlan(leaverConfig(), '2026-03-10', 'manager')
+    expect(automatic).toMatch(/On 2026-03-10 their accounts are deleted permanently/)
+    const kept = deletionPlan(leaverConfig({ leaver: { deletion: 'never' } }), '2026-03-10', 'manager')
+    expect(kept).toMatch(/kept, not deleted/)
+    expect(kept).not.toMatch(/2026-03-10|deleted permanently/)
+    expect(deletionPlan(leaverConfig({ leaver: { deletion: 'never' } }), '2026-03-10', 'ticket')).not.toMatch(/2026-03-10/)
   })
 
   it('explains in the blocked note that silence means the same blockage', () => {

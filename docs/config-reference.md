@@ -177,6 +177,7 @@ not exist.
 | `devices.fleet.url` | `FLEET_API_URL` | string \| null | `null` | - | Optional host-inventory API. Null disables the adapter. |
 | `devices.fleet.token` | `FLEET_API_TOKEN` | string \| null | `null` | yes | Optional host-inventory token. |
 | `notify.adapters` | `NOTIFY_ADAPTERS` | slack \| email \| console[] | `[console]` | - | Where notifications go. Console is the default so the first run needs no credential. |
+| `notify.templatesDir` | `NOTIFY_TEMPLATES_DIR` | string \| null | `null` | - | A folder of your own message wording. A file named like a built-in template (day0-manager.md, joiner-welcome.md and so on) replaces it; the rest keep the built-in text. Checked at start-up: an unknown file name or a placeholder the message does not supply refuses to start. |
 | `notify.weeklyReraiseDay` | `NOTIFY_WEEKLY_RERAISE_DAY` | monday \| tuesday \| wednesday \| thursday \| friday \| none | `monday` | - | A standing problem is re-raised once on this weekday. Once, not on every run of that weekday: a weekday test is true for all of it. |
 | `notify.slack.botToken` | `SLACK_BOT_TOKEN` | string \| null | `null` | yes | Bot token, as a secret reference. |
 | `notify.slack.itChannelId` | `SLACK_JML_CHANNEL_ID` | string \| null | `null` | - | Channel the IT summary is posted to. |

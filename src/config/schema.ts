@@ -689,6 +689,16 @@ const NotifySchema = z
       .array(z.enum(['slack', 'email', 'console']))
       .default(['console'])
       .describe(meta('NOTIFY_ADAPTERS', 'Where notifications go. Console is the default so the first run needs no credential.')),
+    templatesDir: z
+      .string()
+      .nullable()
+      .default(null)
+      .describe(
+        meta(
+          'NOTIFY_TEMPLATES_DIR',
+          'A folder of your own message wording. A file named like a built-in template (day0-manager.md, joiner-welcome.md and so on) replaces it; the rest keep the built-in text. Checked at start-up: an unknown file name or a placeholder the message does not supply refuses to start.',
+        ),
+      ),
     weeklyReraiseDay: z
       .enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'none'])
       .default('monday')

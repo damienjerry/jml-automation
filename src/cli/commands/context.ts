@@ -37,6 +37,7 @@ import { JumpCloudCommands } from '../../connectors/jumpcloud/commands.ts'
 import { JumpCloudDevices } from '../../connectors/jumpcloud/devices.ts'
 import { JumpCloudUsers } from '../../connectors/jumpcloud/users.ts'
 import { NoIdentityProvider } from '../../connectors/google/identity.ts'
+import { useTemplateOverrides } from '../../notify/fanout.ts'
 import { createGoogleAuth } from '../../connectors/google/index.ts'
 import { CsvHrisAdapter } from '../../hris/csv.ts'
 import { SheetHrisAdapter } from '../../hris/sheet.ts'
@@ -149,6 +150,10 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
 /** The half that needs no file, so the demo can supply its own document. */
 export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOptions): Promise<Runtime> {
   const cfg = loaded.config
+  const templateProblems = useTemplateOverrides(cfg.notify.templatesDir)
+  if (templateProblems.length > 0) {
+    throw new CliError('notify.templatesDir has problems, so nothing was started:\n' + templateProblems.map((p) => '  - ' + p).join('\n'), { exitCode: 78, docsAnchor: 'docs/config-reference.md#keys' })
+  }
   const clock = opts.clock ?? new SystemClock()
   const logger = createLogger({
     ...(opts.logLevel ? { level: opts.logLevel } : {}),

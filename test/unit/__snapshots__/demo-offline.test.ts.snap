@@ -276,12 +276,13 @@ Day 6 offboarding: Robin Ellis (robin.ellis@example.com)
 - Files handed to: jane.doe@example.com
 - Google account: Google account suspended, read back
 
-Deletion is due 2026-01-22.
+Deletion is due 2026-01-22, and is refused
+until the transfer has completed and no device is still bound to this person.
 
 The transfer is recorded as complete only when the provider reports the job
 finished. Until then deletion stays blocked, because deleting the account first
 destroys the files the transfer was meant to move.
-
+... 1 more line(s)
 --- end notification ---
 
 --- notification (leaver.day6) would be sent to IT ---
@@ -293,12 +294,13 @@ Day 6 offboarding: Sam Rivera (sam.rivera@example.com)
 - Files handed to: jane.doe@example.com
 - Google account: Google account suspended, read back
 
-Deletion is due 2026-01-22.
+Deletion is due 2026-01-22, and is refused
+until the transfer has completed and no device is still bound to this person.
 
 The transfer is recorded as complete only when the provider reports the job
 finished. Until then deletion stays blocked, because deleting the account first
 destroys the files the transfer was meant to move.
-
+... 1 more line(s)
 --- end notification ---
 
 --- notification (leaver.day6) would be sent to IT ---
@@ -310,12 +312,13 @@ Day 6 offboarding: Kit Marlowe (kit.marlowe+exit@example.com)
 - Files handed to: jane.doe@example.com
 - Google account: Google account suspended, read back
 
-Deletion is due 2026-01-22.
+Deletion is due 2026-01-22, and is refused
+until the transfer has completed and no device is still bound to this person.
 
 The transfer is recorded as complete only when the provider reports the job
 finished. Until then deletion stays blocked, because deleting the account first
 destroys the files the transfer was meant to move.
-
+... 1 more line(s)
 --- end notification ---
 
 --- notification (run.summary) would be sent to IT ---

@@ -15,6 +15,7 @@
  * because it is driven by a webhook rather than by the pipeline.
  */
 
+import { deletionPlan } from '../leaver/notify.ts'
 import { addDays, daysBetween } from '../../core/clock.ts'
 import type { RunReport } from '../../core/types.ts'
 import { leaveDateOf } from '../../hris/leave-date.ts'
@@ -150,7 +151,7 @@ async function leaverTicket(deps: TicketingDeps, ctx: AuditCtx, adapter: Ticketi
     hrisId: person.hrisId,
     leavingDate: leaving,
     transferOn: addDays(leaving, deps.cfg.leaver.transferDay),
-    deleteOn: addDays(leaving, deps.cfg.leaver.deleteDay),
+    deletionPlan: deletionPlan(deps.cfg, addDays(leaving, deps.cfg.leaver.deleteDay), 'ticket'),
     managerEmail: person.managerEmail ?? 'none held',
   })
   if (ctx.dryRun) return true
