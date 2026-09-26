@@ -27,6 +27,7 @@ them, not left to infer them.
 | What if the HR data is stale? | A live HR read is fresh by definition. A file export is not: **its age is not checked** | none for files. Re-export before each run, or schedule the export |
 | What if the HR data is wrong? | A read below `hris.minPlausibleHeadcount` people is refused. More day-0 leavers in one run than `leaver.maxDay0PerRun` stops the whole run | both settings |
 | A legal or retention hold? | Not known to this toolkit | see below |
+| Laptops, with no identity provider (setup 1.0b)? | **No device inventory.** Deletion is not blocked by a laptop still out there, and every deletion says no machine was checked | recover laptops by hand, or use `leaver.requireOperatorAck: true` so each deletion waits for a person who has checked |
 
 ## A toolkit hold is not a legal hold
 

@@ -49,6 +49,25 @@ none are left. It needs one more delegated scope,
 armed. Sessions cannot be read back from Google, so that half is reported as
 requested rather than confirmed.
 
+## Setup 1.0b: Google Workspace with no identity provider
+
+The routes are the same, but what closes the door on day 0 is different:
+
+| Route | What the toolkit does | When | Read back? | Still your job |
+| --- | --- | --- | --- | --- |
+| Signing in to Google with the password | Replaces it with a random one nobody holds, and requires a change at next sign-in | day 0 | the forced change reads back; the password itself cannot be read | nothing |
+| Sessions already open | Ends every session | day 0 | no, Google cannot confirm it | nothing |
+| Sign in with Google into other apps, third-party grants, app passwords | With `google_signout` armed: revokes every grant and app password | day 0 | yes, a fresh list must come back empty | arm it |
+| The Google account itself | Suspended after the hand-over, then kept or deleted by the policy | day 6, day 7 | yes | nothing |
+| Laptops | **Nothing.** There is no device inventory, and every deletion says so | not covered | no | recover the laptop, and remove the person from it, by hand |
+| Sign-in through another identity provider (SSO) | **Nothing.** If Google sign-in goes through Okta, Entra ID or anything else, the Google password is not what lets the person in | not covered | no | close that account on day 0 yourself, or this setup is not closing the door |
+
+A second factor does not help an attacker here, but it does not stop the
+person either: with the password replaced, a known second factor is not enough
+to sign in. What would let them back in is a recovery route you have not
+closed, such as a recovery phone or address that can reset the password.
+Check your recovery settings before relying on this setup.
+
 ## How to read the run report against this
 
 Each step in the report ends in one of these states:

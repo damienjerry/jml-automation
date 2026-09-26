@@ -1,5 +1,11 @@
 # A possible extension: a complete route on Google Workspace and a people spreadsheet
 
+**Update:** steps 1 and 3 below are built, as setup 1.0b: Google Workspace with
+no identity provider, and a CSV file or Google Sheet as the HR source. They
+were decided from what production already proves rather than from the spike in
+step 0, so the day-0 close replaces the password and ends sessions instead of
+suspending, and suspension stays on day 6. Steps 2 and 4 are not built.
+
 **Not planned work, and not a commitment.** v1.0.0 does not include any of
 this. It is written down so that anybody who wants the route can build it in
 their own copy, in an order that works, with the design questions already

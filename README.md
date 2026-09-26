@@ -1,21 +1,40 @@
 # jml-automation
 
-An HR-driven account lifecycle toolkit for JumpCloud and Google Workspace. It
-reads your HR system every day. When somebody leaves, it suspends their identity
-provider account, sets an auto-reply, removes their paid licence, hands their
-files to their manager, and, only if you choose, deletes their accounts, reading
-back every change it makes. When somebody is about to start, it activates the
-accounts your other systems have already created. It is a command line tool, an
-optional HTTP sidecar, and six n8n workflows that hold no logic.
+An HR-driven account lifecycle toolkit for Google Workspace. It reads your HR
+system, or a spreadsheet of people, every day. When somebody leaves, it closes
+their sign-in, sets an auto-reply, removes their paid licence, signs them out,
+hands their files to their manager, and, only if you choose, deletes their
+accounts, reading back every change it makes. When somebody is about to start,
+it activates the account your HR system has already created. It is a command
+line tool, an optional HTTP sidecar, and six n8n workflows that hold no logic.
 
 It **does not create accounts** and it **does not change access for movers**.
 The read-only half has run against one real tenant. **No write has ever run
 against a real provider**: suspension, deletion and activation are tested
 against fakes only.
 
+## Two setups
+
+| | Setup 1.0a | Setup 1.0b |
+| --- | --- | --- |
+| HR source | HiBob | any: HiBob, a Google Sheet, a CSV export, or one adapter file for another HR API |
+| Accounts | JumpCloud in front of Google Workspace | Google Workspace alone |
+| Who creates the accounts | HiBob's JumpCloud integration, then JumpCloud's Google one | your HR system's Google integration, or you |
+| Day 0 closes sign-in by | suspending the JumpCloud account | replacing the Google password with one nobody holds, requiring a change at next sign-in, and ending every session |
+| Laptops | deletion is blocked while a machine is bound in JumpCloud | no device inventory: every deletion says none was checked, and you recover the laptop by hand |
+| Config | `identity.adapter: jumpcloud` | `identity.adapter: none` |
+
+**Why 1.0a uses JumpCloud.** This was built for a team that uses JumpCloud to
+manage devices, accounts and remote support in one place. That is a
+preference, not a need: nothing is wrong with Google Workspace on its own, and
+if you already use NinjaOne, a remote desktop tool or anything similar for
+devices and support, 1.0b is very likely the better fit.
+
+Both setups run from the same install; `jml setup` asks which one.
+
 ## What this is
 
-**Version 1.0.0, a fixed release.** This is a versioned reference toolkit, shared for you to use and adapt. Ongoing
+**Version 1.0, a fixed release, in two setups.** This is a versioned reference toolkit, shared for you to use and adapt. Ongoing
 maintenance, support and compatibility updates are not promised. If you deploy
 it, you own that deployment, including fixing it when a provider changes its API.
 
@@ -31,18 +50,24 @@ What was tested, and how:
 | `jml n8n import` | **run against n8n 1.123.77**, 2026-09-26 |
 | Leaver writes: suspend, auto-reply, licence, Google sign-out, hand-over, Google suspend, delete | tested against fakes only |
 | Joiner writes: temporary password, licence, org unit, welcome | tested against fakes only |
+| Setup 1.0b: closing the Google account, Google starter passwords, no device inventory | tested against fakes only |
+| HR from a CSV file | tested offline, including the shipped [examples/people.csv](examples/people.csv) |
+| HR from a Google Sheet | tested against a fake Sheets API only |
+| Your own message wording (`notify.templatesDir`) | tested offline |
 | Ticketing (Suptask), owner notifications, Slack and email notifications | tested against fakes only |
 | Device unbind and handover | never run on real hardware; handover is refused until you canary it |
 | `install.sh` and `jml setup` | tested with a scripted wizard and `--dry-run`; the Docker Compose step has never started the containers end to end |
 
 The design comes from automation that runs these steps in production at one
-organisation. This code's own write paths have not run against a real
-provider. The first armed action you take is also a test of the toolkit, so
-take it on a test account.
+organisation, on setup 1.0a. This code's own write paths have not run against a
+real provider, and setup 1.0b has not run against a real tenant at all. The
+first armed action you take is also a test of the toolkit, so take it on a
+test account.
 
 Tested with Node 22.22, n8n 1.123.77, the JumpCloud v1 and v2 APIs, the Google
 Admin SDK Directory, Licensing and Data Transfer v1 APIs, the Gmail v1 API, the
-HiBob v1 API and the Notion API version 2022-06-28.
+Sheets v4 and Drive v3 APIs (1.0b, against fakes), the HiBob v1 API and the
+Notion API version 2022-06-28.
 
 Deletion, the device handover and every other destructive step are optional
 and off by default. Suspension and reporting can be used indefinitely without
@@ -57,15 +82,16 @@ has an easier time with all three.
 
 | Your setup | Today |
 | --- | --- |
-| HiBob, JumpCloud and Google Workspace | What it was built for. Close to configuration only, once you have read [docs/policy.md](docs/policy.md) |
-| Another HR system with an API | One adapter file behind a small interface. HiBob's is about 650 lines |
-| No HR API, only an export or a spreadsheet | Convert the export to the JSON file format in [docs/adapters/hris-fixture.md](docs/adapters/hris-fixture.md). There is no CSV import yet |
-| Google Workspace without JumpCloud | **Not supported.** JumpCloud is built into the leaver steps; replacing it is a fork |
+| HiBob, JumpCloud and Google Workspace | Setup 1.0a. What it was built for. Close to configuration only, once you have read [docs/policy.md](docs/policy.md) |
+| Google Workspace, with any HR system that creates the Google accounts | Setup 1.0b |
+| No HR API, only an export or a spreadsheet | Setup 1.0b with a CSV file or a Google Sheet: [docs/adapters/hris-table.md](docs/adapters/hris-table.md) |
+| Another HR system with an API | a CSV or sheet export works today; a direct adapter is one file behind a small interface (HiBob's is about 650 lines) |
+| Nothing creates the Google accounts | **Not covered.** The toolkit activates accounts; it does not create them |
 | Microsoft 365 or Entra ID | **Not supported.** A fork, and a different lifecycle: sessions, mailbox retention, OneDrive and licences are separate decisions there |
-| Okta or another identity provider | **Not supported.** A fork |
-| Where it keeps its own records | SQLite by default, or a Notion database. Google Sheets is designed and not implemented; selecting it fails |
+| Okta or another identity provider in front of Google | **Not supported.** A fork. Setup 1.0b does not cover it: it closes the Google password, and a person who signs in to Google through another identity provider can still get in until that account is closed too |
+| Where it keeps its own records | SQLite by default, or a Notion database |
 | Scheduler | n8n, or cron |
-| Notifications | Slack, email or the console. Not Teams |
+| Notifications | Slack, email or the console, with your own wording from a folder of templates. Not Teams |
 | Ticketing | Suptask, or none |
 
 "Fork" means the change touches shared code, so plan it as a project.
@@ -81,7 +107,7 @@ a leaver has no access.
 1. **Try it.** Fictional people, no credentials, no network, one command. The
    demo below.
 2. **Look at your own organisation, changing nothing.** Point the HR adapter at
-   your HR system with a read-only token, or at an export file, and run
+   your HR system with a read-only token, or at a CSV export or a Google Sheet, and run
    `jml store bootstrap`, `jml sync --armed`, `jml detect` and `jml store verify`.
    These read the HR system and write only a local file. They need no identity
    provider or Google credential. You see who the toolkit thinks has joined and
@@ -216,8 +242,8 @@ cd jml-automation
 It checks for Node 22 and Docker (offering Homebrew, and doing nothing without a yes),
 clones, prints the exact commit and **stops until you say yes**, then installs dependencies
 with `--ignore-scripts` so no third-party package runs code on your machine, builds from the
-source you cloned, and hands over to `jml setup`. It builds the `v1.0.0` tag by default; set
-`JML_REF` to another tag or a commit you have read to build that instead. That asks for your
+source you cloned, and hands over to `jml setup`. It builds the `v1.0b` tag by default, which
+holds both setups; set `JML_REF` to another tag or a commit you have read to build that instead. That asks for your
 organisation, HR system and people store; asks for each credential and prints its minimum
 access; runs `jml doctor` until every check passes; rehearses the tombstone bootstrap before
 writing it; starts the sidecar and n8n with Docker Compose; and imports the six workflows with
@@ -302,9 +328,12 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   grep -rhoE "https://[a-zA-Z0-9./-]+" src | sort -u
   ```
 
-  It returns nineteen lines: the Google, JumpCloud, HiBob and Slack API hosts, Google's
-  OAuth token endpoint, the Google OAuth scope strings, and two JSON Schema identifiers that
-  are written into the generated schema file and never fetched. Nothing else. The optional
+  It returns twenty-seven lines. Called: the Google Admin SDK, Licensing, Gmail, Sheets
+  and Drive APIs, Google's OAuth token endpoint, and the JumpCloud, HiBob, Notion, Slack
+  and Suptask APIs, each only when that piece is configured. Never fetched, only printed
+  or written: the Google OAuth scope strings, the Google and JumpCloud sign-in pages named
+  in starter messages, the Docker Desktop download page `jml setup` points to, and two JSON
+  Schema identifiers in the generated schema file. Nothing else. The optional
   log-aggregator push and the dead-man ping go to URLs you configure, and both default to
   off.
 
@@ -330,7 +359,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 88 files each named for one of them, for example
+  and `test/regression/` holds 89 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.
@@ -343,8 +372,8 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | | |
 | --- | --- |
 | Node | 22.13 or newer. `node:sqlite` is the default people store, and the CLI relies on type stripping. `bin/jml.mjs` checks the version and exits 78 rather than failing halfway. |
-| HR system | HiBob is the reference adapter and needs a **read-only** service user. The adapter interface is deliberately small (one snapshot read), so another HR system is a single file. A JSON fixture adapter ships for rehearsal. |
-| Identity provider | JumpCloud. A read-only admin key satisfies the whole read set, including the device gate, which is what makes a report-only deployment possible. |
+| HR system | HiBob with a **read-only** service user; or a CSV file or a Google Sheet ([docs/adapters/hris-table.md](docs/adapters/hris-table.md)). The adapter interface is deliberately small (one snapshot read), so another HR API is a single file. A JSON fixture adapter ships for rehearsal. |
+| Identity provider | JumpCloud (setup 1.0a), or none (setup 1.0b). A read-only JumpCloud admin key satisfies the whole read set, including the device gate. |
 | Google Workspace | A service account with domain-wide delegation, one scope string at a time. |
 | n8n | Optional and recommended, self-hosted. Without it, run `jml run` from cron. |
 | Docker | Optional. The compose file runs the sidecar and n8n side by side. |
@@ -354,14 +383,16 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | Module | Status | Notes |
 | --- | --- | --- |
 | HR adapter: HiBob | required, or write your own | Read-only. No write, no time-off endpoints. |
+| HR adapter: CSV file, Google Sheet | ships | One set of rules: a column map, one date format, a leaver keeps their row with a last working day, and one bad row refuses the whole read. See [docs/adapters/hris-table.md](docs/adapters/hris-table.md). |
 | HR adapter: JSON fixture | ships | Rehearse the sync, the detection and the store commands offline against a file. It is what `jml init` selects, so a first run cannot read a real HR system by accident. See [docs/adapters/hris-fixture.md](docs/adapters/hris-fixture.md). |
 | People store: SQLite | default | Transactional. `node:sqlite`, no native module. |
 | People store: Notion | optional | One Notion database, one row per person. Single-writer under the pipeline lease; opening it never changes the database, and only `jml store migrate --armed` adds a missing property. Passes the same conformance suite as SQLite. |
-| People store: Sheets | interface only | Not shipped in this release. |
+| People store: Google Sheets | not implemented | Selecting it fails. Not the same as reading people from a sheet (the HR adapter above): this would keep the toolkit's own records in one. |
 | People store: memory | demo and dry-run only | Nothing persists. |
-| Identity provider: JumpCloud | required | Users, device bindings, commands, command results. |
+| Identity provider: JumpCloud | setup 1.0a | Users, device bindings, commands, command results. |
+| Identity provider: none | setup 1.0b | Google is the only account. Day 0 closes it; starters get their password on Google. |
 | Google Workspace | required | Directory, licensing, data transfer, Gmail settings, Gmail send. |
-| Device gate | required, read-only | Blocks a deletion while a machine is bound. Not overridable. |
+| Device gate | read-only | Blocks a deletion while a machine is bound (1.0a). Not overridable. With no identity provider (1.0b) there is no inventory, and every deletion says so. |
 | Device disposition | optional | Unbind, reassign, handover, retain. Handover is refused until canaried. |
 | Notifications: console | default | So a first run needs no credential. |
 | Notifications: email, Slack | optional | Gmail send as one named mailbox; a Slack bot token. |
@@ -388,6 +419,7 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | [docs/config-reference.md](docs/config-reference.md) | Every configuration key, generated from the schema. Do not hand-edit. |
 | [docs/runbooks/offboard-a-leaver.md](docs/runbooks/offboard-a-leaver.md) | Day 0, day 6 and day 7 in plain English, and how to stop it. |
 | [docs/runbooks/canary-a-device-script.md](docs/runbooks/canary-a-device-script.md) | The mandatory procedure before a device handover is allowed. |
+| [docs/adapters/hris-table.md](docs/adapters/hris-table.md) | People from a CSV file or a Google Sheet: the columns, how leavers work, dates, and what refuses a read. |
 | [docs/adapters/hris-fixture.md](docs/adapters/hris-fixture.md) | The JSON fixture adapter: the file format, and how to rehearse offline without a credential. |
 | [docs/adapters/notion.md](docs/adapters/notion.md) | The Notion people store: setup, the column contract, and why opening it never changes the database. |
 | [docs/adapters/sheets.md](docs/adapters/sheets.md) | The design for a Google Sheets people store. Not implemented: selecting it fails. |
@@ -408,10 +440,10 @@ in [n8n/README.md](n8n/README.md), next to the files.
 ## Possible extensions
 
 Not planned work and not commitments. [docs/plan-google-and-sheet-route.md](docs/plan-google-and-sheet-route.md)
-sets out how a second complete route could be built: Google Workspace without
-JumpCloud, account creation, a spreadsheet as the HR source, and department
-groups for movers. It is there for anybody who wants to build it in their own
-copy.
+set out a complete Google route. Setup 1.0b built two parts of it: Google
+Workspace with no identity provider, and a sheet or CSV as the HR source. The
+other two, creating accounts and department groups for movers, are written
+down there for anybody who wants to build them in their own copy.
 
 ## Where to go next
 

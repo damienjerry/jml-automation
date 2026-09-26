@@ -4,6 +4,55 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-26: setup 1.0b
+
+Released as `v1.0b`. It holds both setups: 1.0a (HiBob, JumpCloud and Google
+Workspace, unchanged) and 1.0b (Google Workspace alone, with any HR source).
+The package version is 1.1.0 because npm needs a semantic version; the setup
+names are 1.0a and 1.0b. The same reference-toolkit statement applies: no
+maintenance, support or compatibility updates are promised.
+
+### Added
+
+**Setup 1.0b: Google Workspace with no identity provider** (`identity.adapter:
+none`). For a team whose HR system (or a person) creates the Google accounts.
+Day 0 closes the Google account with `close_google`: a random password nobody
+holds, a change required at next sign-in and read back, and every session
+ended. It is not suspended then, because the day-6 hand-over is proven on an
+active, unlicensed account; suspension stays after it. Starters get their
+temporary password on Google, and an account counts as in use unless Google
+reports that it has never signed in. There is no device inventory: every
+deletion says no machine was checked. Arming a device step under this setup is
+a configuration error. The sign-out step now also revokes app passwords.
+Tested against fakes only.
+
+**People from a CSV file or a Google Sheet** (`hris.adapter: csv` or `sheet`).
+A column map, one stated date format, and status from the dates, so a leaver
+keeps their row with a last working day filled in. One bad row refuses the
+whole read and names every problem by row number. `hris.table.maxAgeHours`
+refuses a stale table. A CSV needs no credential; a sheet is read as the
+service account itself with the read-only Sheets scope, shared with it as a
+viewer. See [docs/adapters/hris-table.md](docs/adapters/hris-table.md) and
+[examples/people.csv](examples/people.csv).
+
+**Your own message wording** (`notify.templatesDir`). A file named like a
+built-in template replaces it. Checked at start-up: an unknown file name or a
+placeholder the message does not supply refuses to start.
+
+**`jml setup` asks which setup**: JumpCloud or none, and HiBob, a sheet, a CSV
+or the demo file. It asks only for the credentials and prints only the Google
+scopes that choice needs.
+
+### Fixed
+
+- **Messages stated a deletion date under a never-delete policy.** The day-0
+  manager email, the day-0 and day-6 IT notes and the leaver ticket said the
+  accounts would be deleted on a date even with `leaver.deletion: never`. The
+  deletion sentence now follows the policy.
+- **The README's host count was wrong** (nineteen; the source holds
+  twenty-seven, including Notion, Suptask and a link `jml setup` prints). It
+  now lists them by what is called and what is only printed.
+
 ## [1.0.0] - 2026-09-26
 
 The first and fixed release. This is a versioned reference toolkit, shared for you to use and adapt. Ongoing maintenance, support and compatibility updates are not promised. If you deploy it, you own that deployment, including fixing it when a provider changes its API. What was tested,
@@ -304,4 +353,5 @@ Read this before arming anything.
 Test coverage is not evidence about your tenant. 1541 tests across 159 files
 pass on this checkout, and every one of them runs against a fake.
 
+[1.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0b
 [1.0.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0.0

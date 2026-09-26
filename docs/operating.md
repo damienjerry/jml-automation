@@ -36,6 +36,9 @@ its own, and you should know them before you rely on it:
 | Notion people store, read-only | one live Notion database | 2026-09-25 |
 | `jml n8n import` | n8n 1.123.77, a throwaway instance | 2026-09-26 |
 | backup and restore of the SQLite store | test data only | 2026-09-26 |
+| HR from a CSV file, including the shipped example | offline tests | 2026-09-26 |
+| HR from a Google Sheet | a fake Sheets API only | 2026-09-26 |
+| setup 1.0b (no identity provider) | fakes only, never a real tenant | 2026-09-26 |
 | **any write to a real provider** | **never**: no suspension, licence change, transfer, deletion, activation or sent message | |
 | device uninstall scripts | never on real hardware | |
 

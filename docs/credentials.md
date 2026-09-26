@@ -20,7 +20,7 @@ Read this before you grant anything on the strength of this page.
 
 | Claim | Status |
 | --- | --- |
-| The toolkit has run end to end against a real tenancy | **No.** The read-only half has, once, before this release: doctor, HR read, directory read, scope probes, Notion read. No write has. The connectors' write paths are driven by scripted fakes in 1558 tests, and the demo runs offline with no credentials. |
+| The toolkit has run end to end against a real tenancy | **No.** The read-only half has, once, before this release: doctor, HR read, directory read, scope probes, Notion read. No write has. The connectors' write paths are driven by scripted fakes in 1590 tests, and the demo runs offline with no credentials. |
 | The two device uninstall scripts have run on real hardware | **No.** `src/engine/device/scripts/manifest.json` records `provenOnHardware: false`, and a handover is refused on any platform whose script carries that flag until you name the machine you canaried it on. See [the canary runbook](runbooks/canary-a-device-script.md). |
 | The n8n bundle has been imported into a running n8n | **Yes, not run.** `jml n8n import` loaded it into the pinned n8n version with every credential bound; no execution has been observed. The import key needs `workflow:list`, `workflow:create` and `credential:create`, nothing more. |
 
@@ -141,7 +141,10 @@ and the row is weaker than it looks.
 <a id="hibob"></a>
 
 The reference adapter reads HiBob. `hris.adapter: fixture` is the credential-free
-alternative and is what the demo uses.
+alternative and is what the demo uses. `hris.adapter: csv` needs no credential
+at all, and `hris.adapter: sheet` needs only the Google key, reading as the
+service account itself ([below](#the-service-account-acting-as-itself)); see
+[adapters/hris-table.md](adapters/hris-table.md).
 
 | | |
 | --- | --- |
@@ -242,6 +245,9 @@ revoke the old one. Nothing caches the credential beyond process lifetime, so a
 restart is the whole cutover.
 
 ## JumpCloud
+
+Setup 1.0a only. With `identity.adapter: none` (setup 1.0b) no JumpCloud key
+is asked for, read or probed.
 
 | | |
 | --- | --- |
@@ -398,9 +404,15 @@ subject kinds appear in the code:
 | --- | --- | --- | --- |
 | `https://www.googleapis.com/auth/admin.directory.user.security` | admin | `signOutUser` | The leaver's Google sessions and third-party app grants are left in place, so Sign in with Google keeps working until the account is suspended. |
 
-Needed only when `google_signout` is armed, and `jml doctor` probes it only
-then. It lets the service account end a user's sessions and list and delete the
-tokens they have granted to other apps. It cannot read mail or files.
+Needed when `google_signout` is armed, and in setup 1.0b whenever `suspend` is
+armed, because closing the Google account on day 0 ends its sessions.
+`jml doctor` probes it only in those cases. It lets the service account end a
+user's sessions and list and delete the tokens and app passwords they hold. It
+cannot read mail or files.
+
+In setup 1.0b, closing the account and setting a starter's temporary password
+also write the password through `admin.directory.user`, which is already
+required.
 
 Both `admin.directory.user` and its `.readonly` sibling are listed on purpose.
 The recipient lookup and the transfer both read the directory, and a deployment
@@ -533,10 +545,12 @@ Two scopes are declared for this mode:
 
 | Scope | Subject | Declared for |
 | --- | --- | --- |
-| `https://www.googleapis.com/auth/spreadsheets.readonly` | self | reading a spreadsheet shared with the service account |
-| `https://www.googleapis.com/auth/drive.readonly` | self | reading a file shared with the service account |
+| `https://www.googleapis.com/auth/spreadsheets.readonly` | self | reading the people sheet, for `hris.adapter: sheet` |
+| `https://www.googleapis.com/auth/drive.readonly` | self | the people sheet's last edit time, when `hris.table.maxAgeHours` is set |
 
-Both are marked `required: false`, and neither is probed by `jml doctor`.
+Both are marked `required: false`, and neither needs domain-wide delegation.
+`jml doctor` proves them through the HR row: with a sheet as the HR source,
+that row reads the sheet.
 
 Why the mode is worth knowing about: sharing one document with one address is a
 grant you can see, revoke and audit from the document itself. A domain-wide

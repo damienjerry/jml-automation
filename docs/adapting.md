@@ -55,6 +55,12 @@ Read this first, because it decides whether the toolkit fits.
 | Ticketing (optional) | Suptask | A starter form that opens the activation gate; a leaver ticket for the manual steps |
 | App register (optional) | A CSV or JSON file | Who owns each other app, so they can be told when somebody leaves |
 
+**Why JumpCloud is in this mix.** It was used to manage devices, accounts and
+remote support in one place. That is a preference, not a requirement: nothing
+is wrong with Google Workspace on its own. If you use NinjaOne, a remote
+desktop tool or similar for devices and support, setup 1.0b (no identity
+provider) is very likely the better fit. See the README's two-setups table.
+
 **Why a people store at all, when HR already has everybody?** HR records who
 people are. The toolkit also needs to record what it has done to each of
 them: suspended on this date, files handed over, deleted. It needs that record
@@ -127,20 +133,22 @@ comes from a real failure, recorded in [incidents.md](incidents.md).
 ## How hard each swap is today
 
 Honestly: the HR system, the people store, the scheduler and the ticketing
-tool swap cleanly. The identity provider and the email platform do not yet.
-JumpCloud and Google are wired into the configuration, the stored account ids,
-the action names and the audit labels, so replacing either is a fork of those
-parts rather than an adapter. The sizes below are measured from the reference
+tool swap cleanly. **Dropping** the identity provider is a setting (setup 1.0b,
+`identity.adapter: none`). **Replacing** it with another one, or replacing
+Google with another email platform, is still a fork: JumpCloud and Google are
+wired into the configuration, the stored account ids, the action names and the
+audit labels. The sizes below are measured from the reference
 implementations, to give a sense of scale.
 
 | Piece | Swap today | What changing it involves | Reference size |
 | --- | --- | --- | --- |
-| HR system | **setting, or small adapter** | export to a file (no code), or a two-method adapter plus its own config block and a build branch | HiBob: 2 files, ~650 lines |
+| HR system | **setting, or small adapter** | a CSV export or a Google Sheet (no code: [adapters/hris-table.md](adapters/hris-table.md)), or a two-method adapter plus its own config block and a build branch | HiBob: 2 files, ~650 lines |
 | Scheduler | **setting** | cron instead of n8n; nothing to write | none |
 | People store | **adapter** | implement `PeopleStore`, add its own config block and a `buildStore` branch, pass the shared test suite | Notion: ~600 lines |
 | Ticketing | **adapter** | implement `TicketingAdapter`, add its own config block for its credentials and a `buildTicketing` branch | Suptask: ~160 lines |
-| Notifications | **setting** | Slack, email or console already ship | none |
-| Identity provider | **fork** | new connector, plus config keys, stored id field and audit labels | JumpCloud: ~1,600 lines, including devices and remote commands |
+| Notifications | **setting** | Slack, email or console already ship; your own wording from `notify.templatesDir` | none |
+| No identity provider | **setting** | `identity.adapter: none`, setup 1.0b: Google is the only account | none |
+| Another identity provider | **fork** | new connector, plus config keys, stored id field and audit labels | JumpCloud: ~1,600 lines, including devices and remote commands |
 | Email and files | **fork** | new connector covering the whole Google surface, plus config keys and labels | Google: ~1,800 lines across 7 files |
 
 "Fork" is not a reason to give up. It means the change touches shared parts,
@@ -148,9 +156,11 @@ so plan for it as a project rather than an afternoon.
 
 ### What you can try before building anything
 
-If your identity provider or email platform is not JumpCloud and Google, you
-can still run the HR half today, which is enough to judge the idea against
-your own people. Point the HR adapter at your HR system or at an export file.
+If you run Google Workspace with no identity provider, setup 1.0b covers the
+whole lifecycle; this section is for anybody on a different identity provider
+or email platform. You can still run the HR half today, which is enough to judge the idea against
+your own people. Point the HR adapter at your HR system, a CSV export or a
+Google Sheet ([adapters/hris-table.md](adapters/hris-table.md)).
 No JumpCloud or Google credential is needed or read, so leave those
 references unset rather than filling them with placeholders. These all run and
 act on your real HR data, writing only the local store:
@@ -235,6 +245,11 @@ credentials in [src/config/schema.ts](../src/config/schema.ts), following
 
 ### A different identity provider (Okta, Microsoft Entra ID)
 
+First, check whether you need one at all. If people sign in to Google with a
+Google password, setup 1.0b already covers you. If they sign in through Okta
+or Entra ID, you do need this, because closing the Google password does not
+close a sign-in that goes through somebody else.
+
 What the toolkit needs from it:
 
 - **Leavers:** find a person's account by id or email, suspend it, delete it.
@@ -253,7 +268,7 @@ the reference. Beyond the connector, a swap has to touch:
 
 - the `identity.jumpcloud` block in [src/config/schema.ts](../src/config/schema.ts);
 - `buildProviders` in [src/cli/commands/context.ts](../src/cli/commands/context.ts),
-  which builds JumpCloud unconditionally today;
+  which chooses between JumpCloud and none on `identity.adapter`;
 - the stored id field `jumpcloudUserId` in [src/core/types.ts](../src/core/types.ts);
 - the `'jumpcloud'` audit label in [src/engine/leaver/legs.ts](../src/engine/leaver/legs.ts).
 

@@ -9,6 +9,15 @@ what follows is the honest account of which surfaces can be relied on.
 A fixed reference release, v1.0.0. This is a versioned reference toolkit, shared for you to use and adapt. Ongoing maintenance, support and compatibility updates are not promised. If you deploy it, you own that deployment, including fixing it when a provider changes its API. Do not
 tell a user to wait for an upstream fix; the fork they run is theirs to change.
 
+## The two setups
+
+Setup 1.0a is HiBob, JumpCloud and Google Workspace (`identity.adapter:
+jumpcloud`). Setup 1.0b is Google Workspace alone with any HR source, including
+a CSV file or a Google Sheet (`identity.adapter: none`). Before proposing a
+fork for somebody on Google without JumpCloud, check whether 1.0b already fits.
+It does not fit if they sign in to Google through another identity provider:
+see docs/access-removal.md.
+
 ## If you are helping somebody adapt this to their own platforms
 
 Start from [docs/adapting.md](docs/adapting.md). It names the mix this was

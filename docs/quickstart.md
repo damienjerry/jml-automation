@@ -11,6 +11,14 @@ domain-wide delegation granted, and reading dry runs. Decide your leaver policy
 ([policy.md](policy.md)) before step 10, and know what a suspension does and
 does not remove ([access-removal.md](access-removal.md)).
 
+**On setup 1.0b** (Google Workspace, no identity provider) the steps are the
+same, with three differences: step 3 asks for no JumpCloud key; `suspend` in
+step 10 closes the Google account (a password nobody holds, a forced change,
+every session ended) and needs `admin.directory.user.security` delegated; and
+there is no device inventory, so step 12's device gate is replaced by a line on
+every deletion saying no machine was checked. For a CSV or sheet as the HR
+source, see [adapters/hris-table.md](adapters/hris-table.md).
+
 `jml doctor` has passed against one real tenant, in a shadow run before this
 release. Every output below is real output from the offline paths. No provider write in
 steps 10, 11, 12 or 14 has yet run against a real tenant, so the first armed action
