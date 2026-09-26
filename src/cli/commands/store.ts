@@ -37,7 +37,12 @@ export async function storeCommand(io: CliIo, opts: StoreCommandOptions): Promis
   const rt = await openRuntime({ io, ...(opts.configPath ? { configPath: opts.configPath } : {}) })
   try {
     if (opts.action === 'bootstrap') {
-      const snapshot = await rt.hris.fetchAll()
+      // A failed read is the likeliest first error of all (a wrong path, a
+      // stale token), so it gets a sentence rather than a stack trace. Nothing
+      // has been written when it happens.
+      const snapshot = await rt.hris.fetchAll().catch((err: unknown) => {
+        throw new CliError('Could not read the HR system, so nothing was imported: ' + (err instanceof Error ? err.message : String(err)))
+      })
       const report = await bootstrapTombstones({
         people: rt.store,
         snapshot,
@@ -72,8 +77,13 @@ export async function storeCommand(io: CliIo, opts: StoreCommandOptions): Promis
               'parked         ' + report.counts.parked,
               'day-0 today    ' + report.counts.day0Selection + '   (the set a run would act on)',
               '',
+              ...report.warnings.map((line) => 'WARNING: ' + line),
               ...report.mismatches.map((line) => 'MISMATCH: ' + line),
-              report.mismatches.length > 0 ? '' : 'every stated expectation held',
+              report.mismatches.length > 0
+                ? ''
+                : opts.expectDay0 === undefined && opts.expectDeparted === undefined
+                  ? 'no expectation was stated; pass --expect-day0 and --expect-departed to check the counts'
+                  : 'every stated expectation held',
               '',
             ].join('\n'),
       )

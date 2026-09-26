@@ -179,6 +179,19 @@ describe('verifying a store before a cutover', () => {
     expect(report.mismatches).toEqual([])
   })
 
+  it('warns when the store is empty, even with nothing expected', async () => {
+    // A lost store, or a config pointed at the wrong path, is empty. With no
+    // expectation stated it used to print a clean result.
+    const people = new MemoryPeopleStore()
+    await people.init()
+    const report = await verifyStore(people)
+    expect(report.ok).toBe(true)
+    expect(report.warnings.join(' ')).toMatch(/holds no rows.*restore it from a backup/)
+
+    await bootstrapTombstones({ people, snapshot: snapshot(leavers), today: '2026-03-31' })
+    expect((await verifyStore(people)).warnings).toEqual([])
+  })
+
   it('names each expectation it cannot meet', async () => {
     const people = new MemoryPeopleStore()
     await people.init()

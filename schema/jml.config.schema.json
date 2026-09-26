@@ -448,6 +448,15 @@
           "description": "Days after suspension that accounts are deleted.",
           "default": 7
         },
+        "deletion": {
+          "type": "string",
+          "enum": [
+            "automatic",
+            "never"
+          ],
+          "description": "`never` suspends and hands over, then keeps both accounts. Day 7 is not scheduled at all: no run deletes a retained leaver, reads their devices, or reports a failure over them; the report counts them as retained. Close a row by hand with `jml leaver tombstone` once you have dealt with the accounts. `never` refuses `delete` in armedActions, because the two contradict each other.",
+          "default": "automatic"
+        },
         "revokeLicences": {
           "anyOf": [
             {

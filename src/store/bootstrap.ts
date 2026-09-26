@@ -226,6 +226,8 @@ export interface VerifyExpectations {
 
 export interface VerifyReport {
   ok: boolean
+  /** Things worth reading that are not a failed expectation, such as an empty store. */
+  warnings: string[]
   counts: {
     total: number
     hired: number
@@ -273,7 +275,15 @@ export async function verifyStore(people: PeopleStore, expected: VerifyExpectati
     mismatches.push(`Tombstone (departed) count is ${counts.departed}, expected ${expected.departed}.`)
   }
 
-  return { ok: mismatches.length === 0, counts, mismatches }
+  // Not a mismatch, because a new install is empty until the bootstrap. But a
+  // store that has been lost or pointed at the wrong path is empty too, and
+  // without a stated expectation it would otherwise read as a clean result.
+  const warnings: string[] = []
+  if (counts.total === 0) {
+    warnings.push('The store holds no rows. On a new install, run `jml store bootstrap`. If it held people before, it has been lost or this is the wrong path: restore it from a backup before the next run.')
+  }
+
+  return { ok: mismatches.length === 0, counts, mismatches, warnings }
 }
 
 export interface DepartedInvariant {

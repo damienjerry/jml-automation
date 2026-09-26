@@ -1,38 +1,71 @@
 # jml-automation
 
+An HR-driven account lifecycle toolkit for JumpCloud and Google Workspace. It
+reads your HR system every day. When somebody leaves, it suspends their identity
+provider account, sets an auto-reply, removes their paid licence, hands their
+files to their manager, and, only if you choose, deletes their accounts, reading
+back every change it makes. When somebody is about to start, it activates the
+accounts your other systems have already created. It is a command line tool, an
+optional HTTP sidecar, and six n8n workflows that hold no logic.
+
+It **does not create accounts** and it **does not change access for movers**.
+The read-only half has run against one real tenant. **No write has ever run
+against a real provider**: suspension, deletion and activation are tested
+against fakes only. Treat it as experimental.
+
 **JML** is joiner, mover, leaver: the identity-management term for everything IT
 does when somebody starts, changes role, or leaves. Audits, security
 questionnaires and larger companies use it, and a small IT team that speaks it
-has an easier time with all three. This repository automates it, with your HR
-system as the source of truth.
+has an easier time with all three.
 
-Joiner, mover and leaver automation for JumpCloud and Google Workspace, driven by your HR
-system. The HR system is the source of truth: when somebody appears in it, the toolkit
-records them and announces the joiner; when the HR system drops them from the employed set,
-the toolkit suspends their identity provider account, sets an auto-reply, revokes the paid
-licence, hands their files to their manager on day 6, and deletes both accounts on day 7.
-It is a command line tool, an optional authenticated HTTP sidecar, and six n8n workflows
-that contain no logic.
+## Does it fit what you run?
 
-**It is built for one mix of platforms, and it is an example of an idea that fits any.**
-The mix is HiBob, JumpCloud, Google Workspace and n8n. If you run exactly that, it is close
-to copy and paste. If you run something else, such as BambooHR instead of HiBob, Okta
-instead of JumpCloud, Microsoft 365 instead of Google, or none of these,
-[docs/adapting.md](docs/adapting.md) explains what each piece does, why, and how hard each
-swap is today. The HR system, people store, scheduler and ticketing tool swap cleanly. The
-identity provider and email platform are a larger change, because JumpCloud and Google are
-wired in. It also says what the toolkit does not do: it creates no accounts, and it does
-nothing for movers yet.
+| Your setup | Today |
+| --- | --- |
+| HiBob, JumpCloud and Google Workspace | What it was built for. Close to configuration only, once you have read [docs/policy.md](docs/policy.md) |
+| Another HR system with an API | One adapter file behind a small interface. HiBob's is about 650 lines |
+| No HR API, only an export or a spreadsheet | Convert the export to the JSON file format in [docs/adapters/hris-fixture.md](docs/adapters/hris-fixture.md). There is no CSV import yet |
+| Google Workspace without JumpCloud | **Not supported.** JumpCloud is built into the leaver steps; replacing it is a fork |
+| Microsoft 365 or Entra ID | **Not supported.** A fork, and a different lifecycle: sessions, mailbox retention, OneDrive and licences are separate decisions there |
+| Okta or another identity provider | **Not supported.** A fork |
+| Where it keeps its own records | SQLite by default, or a Notion database. Google Sheets is designed and not implemented; selecting it fails |
+| Scheduler | n8n, or cron |
+| Notifications | Slack, email or the console. Not Teams |
+| Ticketing | Suptask, or none |
 
-It deletes accounts. Read the demo below before you read anything else, then read
-[docs/quickstart.md](docs/quickstart.md) before you point it at your own tenant.
+"Fork" means the change touches shared code, so plan it as a project.
+[docs/adapting.md](docs/adapting.md) explains what every piece does and why, so
+the idea can be rebuilt for any mix, including none of these tools.
+
+What access a suspension does and does not remove is set out route by route in
+[docs/access-removal.md](docs/access-removal.md). Read it before telling anybody
+a leaver has no access.
+
+## Three ways in
+
+1. **Try it.** Fictional people, no credentials, no network, one command. The
+   demo below.
+2. **Look at your own organisation, changing nothing.** Point the HR adapter at
+   your HR system with a read-only token, or at an export file, and run
+   `jml store bootstrap`, `jml sync --armed`, `jml detect` and `jml store verify`.
+   These read the HR system and write only a local file. They need no identity
+   provider or Google credential. You see who the toolkit thinks has joined and
+   left, and the exact set it would act on today. Add read-only provider keys and
+   `jml leaver dry-run` shows, for everybody due, which accounts exist and what
+   would be done to each.
+3. **Automate one action.** Follow [docs/quickstart.md](docs/quickstart.md) to
+   arm suspension alone, on one test account you created, and watch a cycle.
+
+Running it day to day, stopping it, backups, updates and removal:
+[docs/operating.md](docs/operating.md). It also covers what running it costs,
+which is not nothing even though the code is free.
 
 ## Run the demo first. No credentials, no network
 
 ```
 git clone https://github.com/damienjerry/jml-automation.git
 cd jml-automation
-npm ci
+npm ci --ignore-scripts
 npm run build
 node bin/jml.mjs demo
 ```
@@ -170,7 +203,7 @@ disk. `jml.config.yaml` itself never holds a credential in either case.
 | Activate | three working days before a start date, configurable | Set a temporary password with a forced reset on the staged identity account, license the Google account, wait for the mailbox, move the account into the managed organisational unit, then send the password to the personal address and the manager and the welcome to the work address. Never touches an account somebody is already using. |
 | Day 0 | the day the HR system drops somebody from the employed set | Suspend the identity provider account, set the mailbox auto-reply, revoke paid licences, tell the manager and IT. |
 | Day 6 | 6 days after suspension, configurable | Hand the files to the manager through the Google data transfer API, then suspend the Google account. |
-| Day 7 | 7 days after suspension, configurable | Delete the identity provider account and the Google account, if every gate opens. Write a tombstone. |
+| Day 7 | 7 days after suspension, configurable | Delete the identity provider account and the Google account, if every gate opens. Write a tombstone. With `leaver.deletion: never` this day is not scheduled and both accounts are kept. |
 | Ticketing | with the detector, and on a webhook | Ask the manager to raise the starter form when a joiner is detected, remind once the day before, open the activation gate when a ticket on that form arrives, and raise a leaver ticket for the platforms IT does not administer. Suptask is the reference adapter; the interface is four methods. |
 | Owners | the day after a leaving date | Tell each platform owner in the register, once, which of their platforms to check. For everything IT does not administer. Off until a go-live date is set, so switching it on cannot tell every owner about every leaver in the history. |
 | Devices | on demand | Read a machine and report every reason a disposition would be refused. Unbind, reassign, hand over or retain. |
@@ -261,7 +294,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 78 files each named for one of them, for example
+  and `test/regression/` holds 87 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.
@@ -307,7 +340,11 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | | |
 | --- | --- |
 | [docs/adapting.md](docs/adapting.md) | The idea in plain English, the platform mix it was built for, and how to swap any piece of it for what you run. |
-| [docs/quickstart.md](docs/quickstart.md) | The first hour, in order, with real output and what to do when a step fails. |
+| [docs/policy.md](docs/policy.md) | The leaver decisions to make before arming: deletion or retention, approval, managers who have left, rehires, contractors, legal holds. |
+| [docs/access-removal.md](docs/access-removal.md) | Route by route, what a suspension removes, what it does not, and what stays your job. |
+| [docs/operating.md](docs/operating.md) | Daily checks, stopping it, backup and restore, updates, removal, and what running it costs. |
+| [docs/ai-adaptation-brief.md](docs/ai-adaptation-brief.md) | A brief to give a coding assistant that adapts this to your stack, and what it cannot do for you. |
+| [docs/quickstart.md](docs/quickstart.md) | From the demo to a scheduled run, in order, with real output and what to do when a step fails. |
 | [docs/credentials.md](docs/credentials.md) | Every credential, the smallest permission set that works, and how `jml doctor` proves it. |
 | [docs/state-machine.md](docs/state-machine.md) | The statuses, the transition table, the gates, and the failure each guard exists for. |
 | [docs/incidents.md](docs/incidents.md) | The failure catalogue, each entry linked to the regression test that holds the line. |
@@ -316,7 +353,8 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 | [docs/runbooks/offboard-a-leaver.md](docs/runbooks/offboard-a-leaver.md) | Day 0, day 6 and day 7 in plain English, and how to stop it. |
 | [docs/runbooks/canary-a-device-script.md](docs/runbooks/canary-a-device-script.md) | The mandatory procedure before a device handover is allowed. |
 | [docs/adapters/hris-fixture.md](docs/adapters/hris-fixture.md) | The JSON fixture adapter: the file format, and how to rehearse offline without a credential. |
-| [docs/adapters/notion.md](docs/adapters/notion.md), [docs/adapters/sheets.md](docs/adapters/sheets.md) | The people-store contract for a Notion database or a spreadsheet. Neither is implemented in this release. |
+| [docs/adapters/notion.md](docs/adapters/notion.md) | The Notion people store: setup, the column contract, and why opening it never changes the database. |
+| [docs/adapters/sheets.md](docs/adapters/sheets.md) | The design for a Google Sheets people store. Not implemented: selecting it fails. |
 | [SECURITY.md](SECURITY.md) | Threat model, what the sidecar exposes, and the destructive-action inventory. |
 | [n8n/README.md](n8n/README.md) | The workflow bundle, node by node, and why it holds no logic. |
 | [jml.config.example.yaml](jml.config.example.yaml), [.env.example](.env.example) | Generated from the schema, with every key and its default. |

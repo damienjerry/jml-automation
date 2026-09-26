@@ -93,13 +93,21 @@ actually fires, is in [`n8n/README.md`](../n8n/README.md).
 | 4 | Read the HR system **once** | abort, `hris_incomplete`, `hris_implausible` or `hris_unavailable` |
 | 5 | Sync: reconcile the snapshot into the people store | run continues, marked not ok |
 | 6 | Detect: announce joiners and leavers, if the set of people changed | run continues, marked not ok |
-| 7 | Leaver engine: day 0, then day 6, then day 7, per person in day order | abort on the circuit breaker or an unwritable audit log |
-| 8 | Flush the audit sink | run marked not ok |
-| 9 | Send the run summary | run marked not ok |
-| 10 | Ping the dead-man, **only if step 9 was delivered** | warning |
-| 11 | Raise the tombstone baseline, record the run, release the lease | warning |
+| 7 | Ticketing, when an adapter is set: nudge managers for the starter form, open gates from tickets, raise leaver tickets | run continues, marked not ok |
+| 8 | Joiner engine: activate starters due, before the leavers so this morning's account is ready this morning | run continues, marked not ok |
+| 9 | Leaver engine: day 0, then day 6, then day 7 (not scheduled under `leaver.deletion: never`), per person in day order | abort on the circuit breaker or an unwritable audit log |
+| 10 | Owner notifications, when enabled: tell each platform owner once, the day after a leaving date | run continues, marked not ok |
+| 11 | Flush the audit sink | run marked not ok |
+| 12 | Send the run summary | run marked not ok |
+| 13 | Ping the dead-man, **only if step 12 was delivered** | warning |
+| 14 | Raise the tombstone baseline, record the run, release the lease | warning |
 
-Steps 3 and 10 are the two worth arguing about.
+Steps 3 and 13 are the two worth arguing about.
+
+`jml sync` and `jml detect` are this same run with only steps 5 or 6. They read
+the HR system and the people store and nothing else, so they open no provider
+connector and need no identity provider or Google credential, unless
+notifications go by email, which sends through Google.
 
 **The tombstone check runs before anything else writes, including in a dry
 run.** A drop in the number of `departed` rows means somebody removed them

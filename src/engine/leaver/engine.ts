@@ -142,8 +142,14 @@ export async function runLeaverEngine(deps: LeaverDeps, opts: LeaverRunOptions):
       }
     }
     if (phases.includes('day7')) {
-      for (const person of only(await loadDay7Candidates(deps.store, today, deps.cfg), opts)) {
-        await runPerson(deps, opts, state, person, 'day7')
+      const due = only(await loadDay7Candidates(deps.store, today, deps.cfg), opts)
+      if (deps.cfg.leaver.deletion === 'never') {
+        // A policy, not a pending step. Counted so the report says how many
+        // accounts are being kept, and nothing else: no gate read, no
+        // notification, and no red run for a deletion nobody wants.
+        report.counts.retained = due.length
+      } else {
+        for (const person of due) await runPerson(deps, opts, state, person, 'day7')
       }
     }
   } catch (err) {

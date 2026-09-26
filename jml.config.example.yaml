@@ -106,6 +106,8 @@ leaver:
   transferDay: 6
   # Days after suspension that accounts are deleted.
   deleteDay: 7
+  # `never` suspends and hands over, then keeps both accounts. Day 7 is not scheduled at all: no run deletes a retained leaver, reads their devices, or reports a failure over them; the report counts them as retained. Close a row by hand with `jml leaver tombstone` once you have dealt with the accounts. `never` refuses `delete` in armedActions, because the two contradict each other.
+  deletion: automatic
   # `all`, or a list of SKU ids to revoke.
   revokeLicences: all
   # False stops at suspension so the mailbox can be archived by hand.

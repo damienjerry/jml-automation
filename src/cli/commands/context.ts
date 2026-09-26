@@ -117,8 +117,12 @@ export interface Runtime {
 export interface OpenRuntimeOptions {
   io: CliIo
   configPath?: string
-  /** Build the identity, device and Google connectors. Needs their credentials. */
-  withProviders?: boolean
+  /**
+   * Build the identity, device and Google connectors. Needs their credentials.
+   * A function decides from the loaded configuration, for a command whose need
+   * depends on it (a sync-only run needs Google only to send email).
+   */
+  withProviders?: boolean | ((cfg: JmlConfig) => boolean)
   /** Parse and open the stores without resolving any credential. */
   allowMissingSecrets?: boolean
   logLevel?: LogLevel
@@ -130,6 +134,7 @@ export async function openRuntime(opts: OpenRuntimeOptions): Promise<Runtime> {
     ...(opts.configPath ? { path: opts.configPath } : {}),
     env: opts.io.env,
     ...(opts.allowMissingSecrets ? { allowMissingSecrets: true } : {}),
+    providerSecrets: typeof opts.withProviders === 'function' ? opts.withProviders : opts.withProviders === true,
   })
   return openRuntimeFrom(loaded, opts)
 }
@@ -156,7 +161,8 @@ export async function openRuntimeFrom(loaded: LoadedConfig, opts: OpenRuntimeOpt
   await state.init()
 
   const audit = buildAudit(cfg, loaded.secrets, clock, http)
-  const providers = opts.withProviders ? buildProviders(cfg, loaded.secrets, http) : null
+  const wantProviders = typeof opts.withProviders === 'function' ? opts.withProviders(cfg) : opts.withProviders === true
+  const providers = wantProviders ? buildProviders(cfg, loaded.secrets, http) : null
   const notifier = buildNotifier(cfg, loaded.secrets, http, providers, opts.io)
   const ticketing = buildTicketing(cfg, loaded.secrets, http)
   const register = cfg.ownerNotifications.enabled ? new FileRegisterAdapter({ path: cfg.ownerNotifications.register.path, nameColumn: cfg.ownerNotifications.register.nameColumn, ownerColumn: cfg.ownerNotifications.register.ownerColumn, handlingColumn: cfg.ownerNotifications.register.handlingColumn }) : null

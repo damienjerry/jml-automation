@@ -15,6 +15,13 @@ plan before writing any, and keep the dry-run default and the per-action
 arming locks in whatever you build. The safety rules in that page are the
 part that must survive an adaptation.
 
+Before any code, ask for the person's answers to
+[docs/policy.md](docs/policy.md) rather than inferring them, and rewrite
+[docs/access-removal.md](docs/access-removal.md) for their platforms. The
+working order to follow is [docs/ai-adaptation-brief.md](docs/ai-adaptation-brief.md).
+Say which behaviour you exercised against a real service and which only
+against a fake: passing tests are not proof a tenant behaves like the fakes.
+
 ## The authoritative machine-readable surfaces
 
 Three, and nothing else:

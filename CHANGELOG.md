@@ -40,6 +40,45 @@ A second pass by the same reviewer found two more, both reproduced and fixed:
   in `.env`.** Setup now offers to remove it, defaulting to yes, and says
   plainly when it stays.
 
+A third pass looked at the project as a solo IT administrator would, and said
+it promised more than it delivers. Fixed where the code or docs were wrong;
+the larger product gaps it named are listed at the end.
+
+- **Looking at your own HR data needed an identity provider and a Google key.**
+  `jml sync` and `jml detect` opened the provider connectors, and every command
+  resolved their credentials, so the adaptation guide told people to type
+  placeholders into credential fields. Bootstrap, sync, detect and verify now
+  need neither credential (unless notifications go by email, which sends
+  through Google).
+- **There was no supported way to never delete.** Leaving `delete` unarmed
+  turned every armed run red for each leaver past day 7, for ever.
+  `leaver.deletion: never` keeps the accounts, stops scheduling day 7, counts
+  the retained leavers, and refuses `delete` in `armedActions`.
+- **An empty store passed `jml store verify`.** A lost store, or a config
+  pointed at the wrong path, printed "every stated expectation held" with
+  nothing stated. It now warns on an empty store, and says when no expectation
+  was given.
+- **`jml store bootstrap` printed a stack trace** when the HR read failed. It
+  now says the read failed and that nothing was imported.
+- **The README promised joiner, mover and leaver automation.** It now opens
+  with what it does, what it does not, and a compatibility table before any
+  install step. The quickstart's step table listed three steps it had no
+  section for, the demo used a plain `npm ci`, and the architecture page's run
+  order predated the joiner, ticketing and owner steps. All corrected.
+
+New pages: [docs/policy.md](docs/policy.md) (the leaver decisions to make before
+arming, including what the toolkit does not check, such as a manager who has
+also left), [docs/access-removal.md](docs/access-removal.md) (route by route,
+what a suspension removes and what it does not, including the six days the
+Google account stays unsuspended), [docs/operating.md](docs/operating.md)
+(daily checks, stopping, a backup and restore exercised on test data, updates,
+removal, and what running it costs), and
+[docs/ai-adaptation-brief.md](docs/ai-adaptation-brief.md).
+
+Not done, and still true: no CSV import, no Google-only or Microsoft 365 path,
+no read-only Sheets report, no day-0 Google sign-out, and no write validated
+against a real provider.
+
 ### Added
 
 **A guide to the idea, and to adapting it.** [docs/adapting.md](docs/adapting.md)

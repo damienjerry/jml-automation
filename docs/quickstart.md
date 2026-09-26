@@ -1,12 +1,20 @@
-# Quickstart: the first hour
+# Quickstart: from the demo to a scheduled run
 
 Follow these steps in order. The order is the safeguard, not a convention: the bootstrap
 step exists so that the first real run cannot mistake your HR history for a hundred fresh
 departures, and the staged arming exists because each stage is reversible by hand and the
 next one is less so.
 
+Budget more than an afternoon. Most of the time goes on things outside this
+repository: getting an HR service user, an identity provider key and Google
+domain-wide delegation granted, and reading dry runs. Decide your leaver policy
+([policy.md](policy.md)) before step 10, and know what a suspension does and
+does not remove ([access-removal.md](access-removal.md)).
+
 `jml doctor` has passed against one real tenant, in a shadow run before this
-release. Every output below is real output from the offline paths.
+release. Every output below is real output from the offline paths. No provider write in
+steps 10, 11, 12 or 14 has yet run against a real tenant, so the first armed action
+you take is also a test of the toolkit. Take it on a test account.
 
 | Step | Command | Touches a provider? |
 | --- | --- | --- |
@@ -22,17 +30,16 @@ release. Every output below is real output from the offline paths.
 | 10 | arm `suspend`, watch one cycle | writes |
 | 11 | arm `transfer` | writes |
 | 12 | arm `delete` | writes, irreversibly |
-| 13 | `jml joiner dry-run` for one real starter, read the plan | reads only |
-| 14 | arm `activate`, then `joiner_licence`, `ou_move`, `welcome` | writes; the first one sets a password |
+| 13 | import the n8n bundle | schedules the above |
+| 14 | `jml joiner dry-run` for one real starter, then arm `activate`, `joiner_licence`, `ou_move`, `welcome` | reads, then writes; the first one sets a password |
 | 15 | set `ticketing.adapter` and point the starter-form webhook at `jml-ticket-inbound` | optional; makes `joiner.gate: ticket` real |
-| 16 | import the n8n bundle | schedules the above |
 
 ## 1. Run the demo
 
 ```
 git clone https://github.com/damienjerry/jml-automation.git
 cd jml-automation
-npm ci
+npm ci --ignore-scripts
 npm run build
 node bin/jml.mjs demo
 ```
@@ -303,7 +310,7 @@ held           0
 parked         0
 day-0 today    0   (the set a run would act on)
 
-every stated expectation held
+no expectation was stated; pass --expect-day0 and --expect-departed to check the counts
 ```
 
 State what you expect and let it check, rather than reading the numbers and forming an
@@ -542,9 +549,15 @@ Two of these are marked not overridable in the schema:
 - `leaver.deviceGate.directBindingsOnly` is fixed true. Membership of a group that grants
   access to a machine is not custody of it, so only a direct binding blocks a deletion.
 
-Before you arm this, decide two things:
+You do not have to arm this at all. Before you do, decide, with
+[policy.md](policy.md) open:
 
-- `leaver.deleteGoogleUser` false stops at suspension, so a mailbox can be archived by hand.
+- `leaver.deletion: never` keeps both accounts after suspension and hand-over.
+  Day 7 is not scheduled, nothing is deleted, and the report counts the retained
+  leavers. Without it, a leaver reaching day 7 with `delete` unarmed turns every
+  armed run red until you choose.
+- `leaver.deleteGoogleUser` false stops the Google account at suspension, so a
+  mailbox can be archived by hand.
 - `leaver.requireOperatorAck` true means no deletion happens without a named human ack.
 
 `jml leaver tombstone --hris-id <id> --reason "..."` closes a row by hand without any account
@@ -607,7 +620,33 @@ The full bundle documentation, node by node, including how to read a red executi
 two `409` skips that are normal operation rather than failures, is
 [n8n/README.md](../n8n/README.md).
 
-## After the first hour
+## 14. Starters
+
+Only when your HR system or identity provider already creates the staged
+accounts; the toolkit activates them, it does not create them.
+
+```
+jml joiner dry-run --email <a real starter>
+```
+
+Read the plan: every leg, the recipients the temporary password would go to, and
+any address that would be withheld and why. Then arm `activate` alone, which sets
+the temporary password with a forced reset, and watch one starter through it
+before adding `joiner_licence`, `ou_move` and `welcome`. The procedure, including
+the gate that holds activation until somebody approves it, is
+[runbooks/activate-a-starter.md](runbooks/activate-a-starter.md).
+
+## 15. The starter form and ticketing (optional)
+
+With `ticketing.adapter` set and `joiner.gate: ticket`, a manager's starter form
+is what opens the activation gate, and each leaver gets one ticket listing the
+platforms IT does not administer. Setup and what happens when a ticket cannot be
+matched: [runbooks/starter-form-and-ticketing.md](runbooks/starter-form-and-ticketing.md).
+
+## After the first scheduled run
+
+Daily checks, stopping it, backups, updates and removal are in
+[operating.md](operating.md).
 
 - `jml audit tail` and `jml audit verify`. The chain check reports, for example,
   `the audit chain in ./audit is intact across 6 rows`, and names the first line that does

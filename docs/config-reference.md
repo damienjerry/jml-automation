@@ -92,6 +92,7 @@ not exist.
 | `leaver.maxAttemptsPerLeg` | `LEAVER_MAX_ATTEMPTS_PER_LEG` | integer | `6` | - | After this many failures a leg parks the row for a person. |
 | `leaver.transferDay` | `OFFBOARD_TRANSFER_DAY` | integer | `6` | - | Days after suspension that files are handed over. |
 | `leaver.deleteDay` | `OFFBOARD_DELETE_DAY` | integer | `7` | - | Days after suspension that accounts are deleted. |
+| `leaver.deletion` | `LEAVER_DELETION` | automatic \| never | `automatic` | - | `never` suspends and hands over, then keeps both accounts. Day 7 is not scheduled at all: no run deletes a retained leaver, reads their devices, or reports a failure over them; the report counts them as retained. Close a row by hand with `jml leaver tombstone` once you have dealt with the accounts. `never` refuses `delete` in armedActions, because the two contradict each other. |
 | `leaver.revokeLicences` | `LEAVER_REVOKE_LICENCES` | literal "all" \| string[] | `all` | - | `all`, or a list of SKU ids to revoke. |
 | `leaver.deleteGoogleUser` | `LEAVER_DELETE_GOOGLE_USER` | boolean | `true` | - | False stops at suspension so the mailbox can be archived by hand. |
 | `leaver.requireOperatorAck` | `LEAVER_REQUIRE_OPERATOR_ACK` | boolean | `false` | - | Require a human acknowledgement before any deletion. |

@@ -13,6 +13,7 @@
  * whole thing and then arm suspension alone.
  */
 
+import type { JmlConfig } from '../../config/schema.ts'
 import type { Actor } from '../../core/types.ts'
 import { runPipeline, type PipelineDeps, type PipelineOptions, type PipelineStepName } from '../../engine/pipeline.ts'
 import { renderRunReport } from './render.ts'
@@ -41,9 +42,60 @@ export function actorFor(opts: { actor?: string }): Actor {
   return named ? { kind: 'human', id: named } : { kind: 'system', id: 'system:cli' }
 }
 
-export function pipelineDeps(rt: Runtime): PipelineDeps {
+/**
+ * The steps that read only the HR system and the people store.
+ *
+ * A run of just these needs no identity provider or Google credential, which
+ * is what lets somebody point the toolkit at their own HR data and see who it
+ * thinks has joined and left before they grant it access to anything else.
+ * The one exception is email notification: the detector announces through the
+ * notifier, and the email notifier sends through Google, so with email on the
+ * connectors are still built rather than the announcement going nowhere.
+ */
+export const REPORT_ONLY_STEPS: readonly PipelineStepName[] = ['sync', 'detect']
+
+export function isReportOnly(steps: readonly PipelineStepName[] | undefined): boolean {
+  return steps !== undefined && steps.length > 0 && steps.every((s) => REPORT_ONLY_STEPS.includes(s))
+}
+
+function needsProviders(steps: readonly PipelineStepName[] | undefined): (cfg: JmlConfig) => boolean {
+  return (cfg) => !isReportOnly(steps) || cfg.notify.adapters.includes('email')
+}
+
+/** Stands in for a connector the runtime did not build. Any call is a bug, and says so. */
+function unopened<T extends object>(name: string): T {
+  return new Proxy({} as T, {
+    get(_target, prop) {
+      if (prop === 'then') return undefined
+      return () => {
+        throw new Error('the ' + name + ' connector was not opened for this run (sync and detect only), but ' + String(prop) + ' was called')
+      }
+    },
+  })
+}
+
+export function pipelineDeps(rt: Runtime, steps?: readonly PipelineStepName[]): PipelineDeps {
   if (!rt.providers) {
-    throw new Error('a run needs the provider connectors; this runtime was opened without them')
+    if (!isReportOnly(steps)) throw new Error('a run needs the provider connectors; this runtime was opened without them')
+    return {
+      cfg: rt.cfg,
+      hris: rt.hris,
+      store: rt.store,
+      state: rt.state,
+      idp: unopened('identity provider'),
+      devices: unopened('device'),
+      google: unopened('Google'),
+      joiner: null,
+      ticketing: rt.ticketing,
+      register: rt.register,
+      notifier: rt.notifier,
+      audit: rt.audit,
+      clock: rt.clock,
+      logger: rt.logger,
+      domain: rt.domain,
+      http: rt.http,
+      secrets: rt.secrets,
+    }
   }
   return {
     cfg: rt.cfg,
@@ -69,7 +121,7 @@ export function pipelineDeps(rt: Runtime): PipelineDeps {
 export async function runCommand(io: CliIo, opts: RunCommandOptions): Promise<number> {
   const rt = await openRuntime({
     io,
-    withProviders: true,
+    withProviders: needsProviders(opts.steps),
     ...(opts.configPath ? { configPath: opts.configPath } : {}),
   })
   try {
@@ -80,7 +132,7 @@ export async function runCommand(io: CliIo, opts: RunCommandOptions): Promise<nu
       ...(opts.allowBulk === undefined ? {} : { allowBulk: opts.allowBulk }),
       ...(opts.only ? { only: opts.only } : {}),
     }
-    const report = await runPipeline(pipelineDeps(rt), pipeline)
+    const report = await runPipeline(pipelineDeps(rt, opts.steps), pipeline)
     io.out(opts.json ? JSON.stringify(report, null, 2) + '\n' : renderRunReport(report) + '\n')
     // A skipped run is not a failure: an overlapping schedule is normal, and a
     // red exit code here would teach whoever reads the cron mail to ignore it.

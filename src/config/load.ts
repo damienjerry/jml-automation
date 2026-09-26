@@ -73,6 +73,13 @@ export interface LoadOptions {
    * config tests use it. Nothing that talks to a provider may set it.
    */
   allowMissingSecrets?: boolean
+  /**
+   * Resolve the identity provider and Google credentials. Default true. A
+   * command that reads only the HR system and the people store (bootstrap,
+   * sync, detect, store verify) sets it false, so somebody assessing their
+   * own HR data does not need, or invent, a key for either provider.
+   */
+  providerSecrets?: boolean | ((config: JmlConfig) => boolean)
   /** Pre-read document, for tests and for the Phase 3 installer. */
   document?: unknown
 }
@@ -134,7 +141,8 @@ export async function loadConfig(opts: LoadOptions = {}): Promise<LoadedConfig> 
     )
   }
 
-  const secretPaths = collectSecretFields(config)
+  const wantProviders = typeof opts.providerSecrets === 'function' ? opts.providerSecrets(config) : opts.providerSecrets !== false
+  const secretPaths = collectSecretFields(config).filter((f) => wantProviders || !PROVIDER_SECRET_PATHS.includes(f.path))
   const resolved = new Map<string, SecretHandle>()
   if (!opts.allowMissingSecrets) {
     const providers = opts.providers ?? defaultProviders(env)
@@ -241,6 +249,14 @@ function inactiveAdapterSecret(config: JmlConfig, path: string): boolean {
   if (path.startsWith('ticketing.suptask.')) return config.ticketing.adapter !== 'suptask'
   return false
 }
+
+/**
+ * Credentials only the provider connectors read. A runtime opened without
+ * providers never builds those connectors, so it does not resolve these.
+ * `jml doctor`, a leaver or joiner plan, `jml run` and the sidecar all open
+ * with providers and still require them.
+ */
+export const PROVIDER_SECRET_PATHS: readonly string[] = ['identity.jumpcloud.apiKey', 'google.serviceAccountJson']
 
 /**
  * The secret fields, as dotted paths.

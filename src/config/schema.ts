@@ -479,6 +479,15 @@ const LeaverSchema = z
       .describe(meta('LEAVER_MAX_ATTEMPTS_PER_LEG', 'After this many failures a leg parks the row for a person.')),
     transferDay: z.number().int().min(1).default(6).describe(meta('OFFBOARD_TRANSFER_DAY', 'Days after suspension that files are handed over.')),
     deleteDay: z.number().int().min(2).default(7).describe(meta('OFFBOARD_DELETE_DAY', 'Days after suspension that accounts are deleted.')),
+    deletion: z
+      .enum(['automatic', 'never'])
+      .default('automatic')
+      .describe(
+        meta(
+          'LEAVER_DELETION',
+          '`never` suspends and hands over, then keeps both accounts. Day 7 is not scheduled at all: no run deletes a retained leaver, reads their devices, or reports a failure over them; the report counts them as retained. Close a row by hand with `jml leaver tombstone` once you have dealt with the accounts. `never` refuses `delete` in armedActions, because the two contradict each other.',
+        ),
+      ),
     revokeLicences: z
       .union([z.literal('all'), z.array(z.string())])
       .default('all')
@@ -754,6 +763,9 @@ export const ALL_ARMED_ACTIONS: readonly ArmedAction[] = ARMED_ACTIONS
 
 /** The schema to parse with. Adds the cross-field rules. */
 export const ConfigSchema = ConfigObject.superRefine((cfg, ctx) => {
+  if (cfg.leaver.deletion === 'never' && cfg.armedActions.includes('delete')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['armedActions'], message: 'leaver.deletion is never, so delete cannot be armed. Remove one of them: a list that arms a step the policy forbids reads as coverage nobody meant.' })
+  }
   if (cfg.ownerNotifications.enabled && !cfg.ownerNotifications.goLiveDate) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['ownerNotifications', 'goLiveDate'], message: 'ownerNotifications.enabled needs goLiveDate, so switching it on cannot notify every owner about every leaver in the history.' })
   }

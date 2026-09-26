@@ -2,8 +2,8 @@
 
 This repository is two things. It is a working tool for one exact mix of
 platforms, and it is a worked example of an idea that fits almost any mix. If
-you run the same platforms, it is close to copy and paste: your credentials,
-your field names, and a dry run. If you do not, this page explains what each
+you run the same platforms, the work is mostly configuration: your credentials,
+your field names, your answers to [policy.md](policy.md), and reading dry runs. If you do not, this page explains what each
 piece does and why, says honestly how hard each swap is today, and gives you
 the rules to keep whatever you build.
 
@@ -13,9 +13,10 @@ the rules to keep whatever you build.
 starts and when they leave. Every IT account follows from that: an identity, a
 mailbox, licences, a laptop, access to apps. So the HR system becomes the one
 source of truth, and IT follows it. When somebody appears in HR, their account
-is made ready for their first day. When HR says they have gone, their access
-stops the day after their last day in, their files go to their manager, and a
-week later their accounts are deleted. Nobody has to remember, nobody raises a
+is made ready for their first day. When HR says they have gone, their sign-in is
+suspended the day after their last day in, their files go to their manager, and
+a week later their accounts are deleted, or kept, as your policy says. (What a
+suspension does not stop is listed in [access-removal.md](access-removal.md).) Nobody has to remember, nobody raises a
 ticket to start it, and nothing depends on a spreadsheet somebody forgot to
 update.
 
@@ -149,10 +150,10 @@ so plan for it as a project rather than an afternoon.
 
 If your identity provider or email platform is not JumpCloud and Google, you
 can still run the HR half today, which is enough to judge the idea against
-your own people. Point the HR adapter at an export file, and give the JumpCloud
-and Google keys placeholder values (`JUMPCLOUD_API_KEY=placeholder`), because
-the configuration still requires them. With that, these all run and act on
-your real HR data:
+your own people. Point the HR adapter at your HR system or at an export file.
+No JumpCloud or Google credential is needed or read, so leave those
+references unset rather than filling them with placeholders. These all run and
+act on your real HR data, writing only the local store:
 
 | Command | What you see |
 | --- | --- |
@@ -161,10 +162,12 @@ your real HR data:
 | `jml detect` | the joiners and leavers it would announce |
 | `jml store verify` | the exact set it would act on today |
 
-What does not run until both connectors exist: `jml doctor`, which really
-contacts JumpCloud and Google and fails, and any leaver or joiner dry run once
-somebody is due, because planning one means looking up their accounts. Do not
-put a real key from another system in those placeholders.
+One exception: if notifications go by email, `jml detect` sends through Google
+and needs its credential. Use the console or Slack notifier to stay HR-only.
+
+What does not run until both connectors exist: `jml doctor`, which contacts
+JumpCloud and Google, `jml run`, and any leaver or joiner dry run, because
+planning one means looking up the person's accounts.
 
 ### A different HR system (BambooHR, Personio, Rippling, Workday, and others)
 
@@ -286,6 +289,26 @@ differences to plan for:
   day 0 already stops them signing in. The day-6 suspension is then mailbox
   housekeeping rather than the moment access ends.
 
+That list is the mechanical part. The larger part is that Microsoft 365 needs
+its own lifecycle design, not the Google one translated call for call.
+Microsoft's own offboarding guidance treats these as separate decisions:
+
+- **Sessions.** Blocking sign-in does not end sessions already open. Revoking
+  the user's sign-in sessions and refresh tokens is its own step, and it belongs
+  on day 0.
+- **The mailbox.** Removing the licence starts a countdown on the mailbox's
+  data. Keeping it means converting it to a shared mailbox, or a retention or
+  litigation hold, before the licence goes.
+- **OneDrive.** Granting the manager access is not the same as keeping the
+  files. Once the account is deleted, OneDrive follows it after the retention
+  period.
+- **Deletion.** A deleted user can be restored for a limited time. Decide
+  whether day 7 deletes, or whether the account is kept disabled
+  (`leaver.deletion: never`).
+
+Write the day sequence and [access-removal.md](access-removal.md) for Microsoft
+first, then build to it.
+
 ### No n8n
 
 n8n only runs the schedule and hosts two forms; it holds no logic. Without it,
@@ -351,8 +374,12 @@ upstream still holds in your version.
 ## Using an AI assistant to adapt it
 
 The repository is written to be read by coding assistants as well as people.
-Point Claude, Codex or Gemini at [AGENTS.md](../AGENTS.md) and this page, then
-say what you run, for example "we use BambooHR, Okta and Microsoft 365". Ask
-for a plan first, not code. Check its plan against the table above, so you know
-where it is proposing a fork. Keep the dry run and the three arming locks in
-whatever it builds.
+[ai-adaptation-brief.md](ai-adaptation-brief.md) is a brief to paste in, with
+your platforms and your policy answers. It makes the assistant inventory
+permissions and gaps before writing code, build against fakes with invented
+people, keep every safety rule, and hand over a permission list, a test plan
+and a list of what is still unverified. Check its plan against the table above,
+so you know where it is proposing a fork.
+
+An assistant makes the code quicker to write. It does not make the lifecycle
+right for your organisation, and you own and maintain the fork it produces.
