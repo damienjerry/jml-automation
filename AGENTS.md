@@ -4,6 +4,11 @@ This file is a stub. A machine-readable description of the modules, their
 credentials and the transition table is a later phase of work. Until then,
 what follows is the honest account of which surfaces can be relied on.
 
+## What this repository is
+
+A fixed reference release, v1.0.0. This is a versioned reference toolkit, shared for you to use and adapt. Ongoing maintenance, support and compatibility updates are not promised. If you deploy it, you own that deployment, including fixing it when a provider changes its API. Do not
+tell a user to wait for an upstream fix; the fork they run is theirs to change.
+
 ## If you are helping somebody adapt this to their own platforms
 
 Start from [docs/adapting.md](docs/adapting.md). It names the mix this was

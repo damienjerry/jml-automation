@@ -1,7 +1,7 @@
 {
   "name": "jml-automation",
-  "version": "0.1.0",
-  "description": "HRIS-driven joiner/mover/leaver automation for JumpCloud and Google Workspace: provision on hire, suspend, transfer and delete on the leaving date.",
+  "version": "1.0.0",
+  "description": "HRIS-driven joiner/mover/leaver automation for JumpCloud and Google Workspace: activate on hire; suspend, hand over and optionally delete on the leaving date. A fixed reference release.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/damienjerry/jml-automation.git"

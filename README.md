@@ -11,7 +11,42 @@ optional HTTP sidecar, and six n8n workflows that hold no logic.
 It **does not create accounts** and it **does not change access for movers**.
 The read-only half has run against one real tenant. **No write has ever run
 against a real provider**: suspension, deletion and activation are tested
-against fakes only. Treat it as experimental.
+against fakes only.
+
+## What this is
+
+**Version 1.0.0, a fixed release.** This is a versioned reference toolkit, shared for you to use and adapt. Ongoing
+maintenance, support and compatibility updates are not promised. If you deploy
+it, you own that deployment, including fixing it when a provider changes its API.
+
+What was tested, and how:
+
+| Part | Status |
+| --- | --- |
+| `jml demo` | runs offline; its whole output is snapshot-tested |
+| `jml doctor`: HiBob, JumpCloud and every Google scope | **run against a real tenant**, 2026-09-25 |
+| HR read, history import, sync, detect, store verify | **run against a real tenant, read-only**, 2026-09-25 |
+| Notion people store | **read against a live database**, read-only, 2026-09-25; writes tested against fakes |
+| SQLite store, backup and restore | exercised on test data, 2026-09-26 |
+| `jml n8n import` | **run against n8n 1.123.77**, 2026-09-26 |
+| Leaver writes: suspend, auto-reply, licence, Google sign-out, hand-over, Google suspend, delete | tested against fakes only |
+| Joiner writes: temporary password, licence, org unit, welcome | tested against fakes only |
+| Ticketing (Suptask), owner notifications, Slack and email notifications | tested against fakes only |
+| Device unbind and handover | never run on real hardware; handover is refused until you canary it |
+| `install.sh` and `jml setup` | tested with a scripted wizard and `--dry-run`; the Docker Compose step has never started the containers end to end |
+
+The design comes from automation that runs these steps in production at one
+organisation. This code's own write paths have not run against a real
+provider. The first armed action you take is also a test of the toolkit, so
+take it on a test account.
+
+Tested with Node 22.22, n8n 1.123.77, the JumpCloud v1 and v2 APIs, the Google
+Admin SDK Directory, Licensing and Data Transfer v1 APIs, the Gmail v1 API, the
+HiBob v1 API and the Notion API version 2022-06-28.
+
+Deletion, the device handover and every other destructive step are optional
+and off by default. Suspension and reporting can be used indefinitely without
+ever arming deletion ([docs/policy.md](docs/policy.md)).
 
 **JML** is joiner, mover, leaver: the identity-management term for everything IT
 does when somebody starts, changes role, or leaves. Audits, security
@@ -181,8 +216,8 @@ cd jml-automation
 It checks for Node 22 and Docker (offering Homebrew, and doing nothing without a yes),
 clones, prints the exact commit and **stops until you say yes**, then installs dependencies
 with `--ignore-scripts` so no third-party package runs code on your machine, builds from the
-source you cloned, and hands over to `jml setup`. `main` moves; set `JML_REF` to a tag or a
-commit you have read to build exactly that. That asks for your
+source you cloned, and hands over to `jml setup`. It builds the `v1.0.0` tag by default; set
+`JML_REF` to another tag or a commit you have read to build that instead. That asks for your
 organisation, HR system and people store; asks for each credential and prints its minimum
 access; runs `jml doctor` until every check passes; rehearses the tombstone bootstrap before
 writing it; starts the sidecar and n8n with Docker Compose; and imports the six workflows with
@@ -369,6 +404,14 @@ The rest of the runbooks: [hold and release](docs/runbooks/hold-and-release.md),
 [docs/maintainer.md](docs/maintainer.md) and the release history in
 [CHANGELOG.md](CHANGELOG.md). There is no separate `docs/n8n.md`: the bundle is documented
 in [n8n/README.md](n8n/README.md), next to the files.
+
+## Possible extensions
+
+Not planned work and not commitments. [docs/plan-google-and-sheet-route.md](docs/plan-google-and-sheet-route.md)
+sets out how a second complete route could be built: Google Workspace without
+JumpCloud, account creation, a spreadsheet as the HR source, and department
+groups for movers. It is there for anybody who wants to build it in their own
+copy.
 
 ## Where to go next
 

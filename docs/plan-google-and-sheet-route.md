@@ -1,6 +1,9 @@
-# Plan: a complete route on Google Workspace and a people spreadsheet
+# A possible extension: a complete route on Google Workspace and a people spreadsheet
 
-Status: proposed, 2026-09-26. Nothing here is built yet.
+**Not planned work, and not a commitment.** v1.0.0 does not include any of
+this. It is written down so that anybody who wants the route can build it in
+their own copy, in an order that works, with the design questions already
+named. The sizes are estimates for whoever takes it on.
 
 ## The target
 
@@ -49,8 +52,7 @@ on trust:
 | What does the Directory API return for a user who has never signed in (`lastLoginTime`, `agreedToTerms`)? | The joiner's "never touch an account somebody is already using" rule needs a Google equivalent of JumpCloud's `activated` |
 
 Needs: one throwaway Google Workspace tenant or a test organisational unit that
-holds no real people. **Decision for DJ: which.** A trial tenant keeps this
-completely apart from any real organisation.
+holds no real people.
 
 Size: half a day.
 
@@ -181,9 +183,9 @@ Size: one to two days, once the tenant exists.
 
 Roughly 4,000 lines including tests, and about two working weeks. Steps 1 and 2
 touch shared code, so each lands as its own reviewed change with the full gate
-green, and Codex reviews after steps 2, 4 and 6.
+green, and an outside review after steps 2, 4 and 6 is worth having.
 
-## Decisions needed before starting
+## Questions whoever builds it has to answer
 
 1. The disposable tenant for step 0 and step 6: a Google Workspace trial, or a
    test organisational unit somewhere.

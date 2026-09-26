@@ -21,8 +21,9 @@ its own, and you should know them before you rely on it:
   internal use. Without it, run `jml run` from cron.
 - **Your time.** Provider APIs change. When one does, a connector breaks, and
   somebody has to notice, read the error and fix or update. That somebody is
-  you. There is no support service and no service level. Issues and pull
-  requests are read when the maintainer can.
+  you. This is a versioned reference toolkit, shared for you to use and
+  adapt. Ongoing maintenance, support and compatibility updates are not
+  promised. If you deploy it, you own that deployment.
 - **Someone to receive alerts.** Missed runs and failures are only useful if they
   reach a person who will act. Decide who that is before you arm anything.
 

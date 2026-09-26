@@ -4,7 +4,10 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - Unreleased
+## [1.0.0] - 2026-09-26
+
+The first and fixed release. This is a versioned reference toolkit, shared for you to use and adapt. Ongoing maintenance, support and compatibility updates are not promised. If you deploy it, you own that deployment, including fixing it when a provider changes its API. What was tested,
+and how, is in the README under "What this is".
 
 First release. Phase 1 is the leaver path: read the HR system, keep a people
 store, and on the leaving date suspend access, hand over files, and delete
@@ -301,4 +304,4 @@ Read this before arming anything.
 Test coverage is not evidence about your tenant. 1541 tests across 159 files
 pass on this checkout, and every one of them runs against a fake.
 
-[0.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v0.1.0
+[1.0.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0.0

@@ -101,7 +101,7 @@ node bin/jml.mjs demo
 
 `npm run gate` on this checkout: 0 identifier errors and 0 warnings, 4
 generated artefacts current, 6 workflow files valid, typecheck and lint clean,
-1558 tests across 163 files passing. `npm run docs:links` separately: 49
+1558 tests across 163 files passing. `npm run docs:links` separately: 50
 Markdown files and 127 source files, 0 broken links.
 
 ## Credentials and blast radius
@@ -236,4 +236,6 @@ Useful in a report: the version or commit, the configuration shape from
 expected instead. If a credential has been exposed, rotate it first and report
 second.
 
-Expect an acknowledgement within a week. There is no bounty programme.
+v1.0.0 is a fixed reference release. A report is read, but no response time,
+fix or security release is promised, and there is no bounty programme. If you
+run it, watch your own deployment and patch your own copy.
