@@ -14,6 +14,16 @@ licence, hands their files to their manager on day 6, and deletes both accounts 
 It is a command line tool, an optional authenticated HTTP sidecar, and six n8n workflows
 that contain no logic.
 
+**It is built for one mix of platforms, and it is an example of an idea that fits any.**
+The mix is HiBob, JumpCloud, Google Workspace and n8n. If you run exactly that, it is close
+to copy and paste. If you run something else, such as BambooHR instead of HiBob, Okta
+instead of JumpCloud, Microsoft 365 instead of Google, or none of these,
+[docs/adapting.md](docs/adapting.md) explains what each piece does, why, and how hard each
+swap is today. The HR system, people store, scheduler and ticketing tool swap cleanly. The
+identity provider and email platform are a larger change, because JumpCloud and Google are
+wired in. It also says what the toolkit does not do: it creates no accounts, and it does
+nothing for movers yet.
+
 It deletes accounts. Read the demo below before you read anything else, then read
 [docs/quickstart.md](docs/quickstart.md) before you point it at your own tenant.
 
@@ -296,6 +306,7 @@ destructive actions are in [SECURITY.md](SECURITY.md).
 
 | | |
 | --- | --- |
+| [docs/adapting.md](docs/adapting.md) | The idea in plain English, the platform mix it was built for, and how to swap any piece of it for what you run. |
 | [docs/quickstart.md](docs/quickstart.md) | The first hour, in order, with real output and what to do when a step fails. |
 | [docs/credentials.md](docs/credentials.md) | Every credential, the smallest permission set that works, and how `jml doctor` proves it. |
 | [docs/state-machine.md](docs/state-machine.md) | The statuses, the transition table, the gates, and the failure each guard exists for. |

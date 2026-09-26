@@ -10,7 +10,13 @@ the shipped `jml.config.yaml` points it at
 
 Two things it is not. It is not a way to rehearse against your own people
 without a credential: something has to produce the file, and a hand-written one
-proves your file, not your tenant. And it is not a store: the file is read, never
+proves your file, not your tenant.
+
+It can, though, be a bridge to an HR system this toolkit has no adapter for:
+export everybody to this shape on a schedule and point the adapter at the
+file. [adapting.md](../adapting.md#a-different-hr-system-bamboohr-personio-rippling-workday-and-others)
+covers it, including the one rule that matters: the file must be regenerated
+before every run, because a stale file looks exactly like a quiet day. And it is not a store: the file is read, never
 written. Everything the toolkit records goes to the people store.
 
 ## Getting past the shipped defaults

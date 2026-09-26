@@ -134,7 +134,7 @@ joiner:
   holidays: []
   # More candidates than this are reported and held for the next run rather than all being activated at once. A crowd of joiners is a data fault far more often than a hiring round.
   maxActivationsPerRun: 5
-  # What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticketing adapter opens it (interface only in this phase; behaves as manual).
+  # What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticket raised on the starter form opens it, through the configured ticketing adapter (Suptask ships), and `jml joiner approve` still works by hand.
   gate: none
   # Google organisational unit to move the account into on activation, for example the one whose sign-in is delegated to the identity provider. Blank skips the move.
   targetOrgUnitPath: ""

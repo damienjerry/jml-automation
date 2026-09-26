@@ -362,7 +362,7 @@ const JoinerSchema = z
       .describe(
         meta(
           'JOINER_GATE',
-          'What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticketing adapter opens it (interface only in this phase; behaves as manual).',
+          'What has to happen before an eligible person is activated. none: nothing. manual: somebody runs `jml joiner approve`. ticket: a ticket raised on the starter form opens it, through the configured ticketing adapter (Suptask ships), and `jml joiner approve` still works by hand.',
         ),
       ),
     targetOrgUnitPath: z

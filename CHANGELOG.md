@@ -33,6 +33,16 @@ An independent review before publishing found six things, all fixed:
 
 ### Added
 
+**A guide to the idea, and to adapting it.** [docs/adapting.md](docs/adapting.md)
+names the platform mix this was built for, says what it does not do (it
+creates no accounts and does nothing for movers yet), explains each step and
+safety rule in plain English, and rates every swap honestly: the HR system,
+people store, scheduler and ticketing swap cleanly; the identity provider and
+email platform are a fork today. It shows what can be tried against your own
+HR data before building anything. Writing it found one bug: credentials for
+an adapter that is not selected were still required at start-up, so using
+the file adapter as a bridge to another HR system demanded HiBob keys. Fixed.
+
 **A Mac installer.** `install.sh` checks for Node 22 and Docker, installs
 dependencies with `--ignore-scripts`, builds from the clone and hands over to
 `jml setup`, a resumable wizard: configuration, credentials with their minimum
@@ -229,7 +239,7 @@ Read this before arming anything.
 - **The Google Sheets credential pattern is documented from earlier private
   use**; that adapter does not ship.
 
-Test coverage is not evidence about your tenant. 1535 tests across 158 files
+Test coverage is not evidence about your tenant. 1538 tests across 159 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v0.1.0

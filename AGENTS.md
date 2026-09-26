@@ -4,6 +4,17 @@ This file is a stub. A machine-readable description of the modules, their
 credentials and the transition table is a later phase of work. Until then,
 what follows is the honest account of which surfaces can be relied on.
 
+## If you are helping somebody adapt this to their own platforms
+
+Start from [docs/adapting.md](docs/adapting.md). It names the mix this was
+built for, what each role (HR system, identity provider, email and files,
+store, scheduler, ticketing) has to do, and which swaps are configuration, a
+small adapter against an existing interface, or reuse of the rules only.
+Establish which platforms the person runs before proposing code, propose a
+plan before writing any, and keep the dry-run default and the per-action
+arming locks in whatever you build. The safety rules in that page are the
+part that must survive an adaptation.
+
 ## The authoritative machine-readable surfaces
 
 Three, and nothing else:

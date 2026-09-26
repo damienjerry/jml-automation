@@ -219,10 +219,27 @@ export function expandEnvReferences(value: unknown, env: NodeJS.ProcessEnv, path
 export function collectSecretFields(config: JmlConfig): { path: string; value: string }[] {
   const out: { path: string; value: string }[] = []
   for (const path of SECRET_PATHS) {
+    if (inactiveAdapterSecret(config, path)) continue
     const value = readPath(config, path)
     if (typeof value === 'string') out.push({ path, value })
   }
   return out
+}
+
+/**
+ * A secret belonging to an adapter that is not selected is not resolved.
+ *
+ * The generated configuration carries every adapter's block, so an HR system
+ * read from a file still had a HiBob block holding env references, and
+ * start-up refused because HIBOB_SERVICE_USER_ID was unset. Somebody adapting
+ * this to another HR system hit that before anything else. A credential for
+ * an adapter that will never be built is not needed, and resolving it would
+ * only make somebody put a real key where nothing reads it.
+ */
+function inactiveAdapterSecret(config: JmlConfig, path: string): boolean {
+  if (path.startsWith('hris.hibob.')) return config.hris.adapter !== 'hibob'
+  if (path.startsWith('ticketing.suptask.')) return config.ticketing.adapter !== 'suptask'
+  return false
 }
 
 /**
