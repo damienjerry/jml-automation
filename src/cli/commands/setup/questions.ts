@@ -15,7 +15,7 @@
 
 import { readFile } from 'node:fs/promises'
 import { SCOPE_USES } from '../../../connectors/google/scopes.ts'
-import { setConfig, setEnv, type SetupState } from './files.ts'
+import { setConfig, setEnv, unsetEnv, type SetupState } from './files.ts'
 import type { Prompter } from './prompter.ts'
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
@@ -164,6 +164,16 @@ export async function askCredentials(d: CredentialDeps, answers: Answers): Promi
         if (need.kind === 'google-json') checkGoogleKey(read.value, d.say)
         await setConfig(d.configPath, [[need.path, ref]])
         d.say(`  jml.config.yaml now references ${ref} (${read.value.trim().length} characters); nothing was written to disk`)
+        if (d.env[need.key]) {
+          // An earlier run left the value in plain text. It is no longer read.
+          if (await d.prompter.confirm(`  .env still holds an old plain-text ${need.key}, which nothing reads now. Remove it?`, true)) {
+            await unsetEnv(d.envPath, need.key)
+            delete d.env[need.key]
+            d.say(`  removed ${need.key} from .env`)
+          } else {
+            d.say(`  ${need.key} stays in .env in plain text. Nothing reads it; delete the line yourself when you are ready.`)
+          }
+        }
         continue
       }
       value = read.value

@@ -62,6 +62,21 @@ export async function setEnv(path: string, name: string, value: string): Promise
   await chmod(path, 0o600)
 }
 
+/** Remove KEY from `.env` entirely. Returns whether a non-empty value was there. */
+export async function unsetEnv(path: string, name: string): Promise<boolean> {
+  let text: string
+  try {
+    text = await readFile(path, 'utf8')
+  } catch {
+    return false
+  }
+  const had = Boolean(parseEnv(text)[name])
+  const pattern = new RegExp('^' + name + '=.*(?:\\r?\\n|$)', 'm')
+  await writeFile(path, text.replace(pattern, ''), { encoding: 'utf8', mode: 0o600 })
+  await chmod(path, 0o600)
+  return had
+}
+
 /** Set values in the YAML config, keeping every comment. Paths are arrays of keys. */
 export async function setConfig(path: string, values: [readonly (string | number)[], unknown][]): Promise<void> {
   const doc = parseDocument(await readFile(path, 'utf8'))

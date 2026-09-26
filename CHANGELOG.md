@@ -31,6 +31,15 @@ An independent review before publishing found six things, all fixed:
 - **The installer built without pausing.** It now waits for a yes after
   printing the commit, and builds a pinned tag or commit.
 
+A second pass by the same reviewer found two more, both reproduced and fixed:
+
+- **Setup could report complete while somebody was still selected for
+  offboarding** after the bootstrap. That is now recorded as unresolved, and
+  setup finishes as incomplete until a bootstrap leaves nobody selected.
+- **Moving a credential to a 1Password reference left the old plain-text value
+  in `.env`.** Setup now offers to remove it, defaulting to yes, and says
+  plainly when it stays.
+
 ### Added
 
 **A guide to the idea, and to adapting it.** [docs/adapting.md](docs/adapting.md)
@@ -239,7 +248,7 @@ Read this before arming anything.
 - **The Google Sheets credential pattern is documented from earlier private
   use**; that adapter does not ship.
 
-Test coverage is not evidence about your tenant. 1538 tests across 159 files
+Test coverage is not evidence about your tenant. 1541 tests across 159 files
 pass on this checkout, and every one of them runs against a fake.
 
 [0.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v0.1.0

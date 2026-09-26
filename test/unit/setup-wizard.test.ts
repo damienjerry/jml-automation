@@ -67,7 +67,7 @@ interface Harness {
   n8n: FakeN8n
 }
 
-function harness(answers: string[], opts: { doctorOk?: boolean; dockerUp?: boolean; verifyCode?: number } = {}): Harness {
+function harness(answers: string[], opts: { doctorOk?: boolean; dockerUp?: boolean; verifyCode?: number; day0?: number } = {}): Harness {
   let out = ''
   const io: CliIo = { out: (t) => (out += t), err: (t) => (out += t), env: {}, cwd: '/' }
   const jmlCalls: string[][] = []
@@ -89,7 +89,8 @@ function harness(answers: string[], opts: { doctorOk?: boolean; dockerUp?: boole
     }
     if (argv[0] === 'store' && argv[1] === 'bootstrap') {
       const armed = argv.includes('--armed')
-      return { code: 0, out: JSON.stringify({ scanned: 10, tombstoned: 6, skippedActive: 3, skippedHired: 1, day0SelectionAfter: 0, warnings: [], ok: true, dryRun: !armed }) }
+      const day0 = opts.day0 ?? 0
+      return { code: day0 > 0 ? 1 : 0, out: JSON.stringify({ scanned: 10, tombstoned: 6, skippedActive: 3, skippedHired: 1, day0SelectionAfter: day0, warnings: [], ok: day0 === 0, dryRun: !armed }) }
     }
     if (argv[0] === 'store' && argv[1] === 'verify') return { code: opts.verifyCode ?? 0, out: 'departed 6\nday-0 today 0\n' }
     return { code: 2, out: 'unexpected ' + argv.join(' ') }
@@ -253,5 +254,45 @@ describe('jml setup', () => {
     await setupCommand(h.io, { dir }, h.deps)
     expect(h.output()).toMatch(/plain text, mode 600/)
     expect(await getConfig(join(dir, 'jml.config.yaml'), ['hris', 'hibob', 'serviceToken'])).toBe('env:HIBOB_SERVICE_TOKEN')
+  })
+
+  it('a bootstrap that leaves somebody selected for offboarding finishes as incomplete', async () => {
+    const dir = checkout()
+    const h = harness(fullRunAnswers(googleKeyFile(dir)), { day0: 1 })
+    expect(await setupCommand(h.io, { dir }, h.deps)).toBe(1)
+    expect(h.output()).toContain('Setup finished INCOMPLETE')
+    expect(h.output()).not.toContain('Setup is complete')
+    expect(JSON.parse(readFileSync(join(dir, 'data', 'setup-state.json'), 'utf8')).overrides).toEqual(['bootstrap'])
+  })
+
+  it('moving a credential to a 1Password reference offers to remove the old plain-text value, and removes it on yes', async () => {
+    const dir = checkout()
+    // First run, command line only, every credential pasted or read from a file.
+    const answers = fullRunAnswers(googleKeyFile(dir)).slice(0, -1)
+    answers.splice(14, 2, 'paste', 'hibob-token-pasted-not-real')
+    const first = harness(answers, { dockerUp: false })
+    expect(await setupCommand(first.io, { dir, noDocker: true }, first.deps)).toBe(0)
+    expect(readFileSync(join(dir, '.env'), 'utf8')).toContain('hibob-token-pasted-not-real')
+
+    // Redo credentials: keep all but the HiBob token, which moves to 1Password.
+    const redo = harness(['keep', 'op', 'op://Vault/item/field', 'y', 'keep', 'keep', 'keep', 'y'], { dockerUp: false })
+    expect(await setupCommand(redo.io, { dir, noDocker: true, from: 'credentials' }, redo.deps)).toBe(0)
+    expect(await getConfig(join(dir, 'jml.config.yaml'), ['hris', 'hibob', 'serviceToken'])).toBe('op://Vault/item/field')
+    const env = readFileSync(join(dir, '.env'), 'utf8')
+    expect(env).not.toContain('hibob-token-pasted-not-real')
+    expect(parseEnv(env)['HIBOB_SERVICE_TOKEN']).toBeUndefined()
+    expect(parseEnv(env)['JUMPCLOUD_API_KEY']).toBe(SECRETS.jumpcloud)
+  })
+
+  it('says plainly that the old value stays when the operator keeps it', async () => {
+    const dir = checkout()
+    const answers = fullRunAnswers(googleKeyFile(dir)).slice(0, -1)
+    answers.splice(14, 2, 'paste', 'hibob-token-pasted-not-real')
+    const first = harness(answers, { dockerUp: false })
+    await setupCommand(first.io, { dir, noDocker: true }, first.deps)
+    const redo = harness(['keep', 'op', 'op://Vault/item/field', 'n', 'keep', 'keep', 'keep', 'y'], { dockerUp: false })
+    await setupCommand(redo.io, { dir, noDocker: true, from: 'credentials' }, redo.deps)
+    expect(redo.output()).toContain('stays in .env in plain text')
+    expect(readFileSync(join(dir, '.env'), 'utf8')).toContain('hibob-token-pasted-not-real')
   })
 })

@@ -288,6 +288,12 @@ async function bootstrap(c: Ctx): Promise<'done' | 'stop'> {
     return 'stop'
   }
   c.say(`  wrote ${a.tombstoned} tombstones; ${a.day0SelectionAfter} people would start offboarding today${a.day0SelectionAfter > 0 ? ' (read them with jml store verify before arming anything)' : ''}`)
+  // People still selected for offboarding may be genuine leavers or a data
+  // fault, and only a person can tell which. Either way setup is not
+  // finished: it is recorded like a doctor override, so the run ends as
+  // incomplete, and it clears the next time a bootstrap leaves nobody selected.
+  c.state.overrides = c.state.overrides.filter((o) => o !== 'bootstrap')
+  if (a.day0SelectionAfter > 0 || a.ok === false) c.state.overrides.push('bootstrap')
   const verify = await c.d.jml(['store', 'verify', '--config', c.configPath], env)
   c.say(verify.out.trimEnd())
   if (verify.code !== 0) {
