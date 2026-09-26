@@ -38,7 +38,7 @@ import {
   type GateResult,
   type IdpResolution,
 } from './gate.ts'
-import { DAY0_LEGS, DAY6_LEGS, DAY7_LEGS, type LeaverDeps, type LegContext, type LegResult } from './legs.ts'
+import { DAY0_LEGS, DAY6_LEGS, day0Legs, day7Legs, doorLegName, type LeaverDeps, type LegContext, type LegResult } from './legs.ts'
 import { notifyBlocked, notifyDay0, notifyDay6, notifyDay7, notifyParked, notifyRunAborted, runAuditCtx } from './notify.ts'
 import { loadDay0Candidates, loadDay6Candidates, loadDay7Candidates, loadLiveClaims } from './select.ts'
 
@@ -586,11 +586,11 @@ async function runDay0(
     return
   }
 
-  const results = await runLegs(deps, opts, person, resolved, state.today, DAY0_LEGS, outcome)
+  const results = await runLegs(deps, opts, person, resolved, state.today, day0Legs(deps.cfg), outcome)
   outcome.legs = legRecords(results)
   for (const leg of results) if (leg.record.state === 'failed') bump(state.report, 'failedLegs')
 
-  const suspended = results.find((leg) => leg.name === 'suspend_idp')
+  const suspended = results.find((leg) => leg.name === doorLegName(deps.cfg))
   const doorClosed = verifiedDone(suspended?.record)
 
   if (opts.dryRun) {
@@ -715,8 +715,12 @@ async function runDay7(
     await recordBlocked(deps, opts, state, person, gate, outcome)
     return
   }
+  if (deps.cfg.identity.adapter === 'none') {
+    // On every deletion, so an open gate is never read as "no machine is out there".
+    outcome.notes?.push('no device inventory in this setup (identity.adapter: none), so no bound machine was checked; recover the laptop by hand')
+  }
 
-  const results = await runLegs(deps, opts, person, resolved, state.today, DAY7_LEGS, outcome)
+  const results = await runLegs(deps, opts, person, resolved, state.today, day7Legs(deps.cfg), outcome)
   outcome.legs = legRecords(results)
   for (const leg of results) {
     if (leg.record.state === 'failed') bump(state.report, 'failedLegs')

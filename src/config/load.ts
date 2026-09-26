@@ -247,6 +247,7 @@ export function collectSecretFields(config: JmlConfig): { path: string; value: s
 function inactiveAdapterSecret(config: JmlConfig, path: string): boolean {
   if (path.startsWith('hris.hibob.')) return config.hris.adapter !== 'hibob'
   if (path.startsWith('ticketing.suptask.')) return config.ticketing.adapter !== 'suptask'
+  if (path.startsWith('identity.jumpcloud.')) return config.identity.adapter !== 'jumpcloud'
   return false
 }
 

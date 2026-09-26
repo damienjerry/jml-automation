@@ -16,6 +16,7 @@
 
 import type { Outcome } from '../../core/types.ts'
 import type { MailboxState, ProviderUser } from '../types.ts'
+import { randomBytes } from 'node:crypto'
 import { authorisedRequest, type GoogleCtx } from './auth.ts'
 import { GOOGLE_SCOPES } from './scopes.ts'
 
@@ -32,6 +33,9 @@ interface DirectoryUserBody {
   orgUnitPath?: string
   aliases?: string[]
   isMailboxSetup?: boolean
+  lastLoginTime?: string
+  isEnrolledIn2Sv?: boolean
+  changePasswordAtNextLogin?: boolean
 }
 
 interface DirectoryListBody {
@@ -121,6 +125,73 @@ export async function suspendUser(ctx: GoogleCtx, email: string): Promise<Outcom
   }
 }
 
+/** The raw directory record, for the activation reads. Null on a 404; throws on anything else. */
+export async function readUserBody(ctx: GoogleCtx, userKey: string): Promise<DirectoryUserBody | null> {
+  const response = await readUser(ctx, userKey)
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error(`reading the Google account failed with status ${response.status}`)
+  return response.json<DirectoryUserBody>() ?? {}
+}
+
+/**
+ * Write a password, and optionally require a change at next sign-in, then
+ * confirm the change flag from a fresh read.
+ *
+ * A password cannot be read back. The change flag can, and it is written in the
+ * same request, so a flag that reads back set is evidence the write landed.
+ */
+export async function writePassword(ctx: GoogleCtx, userKey: string, password: string, label: string): Promise<Outcome> {
+  const write = await authorisedRequest(ctx, {
+    method: 'PUT',
+    url: userUrl(userKey),
+    scope: GOOGLE_SCOPES.directoryUser,
+    subject: ctx.cfg.adminEmail,
+    json: { password, changePasswordAtNextLogin: true },
+    label,
+  })
+  if (write.status === 404) return { ok: false, verified: false, error: 'no such account', retryable: false, detail: { reason: 'no_such_account' } }
+  if (!write.ok) return failure('setting the Google password', write.status)
+  const after = await readUser(ctx, userKey)
+  if (!after.ok) {
+    return { ok: false, verified: false, error: `the Google account could not be read back after the password was set (status ${after.status})`, retryable: true }
+  }
+  const flagged = after.json<DirectoryUserBody>()?.changePasswordAtNextLogin === true
+  return flagged
+    ? { ok: true, verified: true, detail: { changePasswordAtNextLogin: true } }
+    : { ok: false, verified: false, error: 'Google accepted the password and the account does not show a pending change', retryable: true }
+}
+
+/**
+ * Close the account on day 0 when Google is the only account (no identity
+ * provider in front of it).
+ *
+ * The account is not suspended: the day-6 hand-over is proven on an active,
+ * unlicensed account, so suspension stays after it, as on the reference
+ * route. Instead the password is replaced with a random one nobody holds, a
+ * change is required at next sign-in, and every session is ended. The random
+ * value exists only inside this call and is never logged or returned.
+ */
+export async function closeUser(ctx: GoogleCtx, email: string): Promise<Outcome> {
+  const locked = await writePassword(ctx, email, randomBytes(24).toString('base64url'), 'google directory close')
+  if (!locked.ok) {
+    if (locked.detail?.['reason'] === 'no_such_account') {
+      return { ok: true, verified: true, alreadyAbsent: true, detail: { reason: 'no_google_account', email } }
+    }
+    return locked
+  }
+  const signOut = await authorisedRequest(ctx, {
+    method: 'POST',
+    url: `${userUrl(email)}/signOut`,
+    scope: GOOGLE_SCOPES.directoryUserSecurity,
+    subject: ctx.cfg.adminEmail,
+    label: 'google directory sign out',
+  })
+  if (!signOut.ok) {
+    return { ...failure('signing the Google account out', signOut.status), detail: { passwordReplaced: true } }
+  }
+  return { ok: true, verified: true, detail: { passwordReplaced: true, changePasswordAtNextLogin: true, sessionsReset: 'requested' } }
+}
+
 interface TokenListBody {
   items?: { clientId?: string }[]
 }
@@ -167,8 +238,24 @@ export async function signOutUser(ctx: GoogleCtx, email: string): Promise<Outcom
     if (!del.ok && del.status !== 404) failed += 1
   }
 
+  // App passwords sign in to mail and calendar clients without the account
+  // password, so they outlive a password change. Revoked with the grants.
+  const asps = await listAspIds(ctx, email)
+  if (!asps.ok) return failure('listing the Google account app passwords', asps.status)
+  for (const codeId of asps.ids) {
+    const del = await authorisedRequest(ctx, {
+      method: 'DELETE',
+      url: `${userUrl(email)}/asps/${encodeURIComponent(codeId)}`,
+      scope: GOOGLE_SCOPES.directoryUserSecurity,
+      subject: ctx.cfg.adminEmail,
+      label: 'google directory revoke app password',
+    })
+    if (!del.ok && del.status !== 404) failed += 1
+  }
+  const aspsAfter = await listAspIds(ctx, email)
+
   const after = await listTokenClients(ctx, email)
-  if (!after.ok) {
+  if (!after.ok || !aspsAfter.ok) {
     return {
       ok: false,
       verified: false,
@@ -176,14 +263,28 @@ export async function signOutUser(ctx: GoogleCtx, email: string): Promise<Outcom
       retryable: true,
     }
   }
-  const remaining = after.clients.length
+  const remaining = after.clients.length + aspsAfter.ids.length
   return {
     ok: remaining === 0,
     verified: remaining === 0,
-    ...(remaining === 0 ? {} : { error: `${remaining} third-party grant(s) are still in place after revoking` }),
-    detail: { sessionsReset: 'requested', grantsRevoked: before.clients.length - failed, grantsRemaining: remaining },
+    ...(remaining === 0 ? {} : { error: `${remaining} third-party grant(s) or app password(s) are still in place after revoking` }),
+    detail: { sessionsReset: 'requested', grantsRevoked: before.clients.length + asps.ids.length - failed, grantsRemaining: remaining },
     ...(remaining === 0 ? {} : { retryable: true }),
   }
+}
+
+async function listAspIds(ctx: GoogleCtx, email: string): Promise<{ ok: boolean; status: number; ids: string[] }> {
+  const response = await authorisedRequest(ctx, {
+    method: 'GET',
+    url: `${userUrl(email)}/asps`,
+    scope: GOOGLE_SCOPES.directoryUserSecurity,
+    subject: ctx.cfg.adminEmail,
+    label: 'google directory list app passwords',
+  })
+  if (!response.ok) return { ok: false, status: response.status, ids: [] }
+  const items = response.json<{ items?: { codeId?: number | string }[] }>()?.items ?? []
+  const ids = items.map((item) => item.codeId).filter((id) => id !== undefined && id !== null).map(String)
+  return { ok: true, status: response.status, ids }
 }
 
 async function listTokenClients(ctx: GoogleCtx, email: string): Promise<{ ok: boolean; status: number; clients: string[] }> {

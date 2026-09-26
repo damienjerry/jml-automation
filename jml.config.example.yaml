@@ -66,6 +66,9 @@ store:
   path: ./data/jml.sqlite
 
 identity:
+  # `jumpcloud` (setup 1.0a) puts a JumpCloud account in front of Google. `none` (setup 1.0b) makes the Google account the only account: day 0 closes it with a random password and a sign-out, starters get their temporary password on Google, and there is no device inventory, so every deletion says none was checked.
+  adapter: jumpcloud
+  # Required when identity.adapter is jumpcloud.
   jumpcloud:
     # Some tenants answer only on the console host and return 404 on the other one for every request, valid key or not.
     baseUrl: "https://console.jumpcloud.com/api"

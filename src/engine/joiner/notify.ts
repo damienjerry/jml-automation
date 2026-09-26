@@ -38,6 +38,12 @@ function report(results: readonly NotificationResult[]): NotifyReport {
   return { delivered: failed.length === 0, reasons: failed.map((r) => `${r.channel}: ${r.error ?? 'no reason given'}`) }
 }
 
+/** Where a starter signs in first: the identity provider, or Google itself when there is none. */
+function signInUrl(cfg: JoinerDeps['cfg']): string {
+  if (cfg.identity.adapter === 'none') return 'https://accounts.google.com'
+  return cfg.identity.jumpcloud?.consoleUrl ?? 'the identity provider sign-in page'
+}
+
 export async function notifyJoinerPassword(deps: JoinerDeps, ctx: AuditCtx, to: readonly string[], password: string): Promise<NotifyReport> {
   if (to.length === 0) return { delivered: false, reasons: ['no usable address for the temporary password'] }
   const person = ctx.person
@@ -45,7 +51,7 @@ export async function notifyJoinerPassword(deps: JoinerDeps, ctx: AuditCtx, to: 
     personName: person.displayName,
     workEmail: person.primaryEmail,
     temporaryPassword: ctx.dryRun ? '(not generated in a dry run)' : password,
-    identityConsoleUrl: deps.cfg.identity.jumpcloud.consoleUrl ?? 'the identity provider sign-in page',
+    identityConsoleUrl: signInUrl(deps.cfg),
     orgName: deps.cfg.org.name,
     itTeamSignature: deps.cfg.org.itTeamSignature,
   })
@@ -58,7 +64,7 @@ export async function notifyJoinerWelcome(deps: JoinerDeps, ctx: AuditCtx, to: r
   const body = renderNotification('joiner-welcome', {
     firstName: person.firstName ?? person.displayName,
     workEmail: person.primaryEmail,
-    identityConsoleUrl: deps.cfg.identity.jumpcloud.consoleUrl ?? 'the identity provider sign-in page',
+    identityConsoleUrl: signInUrl(deps.cfg),
     orgName: deps.cfg.org.name,
     itTeamSignature: deps.cfg.org.itTeamSignature,
   })

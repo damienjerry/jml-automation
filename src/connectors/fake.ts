@@ -107,6 +107,7 @@ export type FakeMethod =
   | 'google.getTransferStatus'
   | 'google.setVacationResponder'
   | 'google.signOutUser'
+  | 'google.closeUser'
   | 'google.sendMail'
   | 'google.getMailboxState'
   | 'google.assignLicence'
@@ -451,6 +452,14 @@ export class FakeProviders {
         if (faulted) return faulted
         if (!this.googleAccount(email)) return { ok: true, verified: true, alreadyAbsent: true }
         return { ok: true, verified: true, detail: { sessionsReset: 'requested', grantsRevoked: 0, grantsRemaining: 0 } }
+      },
+
+      closeUser: async (email) => {
+        this.record('google.closeUser', email)
+        const faulted = this.applyFault('google.closeUser', email)
+        if (faulted) return faulted
+        if (!this.googleAccount(email)) return { ok: true, verified: true, alreadyAbsent: true }
+        return { ok: true, verified: true, detail: { passwordReplaced: true, changePasswordAtNextLogin: true, sessionsReset: 'requested' } }
       },
 
       transferDrive: async (fromEmail, toEmail) => {

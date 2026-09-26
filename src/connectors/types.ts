@@ -186,6 +186,11 @@ export interface GoogleWorkspaceConnector {
    * be read back; the grants can, so verified means none remain.
    */
   signOutUser(email: string): Promise<Outcome>
+  /**
+   * Day 0 when Google is the only account: a random password nobody holds, a
+   * change required at next sign-in (read back), and every session ended.
+   */
+  closeUser(email: string): Promise<Outcome>
   sendMail(opts: { to: string[]; bcc?: string[]; subject: string; body: string }): Promise<Outcome>
   testConnection(): Promise<ConnectionCheck>
   /** Reports per-scope authorisation, so `jml doctor` can name the missing one. */

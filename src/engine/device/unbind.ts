@@ -135,7 +135,7 @@ export async function planRebindTarget(
 
   if (req.disposition !== 'return_to_pool') return
 
-  const poolEmail = deps.config.identity.jumpcloud.poolUserEmail
+  const poolEmail = (deps.config.identity.jumpcloud?.poolUserEmail ?? null)
   if (!poolEmail) return
   const found = await findAccount(deps, poolEmail, plan)
   if (!found) {

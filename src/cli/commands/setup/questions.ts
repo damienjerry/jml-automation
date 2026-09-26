@@ -215,6 +215,6 @@ function printScopes(say: (l: string) => void): void {
   const optional = SCOPE_USES.filter((u) => !u.required && u.armedBy)
   if (optional.length > 0) {
     say('  and only if you will arm the step that needs it:')
-    for (const use of optional) say(`    ${use.scope}   (${use.armedBy})`)
+    for (const use of optional) say(`    ${use.scope}   (${(use.armedBy ?? []).filter((a) => a !== 'google_close').join(', ')}, and suspend when there is no identity provider)`)
   }
 }

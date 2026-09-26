@@ -249,6 +249,15 @@ const MemoryStoreSchema = z
 
 const IdentitySchema = z
   .object({
+    adapter: z
+      .enum(['jumpcloud', 'none'])
+      .default('jumpcloud')
+      .describe(
+        meta(
+          'IDENTITY_ADAPTER',
+          '`jumpcloud` (setup 1.0a) puts a JumpCloud account in front of Google. `none` (setup 1.0b) makes the Google account the only account: day 0 closes it with a random password and a sign-out, starters get their temporary password on Google, and there is no device inventory, so every deletion says none was checked.',
+        ),
+      ),
     jumpcloud: z
       .object({
         baseUrl: z
@@ -271,7 +280,9 @@ const IdentitySchema = z
           .default(null)
           .describe(meta('JUMPCLOUD_POOL_USER_EMAIL', 'Spares account a returned device is rebound to. Null disables the rebind.')),
       })
-      .strict(),
+      .strict()
+      .optional()
+      .describe(meta('', 'Required when identity.adapter is jumpcloud.')),
   })
   .strict()
 
@@ -764,6 +775,15 @@ export const ALL_ARMED_ACTIONS: readonly ArmedAction[] = ARMED_ACTIONS
 
 /** The schema to parse with. Adds the cross-field rules. */
 export const ConfigSchema = ConfigObject.superRefine((cfg, ctx) => {
+  if (cfg.identity.adapter === 'jumpcloud' && !cfg.identity.jumpcloud) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['identity', 'jumpcloud'], message: 'identity.adapter is jumpcloud, so identity.jumpcloud (at least its apiKey) is required. For Google Workspace alone, set identity.adapter: none.' })
+  }
+  if (cfg.identity.adapter === 'none') {
+    const needsIdp = cfg.armedActions.filter((a) => a === 'device_unbind' || a === 'device_handover')
+    if (needsIdp.length > 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['armedActions'], message: `identity.adapter is none, so there is no device inventory and ${needsIdp.join(' and ')} cannot run. Remove it from armedActions.` })
+    }
+  }
   if (cfg.leaver.deletion === 'never' && cfg.armedActions.includes('delete')) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['armedActions'], message: 'leaver.deletion is never, so delete cannot be armed. Remove one of them: a list that arms a step the policy forbids reads as coverage nobody meant.' })
   }

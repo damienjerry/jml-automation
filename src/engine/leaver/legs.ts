@@ -364,6 +364,48 @@ const revokeLicences: Leg = {
   },
 }
 
+/**
+ * Day 0 with no identity provider: the Google account is the door.
+ *
+ * It is not suspended here. The day-6 hand-over is proven on an active,
+ * unlicensed account, and suspension stays after it, as on the reference
+ * setup. What closes the door instead is a random password nobody holds, a
+ * change required at next sign-in, which reads back, and every session ended.
+ * Armed by `suspend`, because it is what suspension means in this setup.
+ */
+const closeGoogle: Leg = {
+  name: 'close_google',
+  phase: 'day0',
+  action: 'suspend',
+  async run(deps, ctx) {
+    const at = deps.clock.nowIso()
+    const pre = await prepare(deps, ctx, closeGoogle, ctx.googleAccount, {
+      at,
+      absent: 'fail',
+      absentNote: 'no Google account matched this person by address or alias',
+      planned: (user) => `would replace the password on ${user.email} with one nobody holds, require a change at next sign-in, and end every session`,
+      declined: 'closing the account is armed by suspend, which is not in armedActions, so the account was left alone',
+    })
+    if (!pre.go) return pre.halt
+
+    const email = pre.user.email
+    const outcome = await auditedCall(
+      deps,
+      ctx,
+      // The password is never audited, logged or returned: it exists only
+      // inside the connector call.
+      { action: 'leaver.day0.close_google', target: 'google', detail: {} },
+      () => deps.google.closeUser(email),
+    )
+    const record = legFrom(outcome, { at, previous: previous(ctx, 'close_google') })
+    return result(
+      'close_google',
+      record,
+      verdict(record, 'Google account closed: password replaced with one nobody holds, change at next sign-in read back, every session ended', 'closing the Google account failed'),
+    )
+  },
+}
+
 const signOutGoogle: Leg = {
   name: 'signout_google',
   phase: 'day0',
@@ -673,6 +715,22 @@ const deleteGoogle: Leg = {
 export const DAY0_LEGS: readonly Leg[] = [suspendIdp, setAutoreply, revokeLicences, signOutGoogle]
 export const DAY6_LEGS: readonly Leg[] = [transferDrive, suspendGoogle]
 export const DAY7_LEGS: readonly Leg[] = [deleteIdp, deleteGoogle]
+
+/**
+ * The steps for this setup. With no identity provider the Google account is
+ * closed on day 0 instead of an identity provider account being suspended, and
+ * only the Google account is deleted on day 7.
+ */
+export function day0Legs(cfg: { identity: { adapter: string } }): readonly Leg[] {
+  return cfg.identity.adapter === 'none' ? [closeGoogle, setAutoreply, revokeLicences, signOutGoogle] : DAY0_LEGS
+}
+export function day7Legs(cfg: { identity: { adapter: string } }): readonly Leg[] {
+  return cfg.identity.adapter === 'none' ? [deleteGoogle] : DAY7_LEGS
+}
+/** The step whose verified result is what lets day 0 write its marker. */
+export function doorLegName(cfg: { identity: { adapter: string } }): LegName {
+  return cfg.identity.adapter === 'none' ? 'close_google' : 'suspend_idp'
+}
 
 /**
  * Values for the auto-reply template.

@@ -61,7 +61,7 @@ export interface ScopeUse {
    * doctor` probes it only then, so an adopter who never arms the step is not
    * shown a failure for a grant they do not need.
    */
-  armedBy?: string
+  armedBy?: readonly string[]
   /** One line, for the probe table and the credentials documentation. */
   breaksWithout: string
 }
@@ -131,9 +131,11 @@ export const SCOPE_USES: readonly ScopeUse[] = [
     key: 'directoryUserSecurity',
     scope: GOOGLE_SCOPES.directoryUserSecurity,
     subject: 'admin',
-    methods: ['signOutUser'],
+    methods: ['signOutUser', 'closeUser'],
     required: false,
-    armedBy: 'google_signout',
+    // `google_close` is not a config action: it is what `suspend` means when
+    // Google is the only account, and `jml doctor` adds it in that setup.
+    armedBy: ['google_signout', 'google_close'],
     breaksWithout:
       "The leaver's Google sessions and third-party app grants are left in place, so Sign in with Google keeps working until the account is suspended.",
   },

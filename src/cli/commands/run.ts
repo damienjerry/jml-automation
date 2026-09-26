@@ -105,7 +105,7 @@ export function pipelineDeps(rt: Runtime, steps?: readonly PipelineStepName[]): 
     idp: rt.providers.idp,
     devices: rt.providers.devices,
     google: rt.providers.google,
-    joiner: { idp: rt.providers.idp, google: rt.providers.google },
+    joiner: { idp: rt.providers.activation, google: rt.providers.google },
     ticketing: rt.ticketing,
     register: rt.register,
     notifier: rt.notifier,

@@ -199,6 +199,8 @@ export interface DeviceGateInput {
   idp: IdpResolution
   devices: DeviceConnector
   logger?: Logger
+  /** Read for `identity.adapter`: with no identity provider there is no device inventory. */
+  cfg?: { identity: { adapter: string } }
 }
 
 /**
@@ -210,6 +212,14 @@ export interface DeviceGateInput {
  * successful read of an empty list.
  */
 export async function evaluateDeviceGate(input: DeviceGateInput): Promise<GateResult> {
+  if (input.cfg?.identity.adapter === 'none') {
+    // Chosen in configuration, never inferred from an empty read. Said on
+    // every deletion, so nobody reads an open gate as "no machine is out there".
+    return {
+      open: true,
+      detail: 'no device inventory in this setup (identity.adapter: none), so no bound machine was checked; recover the laptop by hand',
+    }
+  }
   if (input.idp.kind === 'unreadable') {
     return {
       open: false,

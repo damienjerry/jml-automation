@@ -36,6 +36,7 @@ import { JumpCloudClient } from '../../connectors/jumpcloud/client.ts'
 import { JumpCloudCommands } from '../../connectors/jumpcloud/commands.ts'
 import { JumpCloudDevices } from '../../connectors/jumpcloud/devices.ts'
 import { JumpCloudUsers } from '../../connectors/jumpcloud/users.ts'
+import { NoIdentityProvider } from '../../connectors/google/identity.ts'
 import type { CommandTargeting, IdentityConnector, IdentityActivationConnector } from '../../connectors/types.ts'
 import type { DeviceOps } from '../../engine/device/preflight.ts'
 import { HiBobAdapter } from '../../hris/hibob/adapter.ts'
@@ -88,7 +89,10 @@ export interface CliIo {
 
 /** The provider surface, present only when a command asked for it. */
 export interface Providers {
-  idp: IdentityConnector & IdentityActivationConnector
+  /** The leaver engine's identity provider. With `identity.adapter: none`, one that finds nobody. */
+  idp: IdentityConnector
+  /** Where a starter's temporary password is set: the identity provider, or Google. */
+  activation: IdentityConnector & IdentityActivationConnector
   devices: DeviceOps
   google: GoogleConnector
   commands: CommandTargeting
@@ -280,16 +284,50 @@ function buildHris(cfg: JmlConfig, secrets: SecretRegistry, http: HttpClient): H
 }
 
 function buildProviders(cfg: JmlConfig, secrets: SecretRegistry, http: HttpClient): Providers {
+  const google = buildGoogle(cfg, secrets, http)
+  if (cfg.identity.adapter === 'none' || !cfg.identity.jumpcloud) {
+    return {
+      idp: new NoIdentityProvider(),
+      activation: google.activation,
+      devices: noDeviceInventory<DeviceOps>(),
+      commands: noDeviceInventory<CommandTargeting>(),
+      google,
+    }
+  }
   const client = new JumpCloudClient({
     http,
     apiKey: secrets.get('identity.jumpcloud.apiKey'),
     baseUrl: cfg.identity.jumpcloud.baseUrl,
   })
+  const users = new JumpCloudUsers(client)
   return {
-    idp: new JumpCloudUsers(client),
+    idp: users,
+    activation: users,
     devices: new JumpCloudDevices(client),
     commands: new JumpCloudCommands({ client, pollMs: cfg.devices.receipt.pollMs }),
-    google: createGoogleConnector(
+    google,
+  }
+}
+
+/**
+ * With no identity provider there is no device inventory. The device gate is
+ * told so directly and never calls this; anything else that does gets a clear
+ * refusal rather than an empty list, because an empty list reads as "nothing
+ * bound".
+ */
+function noDeviceInventory<T extends object>(): T {
+  return new Proxy({} as T, {
+    get(_target, prop) {
+      if (prop === 'then') return undefined
+      return () => {
+        throw new CliError('there is no device inventory in this setup (identity.adapter: none), so ' + String(prop) + ' cannot run')
+      }
+    },
+  })
+}
+
+function buildGoogle(cfg: JmlConfig, secrets: SecretRegistry, http: HttpClient): GoogleConnector {
+  return createGoogleConnector(
       {
         serviceAccountJson: secrets.get('google.serviceAccountJson'),
         adminEmail: cfg.google.adminEmail,
@@ -300,8 +338,7 @@ function buildProviders(cfg: JmlConfig, secrets: SecretRegistry, http: HttpClien
         transferPrivacyLevels: cfg.google.driveTransfer.privacyLevels,
       },
       { http },
-    ),
-  }
+  )
 }
 
 /**

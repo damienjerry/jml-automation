@@ -55,6 +55,7 @@ export type LegName =
   | 'revoke_licence'
   | 'set_autoreply'
   | 'signout_google'
+  | 'close_google'
   | 'notify_manager'
   | 'transfer_drive'
   | 'suspend_google'

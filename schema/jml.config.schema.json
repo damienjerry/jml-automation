@@ -294,6 +294,15 @@
     "identity": {
       "type": "object",
       "properties": {
+        "adapter": {
+          "type": "string",
+          "enum": [
+            "jumpcloud",
+            "none"
+          ],
+          "description": "`jumpcloud` (setup 1.0a) puts a JumpCloud account in front of Google. `none` (setup 1.0b) makes the Google account the only account: day 0 closes it with a random password and a sign-out, starters get their temporary password on Google, and there is no device inventory, so every deletion says none was checked.",
+          "default": "jumpcloud"
+        },
         "jumpcloud": {
           "type": "object",
           "properties": {
@@ -327,12 +336,11 @@
           "required": [
             "apiKey"
           ],
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Required when identity.adapter is jumpcloud."
         }
       },
-      "required": [
-        "jumpcloud"
-      ],
+      "required": [],
       "additionalProperties": false
     },
     "google": {

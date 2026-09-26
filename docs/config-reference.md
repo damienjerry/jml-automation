@@ -75,6 +75,7 @@ not exist.
 | `store.spreadsheetId` (sheets) | `PEOPLE_SHEET_ID` | string | **required** | - | Spreadsheet id. |
 | `store.tab` (sheets) | `PEOPLE_SHEET_TAB` | string | `People` | - | Worksheet name. |
 | `store.adapter` (memory) | - | literal "memory" | **required** | - | In-memory store for the demo and for dry-run rehearsal. Nothing persists. |
+| `identity.adapter` | `IDENTITY_ADAPTER` | jumpcloud \| none | `jumpcloud` | - | `jumpcloud` (setup 1.0a) puts a JumpCloud account in front of Google. `none` (setup 1.0b) makes the Google account the only account: day 0 closes it with a random password and a sign-out, starters get their temporary password on Google, and there is no device inventory, so every deletion says none was checked. |
 | `identity.jumpcloud.baseUrl` | `JUMPCLOUD_BASE_URL` | string | `"https://console.jumpcloud.com/api"` | - | Some tenants answer only on the console host and return 404 on the other one for every request, valid key or not. |
 | `identity.jumpcloud.apiKey` | `JUMPCLOUD_API_KEY` | string | **required** | yes | Organisation API key, as a secret reference. |
 | `identity.jumpcloud.consoleUrl` | `JUMPCLOUD_CONSOLE_URL` | string | `"https://console.jumpcloud.com"` | - | Where a starter signs in for the first time. Printed in the password and welcome messages. |

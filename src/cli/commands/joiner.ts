@@ -27,7 +27,7 @@ export interface JoinerCommandOptions {
 
 export function joinerDeps(rt: Runtime): JoinerDeps {
   if (!rt.providers) throw new Error('the joiner engine needs the provider connectors')
-  return { ...leaverDeps(rt), idp: rt.providers.idp, google: rt.providers.google }
+  return { ...leaverDeps(rt), idp: rt.providers.activation, google: rt.providers.google }
 }
 
 export async function joinerCommand(io: CliIo, opts: JoinerCommandOptions): Promise<number> {

@@ -141,7 +141,7 @@ export async function runDoctor(rt: Runtime, opts: DoctorOptions = {}): Promise<
         )
       }),
     )
-    rows.push(...(await probeGoogleScopes(providers.google, rt.cfg.armedActions)))
+    rows.push(...(await probeGoogleScopes(providers.google, effectiveArmed(rt.cfg))))
   }
 
   rows.push(
@@ -262,4 +262,14 @@ export async function assertServable(rt: Runtime): Promise<void> {
       { exitCode: 78, docsAnchor: 'docs/runbooks/store-migration.md' },
     )
   }
+}
+
+/**
+ * The armed actions as the scope table reads them. With no identity provider,
+ * `suspend` closes the Google account, which needs the sign-out scope.
+ */
+function effectiveArmed(cfg: Runtime['cfg']): string[] {
+  const armed: string[] = [...cfg.armedActions]
+  if (cfg.identity.adapter === 'none' && armed.includes('suspend')) armed.push('google_close')
+  return armed
 }

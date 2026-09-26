@@ -188,7 +188,7 @@ async function activateOne(deps: JoinerDeps, ctx: AuditCtx, gate: ActivationGate
   const verdict = await gate.isOpen(fresh)
   if (!verdict.open) { notes.push(`gate closed: ${verdict.reason}`); return out }
 
-  const user = await deps.idp.findUser({ storedId: fresh.externalIds.jumpcloudUserId, email: fresh.primaryEmail, aliases: fresh.aliasEmails })
+  const user = await deps.idp.findUser({ storedId: fresh.externalIds[idField(deps)] ?? null, email: fresh.primaryEmail, aliases: fresh.aliasEmails })
   if (!user) {
     // The HR system's own integration creates the account, usually within a
     // day. Not an error and not a park: the row is looked at again next run.
@@ -212,7 +212,7 @@ async function activateOne(deps: JoinerDeps, ctx: AuditCtx, gate: ActivationGate
       delete activation.activatedAt
       delete activation.activatedBy
     }
-    if (!ctx.dryRun) await deps.store.patch(fresh.hrisId, { activation, externalIds: { ...fresh.externalIds, jumpcloudUserId: user.id } })
+    if (!ctx.dryRun) await deps.store.patch(fresh.hrisId, { activation, externalIds: { ...fresh.externalIds, [idField(deps)]: user.id } })
     if (expected) {
       out.phase = 'joiner_refused'
       notes.push('refused: the identity account is already in use (activated or MFA enrolled). Its password was not touched. Clear with `jml joiner approve --reset-refusal` only if you are sure.')
@@ -226,9 +226,9 @@ async function activateOne(deps: JoinerDeps, ctx: AuditCtx, gate: ActivationGate
   // ---- activate: password, then forced reset, both read back ----
   const password = (deps.passwordGenerator ?? temporaryPassword)(deps.cfg.joiner.temporaryPasswordLength)
   const activate = await runLeg(deps, ctx, legs, 'activate', 'activate', async () => {
-    const set = await auditedCall(deps, ctx, { action: 'joiner.activate.set_password', target: 'jumpcloud', detail: { userId: user.id } }, () => deps.idp.setTemporaryPassword(user.id, password))
+    const set = await auditedCall(deps, ctx, { action: 'joiner.activate.set_password', target: deps.idp.name === 'google' ? 'google' : 'jumpcloud', detail: { userId: user.id } }, () => deps.idp.setTemporaryPassword(user.id, password))
     if (!set.ok || !set.verified) return set
-    const expire = await auditedCall(deps, ctx, { action: 'joiner.activate.expire_password', target: 'jumpcloud', detail: { userId: user.id } }, () => deps.idp.expirePassword(user.id))
+    const expire = await auditedCall(deps, ctx, { action: 'joiner.activate.expire_password', target: deps.idp.name === 'google' ? 'google' : 'jumpcloud', detail: { userId: user.id } }, () => deps.idp.expirePassword(user.id))
     if (!expire.ok || !expire.verified) {
       // The account is usable with the temporary password and nothing forces
       // a change. Reported as a failed leg so it is retried and visible, not
@@ -313,7 +313,7 @@ async function persist(deps: JoinerDeps, ctx: AuditCtx, person: Person, activati
   if (ctx.dryRun) return
   await deps.store.patch(person.hrisId, {
     activation: { ...(person.activation ?? {}), ...activation },
-    externalIds: { ...person.externalIds, jumpcloudUserId: user.id },
+    externalIds: { ...person.externalIds, [idField(deps)]: user.id },
   })
 }
 
@@ -386,4 +386,13 @@ function passwordRecipients(deps: JoinerDeps, person: Person): { to: string[]; p
 
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Which stored id the account belongs under. With no identity provider the
+ * activated account is the Google one, and writing its id into the identity
+ * provider field would later be read as a JumpCloud id.
+ */
+function idField(deps: { idp: { name: string } }): 'jumpcloudUserId' | 'googleUserId' {
+  return deps.idp.name === 'google' ? 'googleUserId' : 'jumpcloudUserId'
 }

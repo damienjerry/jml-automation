@@ -21,7 +21,8 @@ import {
   type GoogleConnectorConfig,
   type GoogleCtx,
 } from './auth.ts'
-import { deleteUser, getUser, listUsers, resolveUserId, suspendUser, getMailboxState, moveToOrgUnit, signOutUser } from './directory.ts'
+import { closeUser, deleteUser, getUser, listUsers, resolveUserId, suspendUser, getMailboxState, moveToOrgUnit, signOutUser } from './directory.ts'
+import { GoogleActivation } from './identity.ts'
 import { sendMail, setVacationResponder } from './gmail.ts'
 import { listLicences, revokeLicence, type LicenceAssignment, assignLicence } from './licensing.ts'
 import { getTransferStatus, transferDrive } from './transfer.ts'
@@ -63,6 +64,8 @@ export interface GoogleConnector extends GoogleWorkspaceConnector, GoogleProvisi
   resolveUserId(email: string): Promise<string | null>
   /** All seats this account holds, with SKU names when the provider gives them. */
   listLicenceAssignments(email: string): Promise<LicenceAssignment[]>
+  /** Starter activation on the Google account, for setups with no identity provider. */
+  activation: GoogleActivation
   /** `armed` adds the optional scopes an armed action needs. */
   probeScopes(opts?: { mailbox?: string; armed?: readonly string[] }): Promise<ScopeReport[]>
 }
@@ -117,6 +120,8 @@ export function createGoogleConnector(
     setVacationResponder: (email: string, subject: string, body: string) =>
       setVacationResponder(ctx, email, subject, body),
     signOutUser: (email: string) => signOutUser(ctx, email),
+    closeUser: (email: string) => closeUser(ctx, email),
+    activation: new GoogleActivation(ctx),
     sendMail: (opts: { to: string[]; subject: string; body: string }) => sendMail(ctx, opts),
 
     testConnection: () => testConnection(ctx),
@@ -187,7 +192,7 @@ async function probeScopes(
 ): Promise<ScopeReport[]> {
   const reports: ScopeReport[] = []
   const armed = opts.armed ?? []
-  const uses = SCOPE_USES.filter((use) => use.required || (use.armedBy !== undefined && armed.includes(use.armedBy)))
+  const uses = SCOPE_USES.filter((use) => use.required || (use.armedBy ?? []).some((action) => armed.includes(action)))
   for (const use of uses) {
     const subject =
       use.subject === 'leaver'
