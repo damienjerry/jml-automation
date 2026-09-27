@@ -179,9 +179,10 @@ export const COMMANDS: readonly CommandSpec[] = [
     path: ['setup'],
     summary: 'guided install: configuration, credentials, doctor, bootstrap, Docker and n8n, resumable',
     value: ['from', 'dir', 'n8n-url'],
-    bool: ['dry-run', 'no-docker'],
+    bool: ['dry-run', 'no-docker', 'preview'],
     notes: [
       'Nothing is armed at the end. --dry-run prints every step and writes nothing.',
+      '--preview walks the whole wizard, asking every real question, in a temporary folder deleted at the end; nothing is kept, nothing is read from 1Password, and no step acts.',
       'Steps: prerequisites, configuration, credentials, doctor, bootstrap, compose, n8n. --from <step> redoes one and those after it.',
     ],
     run: (io, args) =>
@@ -190,6 +191,7 @@ export const COMMANDS: readonly CommandSpec[] = [
         ...(value(args, 'from') ? { from: value(args, 'from') } : {}),
         ...(value(args, 'n8n-url') ? { n8nUrl: value(args, 'n8n-url') } : {}),
         dryRun: bool(args, 'dry-run'),
+        preview: bool(args, 'preview'),
         noDocker: bool(args, 'no-docker'),
       }),
   },

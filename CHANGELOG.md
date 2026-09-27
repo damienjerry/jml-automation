@@ -43,6 +43,11 @@ viewer. See [docs/adapters/hris-table.md](docs/adapters/hris-table.md) and
 built-in template replaces it. Checked at start-up: an unknown file name or a
 placeholder the message does not supply refuses to start.
 
+**A preview of the setup** (`./install.sh --preview`, or `jml setup --preview`).
+Every real question, asked in a temporary folder deleted at the end, including
+on Ctrl-C. The steps that act (doctor, bootstrap, Docker, n8n) say what they
+would do instead; nothing is read from 1Password and nothing is kept.
+
 **`jml setup` asks which setup**: JumpCloud or none, and HiBob, a sheet, a CSV
 or the demo file. It asks only for the credentials and prints only the Google
 scopes that choice needs.

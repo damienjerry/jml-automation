@@ -317,4 +317,37 @@ describe('jml setup', () => {
     const scopes = h.output().split('and only if you will arm')[0] ?? ''
     expect(scopes).toContain('https://www.googleapis.com/auth/admin.directory.user.security')
   })
+
+  it('--preview asks every question, acts on nothing, reads no 1Password item, and leaves nothing behind', async () => {
+    const before = new Set(readdirSync(tmpdir()).filter((f) => f.startsWith('jml-setup-preview-')))
+    const answers = [
+      'Example Organisation', 'example.com', '', 'Europe/London', '', 'admin@example.com', '',
+      'none', 'csv', './people.csv', '', '5', 'sqlite', 'n',
+      // the Google key, from 1Password: must not reach the op CLI
+      'op', 'op://Vault/item/field',
+    ]
+    const shellCalls: string[] = []
+    const h = harness(answers)
+    const deps = {
+      ...h.deps,
+      jml: async (): Promise<{ code: number; out: string }> => {
+        throw new Error('a preview must not run jml')
+      },
+      shell: async (cmd: string, args: string[]) => {
+        shellCalls.push([cmd, ...args].join(' '))
+        return { code: 0, stdout: '27.0.0\n', stderr: '' }
+      },
+    }
+    const dir = checkout()
+    const code = await setupCommand(h.io, { dir, preview: true }, deps)
+    expect(code, h.output()).toBe(0)
+    expect(h.output()).toContain('(preview) Here it runs jml doctor')
+    expect(h.output()).toContain('(preview) Here it runs docker compose up')
+    expect(shellCalls.filter((c) => !c.startsWith('docker version') && !c.startsWith('docker compose version'))).toEqual([])
+    expect(h.n8n.requests).toEqual([])
+    // Nothing in the real directory, and the temporary folder is gone.
+    expect(existsSync(join(dir, 'jml.config.yaml'))).toBe(false)
+    const after = readdirSync(tmpdir()).filter((f) => f.startsWith('jml-setup-preview-') && !before.has(f))
+    expect(after).toEqual([])
+  })
 })

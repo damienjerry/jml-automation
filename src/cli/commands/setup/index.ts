@@ -24,8 +24,10 @@
  */
 
 import { spawn } from 'node:child_process'
+import { rmSync } from 'node:fs'
 import { randomBytes } from 'node:crypto'
-import { access, readFile } from 'node:fs/promises'
+import { access, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHttpClient, type HttpClient } from '../../../core/http.ts'
 import { importBundle, n8nHealthy } from '../../../n8n/import.ts'
@@ -55,9 +57,36 @@ export interface SetupOptions {
   dir?: string
   from?: string
   dryRun?: boolean
+  /**
+   * Walk the whole wizard, asking every real question, in a temporary folder
+   * that is deleted at the end. The steps that act (doctor, bootstrap, Docker,
+   * n8n) say what they would do instead of doing it, and nothing is read from
+   * 1Password. For seeing what a new user sees.
+   */
+  preview?: boolean
+  /** Internal: set by the preview wrapper on the inner run. */
+  previewing?: boolean
   noDocker?: boolean
   n8nUrl?: string
 }
+
+/** What each acting step would do, said in its place during a preview. */
+const PREVIEW: Partial<Record<StepName, string>> = {
+  doctor:
+    'Here it runs jml doctor: one read per credential and one per Google scope, printed as a table. If a row fails you choose: fix it and check again, carry on anyway (setup then finishes INCOMPLETE), or stop.',
+  bootstrap:
+    'Here it rehearses importing your HR history as closed records and shows the counts, then asks "Write those tombstones?". It then runs jml store verify: the number of people it would offboard today must be 0 before anything can be armed.',
+  compose: 'Here it runs docker compose up -d --build, starting the sidecar and n8n on this machine, and waits until both report healthy.',
+  n8n: 'Here it asks for an n8n API key (Settings, n8n API, with the scopes workflow:list, workflow:create and credential:create), then creates the four n8n credentials and imports the six workflows, all inactive.',
+}
+
+/** A stand-in for a 1Password read during a preview: shaped like a service account key so the key check passes. */
+const PREVIEW_SECRET = JSON.stringify({
+  type: 'service_account',
+  client_email: 'preview-only@example.com',
+  client_id: 'preview-only',
+  private_key: '-----BEGIN PRIVATE KEY-----\npreview only, not a key\n-----END PRIVATE KEY-----\n',
+})
 
 const PLAN: Record<StepName, string> = {
   prerequisites: 'check Node 22.13+, and Docker with Compose unless --no-docker',
@@ -70,6 +99,31 @@ const PLAN: Record<StepName, string> = {
 }
 
 export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial<SetupDeps>): Promise<number> {
+  if (opts.preview) {
+    const scratch = await mkdtemp(join(tmpdir(), 'jml-setup-preview-'))
+    // Ctrl-C mid-preview must not leave typed values behind in the scratch folder.
+    const onSignal = (): void => {
+      rmSync(scratch, { recursive: true, force: true })
+      io.out('\nPreview stopped. The temporary folder has been deleted.\n')
+      process.exit(130)
+    }
+    process.once('SIGINT', onSignal)
+    process.once('SIGTERM', onSignal)
+    io.out('\nPREVIEW. Every question is real; nothing is kept. Answers go into a temporary folder that is deleted at the end,\n')
+    io.out('and the steps that act (doctor, bootstrap, Docker, n8n) say what they would do instead. Nothing is read from 1Password,\n')
+    io.out('and no network call is made. Type anything at a secret prompt: the value never leaves this machine.\n')
+    try {
+      const code = await setupCommand(io, { ...opts, preview: false, previewing: true, dir: scratch }, deps)
+      io.out('\nPreview finished. The temporary folder has been deleted; nothing was written anywhere else.\n')
+      io.out('For a real setup, run jml setup (or ./install.sh) without --preview.\n')
+      return code === 0 ? 0 : code
+    } finally {
+      process.off('SIGINT', onSignal)
+      process.off('SIGTERM', onSignal)
+      await rm(scratch, { recursive: true, force: true })
+    }
+  }
+  const previewing = Boolean(opts.previewing)
   const dir = opts.dir ?? io.cwd
   const say = (line: string): void => io.out(line + '\n')
   const configPath = join(dir, CONFIG_FILE)
@@ -107,7 +161,7 @@ export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial
         continue
       }
       say(`\n= ${step}: ${PLAN[step]}`)
-      const outcome = await runStep(step, { io, d, say, dir, configPath, envPath, state, n8nUrl, noDocker: Boolean(opts.noDocker) })
+      const outcome = await runStep(step, { io, d, say, dir, configPath, envPath, state, n8nUrl, noDocker: Boolean(opts.noDocker), previewing })
       if (outcome === 'stop') {
         await saveState(statePath, state)
         say(`\nstopped at ${step}. Run jml setup again to carry on from here.`)
@@ -120,6 +174,10 @@ export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial
     d.prompter.close()
   }
 
+  if (previewing) {
+    say('\nThis is where a real setup ends: "Setup is complete, and nothing is armed", followed by how to run the first dry run.')
+    return 0
+  }
   if (state.overrides.length > 0) {
     say(`\nSetup finished INCOMPLETE: you carried on past ${state.overrides.join(', ')}. Nothing is armed. Fix it and run jml setup --from ${state.overrides[0]}.`)
     return 1
@@ -141,12 +199,25 @@ interface Ctx {
   state: SetupState
   n8nUrl: string
   noDocker: boolean
+  /** A preview: acting steps describe themselves and return. */
+  previewing?: boolean
 }
 
 async function runStep(step: StepName, c: Ctx): Promise<'done' | 'stop'> {
+  const preview = c.previewing ? PREVIEW[step] : undefined
+  if (preview) {
+    c.say('  (preview) ' + preview)
+    return 'done'
+  }
   switch (step) {
-    case 'prerequisites':
-      return prerequisites(c)
+    case 'prerequisites': {
+      const outcome = await prerequisites(c)
+      if (outcome === 'stop' && c.previewing) {
+        c.say('  (preview) A real setup stops here until this is fixed. The preview carries on.')
+        return 'done'
+      }
+      return outcome
+    }
     case 'configuration': {
       if (!(await exists(c.configPath))) {
         const code = await initCommand({ ...c.io, out: () => {} }, { dir: c.dir })
@@ -161,7 +232,7 @@ async function runStep(step: StepName, c: Ctx): Promise<'done' | 'stop'> {
     case 'credentials': {
       const env = await readEnv(c.envPath)
       await askCredentials(
-        { prompter: c.d.prompter, say: c.say, envPath: c.envPath, env, state: c.state, configPath: c.configPath, keepReferences: c.noDocker, opRead: (ref) => opRead(c.d, ref) },
+        { prompter: c.d.prompter, say: c.say, envPath: c.envPath, env, state: c.state, configPath: c.configPath, keepReferences: c.noDocker, opRead: (ref) => (c.previewing ? Promise.resolve({ ok: true, value: PREVIEW_SECRET, error: '' }) : opRead(c.d, ref)) },
         await answersFromConfig(c.configPath),
       )
       return 'done'
@@ -238,7 +309,7 @@ async function doctor(c: Ctx): Promise<'done' | 'stop'> {
       return 'done'
     }
     if (next === 'credentials') {
-      await askCredentials({ prompter: c.d.prompter, say: c.say, envPath: c.envPath, env: await readEnv(c.envPath), state: c.state, configPath: c.configPath, keepReferences: c.noDocker, opRead: (ref) => opRead(c.d, ref) }, await answersFromConfig(c.configPath))
+      await askCredentials({ prompter: c.d.prompter, say: c.say, envPath: c.envPath, env: await readEnv(c.envPath), state: c.state, configPath: c.configPath, keepReferences: c.noDocker, opRead: (ref) => (c.previewing ? Promise.resolve({ ok: true, value: PREVIEW_SECRET, error: '' }) : opRead(c.d, ref)) }, await answersFromConfig(c.configPath))
     }
   }
 }

@@ -23,6 +23,10 @@
 #
 # Options:
 #   --dry-run     print every command instead of running it
+#   --preview     see what a new user sees: checks and builds as usual, then
+#                 walks the whole setup wizard with every real question, in a
+#                 temporary folder deleted at the end. Nothing is installed
+#                 with Homebrew, nothing is kept, and no step acts
 #   --no-docker   set up the command line tool only, without Docker and n8n
 #   --yes         build without asking, once you have checked the commit
 #   --help
@@ -42,12 +46,14 @@ REF="${JML_REF:-v1.0b}"
 DRY=0
 NO_DOCKER=0
 ASSUME_YES=0
+PREVIEW=0
 
-usage() { sed -n '3,33p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '3,38p' "$0" | sed 's/^# \{0,1\}//'; }
 
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY=1 ;;
+    --preview) PREVIEW=1 ;;
     --no-docker) NO_DOCKER=1 ;;
     --yes) ASSUME_YES=1 ;;
     -h|--help) usage; exit 0 ;;
@@ -75,6 +81,7 @@ say "jml-automation installer"
 note "clone into: $DIR"
 note "build:      $REF of $REPO_URL"
 [ "$DRY" -eq 1 ] && note "dry run: nothing will be changed"
+[ "$PREVIEW" -eq 1 ] && note "preview: nothing is installed with Homebrew; the wizard runs in a temporary folder and keeps nothing"
 [ "$(uname -s)" = "Darwin" ] || note "this is written for macOS; carrying on, but the Homebrew offers will not apply"
 
 say "1. prerequisites"
@@ -88,6 +95,10 @@ if node_ok; then
   note "node: $(node -p 'process.versions.node')"
 else
   note "Node 22.13 or newer is needed (found: $(command -v node >/dev/null 2>&1 && node -p 'process.versions.node' || echo none))."
+  if [ "$PREVIEW" -eq 1 ]; then
+    note "The preview needs Node 22.13 or newer to run the wizard. Install it (https://nodejs.org or brew install node@22), then run this again."
+    exit 1
+  fi
   if command -v brew >/dev/null 2>&1 && yes_to "Install it with Homebrew (brew install node@22)?"; then
     run brew install node@22
     PATH="$(brew --prefix node@22)/bin:$PATH"; export PATH
@@ -104,12 +115,16 @@ if [ "$NO_DOCKER" -eq 0 ]; then
     note "docker: $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo running)"
   else
     note "Docker is not running. It runs the sidecar and n8n; the command line tool works without it."
-    if ! command -v docker >/dev/null 2>&1 && command -v brew >/dev/null 2>&1 && yes_to "Install Docker Desktop with Homebrew (brew install --cask docker)?"; then
+    if [ "$PREVIEW" -eq 1 ]; then
+      note "(preview) A real install offers to install Docker Desktop here. The preview carries on."
+    elif ! command -v docker >/dev/null 2>&1 && command -v brew >/dev/null 2>&1 && yes_to "Install Docker Desktop with Homebrew (brew install --cask docker)?"; then
       run brew install --cask docker
       note "Open Docker Desktop once from Applications so it can finish installing, then run this again."
       exit 0
     fi
-    if yes_to "Carry on without Docker (command line only)?"; then
+    if [ "$PREVIEW" -eq 1 ]; then
+      :
+    elif yes_to "Carry on without Docker (command line only)?"; then
       NO_DOCKER=1
     elif [ "$DRY" -eq 0 ]; then
       note "Start Docker Desktop and run this again."
@@ -153,6 +168,7 @@ if [ "$DRY" -eq 1 ]; then note "would run: (cd $DIR && npm run build)"; else (cd
 
 say "5. guided setup"
 SETUP_ARGS=(setup)
+[ "$PREVIEW" -eq 1 ] && SETUP_ARGS+=(--preview)
 [ "$NO_DOCKER" -eq 1 ] && SETUP_ARGS+=(--no-docker)
 if [ "$DRY" -eq 1 ]; then
   note "would run: (cd $DIR && node bin/jml.mjs ${SETUP_ARGS[*]})"

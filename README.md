@@ -241,7 +241,10 @@ it is not overridable.
 ## Install on a Mac
 
 When the demo makes sense, the installer takes a Mac from nothing to a scheduled first
-dry run. Read `install.sh` before you run it: it is short, it prints every command before it
+dry run. To see the whole setup first, as a new user would, run `./install.sh --preview`:
+it checks and builds as usual, then walks the wizard with every real question in a
+temporary folder that is deleted at the end. Nothing is installed with Homebrew, nothing
+is read from 1Password, and the steps that act say what they would do instead. Read `install.sh` before you run it: it is short, it prints every command before it
 runs it, and `--dry-run` prints them without running any.
 
 ```
