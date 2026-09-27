@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# jml-automation installer for macOS.
+# jml-automation installer for macOS and Linux (and Windows through WSL2).
 #
 # Read this file before you run it. It is short on purpose, and it does five
 # things, each printed before it happens:
@@ -77,64 +77,125 @@ node_ok() {
   [ "$major" -gt 22 ] || { [ "$major" -eq 22 ] && [ "$minor" -ge 13 ]; }
 }
 
+# Which platform, and on Linux which package manager. WSL2 is Linux, and is how
+# this runs on Windows: native Windows has no installer.
+OS="$(uname -s)"
+PLATFORM=other
+if [ "$OS" = "Darwin" ]; then PLATFORM=mac
+elif [ "$OS" = "Linux" ]; then
+  PLATFORM=linux
+  grep -qi microsoft /proc/version 2>/dev/null && PLATFORM=wsl
+fi
+PKG=""
+if [ "$PLATFORM" = "linux" ] || [ "$PLATFORM" = "wsl" ]; then
+  if command -v apt-get >/dev/null 2>&1; then PKG=apt
+  elif command -v dnf >/dev/null 2>&1; then PKG=dnf
+  fi
+fi
+
 say "jml-automation installer"
 note "clone into: $DIR"
 note "build:      $REF of $REPO_URL"
+case "$PLATFORM" in
+  mac) note "platform:   macOS" ;;
+  linux) note "platform:   Linux${PKG:+ ($PKG)}" ;;
+  wsl) note "platform:   Windows, through WSL2${PKG:+ ($PKG)}" ;;
+  *) note "platform:   $OS, which this has not been written for; carrying on, with no install offers" ;;
+esac
 [ "$DRY" -eq 1 ] && note "dry run: nothing will be changed"
-[ "$PREVIEW" -eq 1 ] && note "preview: nothing is installed with Homebrew; the wizard runs in a temporary folder and keeps nothing"
-[ "$(uname -s)" = "Darwin" ] || note "this is written for macOS; carrying on, but the Homebrew offers will not apply"
+[ "$PREVIEW" -eq 1 ] && note "preview: nothing is installed; the wizard runs in a temporary folder and keeps nothing"
+
+# Offer to install a package with the platform's own manager, never anything
+# piped from the internet into a shell.
+offer_install() { # $1 what, $2 brew formula or empty, $3 apt/dnf package or empty
+  [ "$PREVIEW" -eq 1 ] && return 1
+  if [ "$PLATFORM" = "mac" ] && [ -n "$2" ] && command -v brew >/dev/null 2>&1; then
+    # $2 is split on purpose: "--cask docker" is two arguments.
+    # shellcheck disable=SC2086
+    yes_to "Install $1 with Homebrew (brew install $2)?" && { run brew install $2; return 0; }
+  elif [ -n "$3" ] && [ "$PKG" = "apt" ]; then
+    yes_to "Install $1 with apt (sudo apt-get install -y $3)?" && { run sudo apt-get install -y "$3"; return 0; }
+  elif [ -n "$3" ] && [ "$PKG" = "dnf" ]; then
+    yes_to "Install $1 with dnf (sudo dnf install -y $3)?" && { run sudo dnf install -y "$3"; return 0; }
+  fi
+  return 1
+}
 
 say "1. prerequisites"
 if ! command -v git >/dev/null 2>&1; then
-  note "git is missing. On a Mac, run: xcode-select --install"
-  note "It opens Apple's installer for the command line tools, which include git. Then run this again."
-  exit 1
+  note "git is missing."
+  if [ "$PLATFORM" = "mac" ]; then
+    note "Run: xcode-select --install"
+    note "It opens Apple's installer for the command line tools, which include git. Then run this again."
+    exit 1
+  fi
+  if ! offer_install git "" git || ! command -v git >/dev/null 2>&1; then
+    [ "$DRY" -eq 1 ] || { note "Install git with your package manager, then run this again."; exit 1; }
+  fi
 fi
-note "git: $(git --version)"
+command -v git >/dev/null 2>&1 && note "git: $(git --version)"
+
+node_help() {
+  case "$PLATFORM" in
+    mac) note "Install Node 22 from https://nodejs.org (the LTS installer), or install Homebrew from https://brew.sh and run this again to be offered it." ;;
+    *) note "Install Node 22 LTS from https://nodejs.org/en/download (a prebuilt binary, or a version manager such as nvm)."
+       note "Distribution packages are often older than 22.13; check with node -v." ;;
+  esac
+  note "Then run this again."
+}
 
 if node_ok; then
   note "node: $(node -p 'process.versions.node')"
 else
   note "Node 22.13 or newer is needed (found: $(command -v node >/dev/null 2>&1 && node -p 'process.versions.node' || echo none))."
   if [ "$PREVIEW" -eq 1 ]; then
-    note "The preview needs Node 22.13 or newer to run the wizard. Install it (https://nodejs.org or brew install node@22), then run this again."
+    note "The preview needs Node 22.13 or newer to run the wizard."
+    node_help
     exit 1
   fi
-  if command -v brew >/dev/null 2>&1 && yes_to "Install it with Homebrew (brew install node@22)?"; then
-    run brew install node@22
+  # Homebrew only: a distribution's node package is too often older than 22.13
+  # to offer blindly.
+  if [ "$PLATFORM" = "mac" ] && offer_install "Node 22" node@22 ""; then
     PATH="$(brew --prefix node@22)/bin:$PATH"; export PATH
     note "for new shells, add this to your profile: export PATH=\"$(brew --prefix node@22)/bin:\$PATH\""
   fi
   if [ "$DRY" -eq 0 ] && ! node_ok; then
-    note "Install Node 22 from https://nodejs.org (the LTS installer), or install Homebrew from https://brew.sh and run this again to be offered it."
-    note "Then run this again."
+    node_help
     exit 1
   fi
 fi
+
+docker_help() {
+  if command -v docker >/dev/null 2>&1; then
+    case "$PLATFORM" in
+      mac) note "Start Docker Desktop and run this again." ;;
+      wsl) note "Start Docker Desktop on Windows with WSL integration turned on for this distribution, or start Docker Engine inside WSL, then run this again." ;;
+      *) note "Start it (sudo systemctl start docker). If it is running, your user may not be allowed to use it: sudo usermod -aG docker \$USER, then log out and in. Then run this again." ;;
+    esac
+  else
+    case "$PLATFORM" in
+      mac) note "Install Docker Desktop from https://www.docker.com/products/docker-desktop/ (or install Homebrew from https://brew.sh and run this again to be offered it), open it once, then run this again." ;;
+      wsl) note "Install Docker Desktop for Windows and turn on WSL integration for this distribution (https://docs.docker.com/desktop/features/wsl/), then run this again." ;;
+      *) note "Install Docker Engine for your distribution (https://docs.docker.com/engine/install/), then run this again." ;;
+    esac
+  fi
+  note "Or run ./install.sh --no-docker to set up the command line tool alone."
+}
 
 if [ "$NO_DOCKER" -eq 0 ]; then
   if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     note "docker: $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo running)"
   else
-    note "Docker is not running. It runs the sidecar and n8n; the command line tool works without it."
+    note "Docker is not running, or this user cannot reach it. It runs the sidecar and n8n; the command line tool works without it."
     if [ "$PREVIEW" -eq 1 ]; then
-      note "(preview) A real install offers to install Docker Desktop here. The preview carries on."
-    elif ! command -v docker >/dev/null 2>&1 && command -v brew >/dev/null 2>&1 && yes_to "Install Docker Desktop with Homebrew (brew install --cask docker)?"; then
-      run brew install --cask docker
+      note "(preview) A real install stops here with what to do next, or carries on without Docker. The preview carries on."
+    elif [ "$PLATFORM" = "mac" ] && ! command -v docker >/dev/null 2>&1 && offer_install "Docker Desktop" "--cask docker" ""; then
       note "Open Docker Desktop once from Applications so it can finish installing, then run this again."
       exit 0
-    fi
-    if [ "$PREVIEW" -eq 1 ]; then
-      :
     elif yes_to "Carry on without Docker (command line only)?"; then
       NO_DOCKER=1
     elif [ "$DRY" -eq 0 ]; then
-      if command -v docker >/dev/null 2>&1; then
-        note "Start Docker Desktop and run this again."
-      else
-        note "Install Docker Desktop from https://www.docker.com/products/docker-desktop/ (or install Homebrew from https://brew.sh and run this again to be offered it), open it once, then run this again."
-        note "Or run ./install.sh --no-docker to set up the command line tool alone."
-      fi
+      docker_help
       exit 1
     fi
   fi
