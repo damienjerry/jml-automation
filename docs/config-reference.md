@@ -47,7 +47,7 @@ not exist.
 | `org.name` | `ORG_NAME` | string | **required** | - | Organisation name, used in notifications and the leaver auto-reply. |
 | `org.primaryDomain` | `ORG_PRIMARY_DOMAIN` | string | **required** | - | The domain a canonical address is expressed in. |
 | `org.aliasDomains` | `ORG_ALIAS_DOMAINS` | string[] | `[]` | - | Comma-separated domains that route to the same mailboxes. Two systems keyed on different domains for one person is how identity joins silently diverge. |
-| `org.timezone` | `ORG_TIMEZONE` | string | **required** | - | IANA zone. ALL date-only arithmetic happens in it; never in UTC. |
+| `org.timezone` | `ORG_TIMEZONE` | value | **required** | - | IANA zone as Region/City, such as Europe/London. ALL date-only arithmetic happens in it; never in UTC. |
 | `org.itTeamSignature` | `IT_TEAM_SIGNATURE` | string | **required** | - | Sign-off line on notifications sent to a person. |
 | `mode` | `JML_MODE` | dry-run \| armed | `dry-run` | - | dry-run plans and reports without touching a provider. It is the default, and the demo runs in it. |
 | `armedActions` | `JML_ARMED_ACTIONS` | suspend \| autoreply \| licence \| transfer \| google_suspend \| google_signout \| delete \| device_unbind \| device_handover \| activate \| joiner_licence \| ou_move \| welcome[] | `[]` | - | Which actions may really happen. An action absent from this list records not_armed rather than running, so arming happens one action at a time. |

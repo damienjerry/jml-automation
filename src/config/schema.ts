@@ -65,7 +65,18 @@ const OrgSchema = z
     timezone: z
       .string()
       .min(1)
-      .describe(meta('ORG_TIMEZONE', 'IANA zone. ALL date-only arithmetic happens in it; never in UTC.')),
+      .refine(
+        (value) => {
+          try {
+            new Intl.DateTimeFormat('en-GB', { timeZone: value })
+            return true
+          } catch {
+            return false
+          }
+        },
+        { message: 'not a time zone this system knows. Use a Region/City name such as Europe/London or America/New_York.' },
+      )
+      .describe(meta('ORG_TIMEZONE', 'IANA zone as Region/City, such as Europe/London. ALL date-only arithmetic happens in it; never in UTC.')),
     itTeamSignature: z
       .string()
       .min(1)

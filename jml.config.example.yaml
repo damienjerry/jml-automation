@@ -15,7 +15,7 @@ org:
   primaryDomain: example.com
   # Comma-separated domains that route to the same mailboxes. Two systems keyed on different domains for one person is how identity joins silently diverge.
   aliasDomains: []
-  # IANA zone. ALL date-only arithmetic happens in it; never in UTC.
+  # IANA zone as Region/City, such as Europe/London. ALL date-only arithmetic happens in it; never in UTC.
   timezone: Europe/London
   # Sign-off line on notifications sent to a person.
   itTeamSignature: "IT Team"

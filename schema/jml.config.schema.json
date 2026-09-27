@@ -29,8 +29,7 @@
           "default": []
         },
         "timezone": {
-          "type": "string",
-          "description": "IANA zone. ALL date-only arithmetic happens in it; never in UTC."
+          "description": "IANA zone as Region/City, such as Europe/London. ALL date-only arithmetic happens in it; never in UTC."
         },
         "itTeamSignature": {
           "type": "string",

@@ -21,6 +21,51 @@ import { setConfig, setEnv, unsetEnv, type SetupState } from './files.ts'
 import type { Prompter } from './prompter.ts'
 
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+/**
+ * Ask for a time zone the way a person thinks of one: a city.
+ *
+ * Enter keeps the zone the machine reports. A city (London, New York, sao
+ * paulo) is matched against the zones the runtime knows; one match is taken,
+ * several are offered as a short list, none asks again. A full zone name such
+ * as Europe/London is accepted as it is.
+ */
+export async function askTimeZone(p: Prompter, say: (l: string) => void, detected: string): Promise<string> {
+  for (;;) {
+    const answer = (await p.ask('Time zone', { default: detected })).trim()
+    if (isTimeZone(answer)) return answer
+    const matches = zonesForCity(answer)
+    if (matches.length === 1) {
+      say(`  using ${matches[0]}`)
+      return matches[0] as string
+    }
+    if (matches.length > 1) {
+      return p.choose(`More than one zone matches "${answer}"`, matches.slice(0, 9).map((z) => ({ value: z, label: z })), matches[0])
+    }
+    say(`  No time zone found for "${answer}". Type the nearest large city, for example London, New York or Sydney.`)
+  }
+}
+
+/** Zones whose city part matches the text, ignoring case, spaces and underscores. */
+export function zonesForCity(text: string): string[] {
+  const wanted = text.trim().toLowerCase().replace(/[\s_]+/g, ' ')
+  if (!wanted) return []
+  const zones = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []
+  const city = (zone: string) => (zone.split('/').pop() ?? '').toLowerCase().replace(/_/g, ' ')
+  const exact = zones.filter((z) => city(z) === wanted)
+  return exact.length > 0 ? exact : zones.filter((z) => city(z).startsWith(wanted))
+}
+
+/** True for a zone the runtime knows, such as Europe/London. */
+export function isTimeZone(value: string): boolean {
+  if (!value) return false
+  try {
+    new Intl.DateTimeFormat('en-GB', { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
+}
 const DOMAIN = /^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i
 
 export interface Answers {
@@ -50,30 +95,35 @@ export interface CredentialDeps {
 
 export async function askConfiguration(p: Prompter, say: (l: string) => void, configPath: string, envPath: string, opts: { docker?: boolean } = {}): Promise<Answers> {
   say('\nYour organisation. None of this is secret; it goes into jml.config.yaml.')
-  const name = await p.ask('Organisation name', { validate: (a) => (a ? null : 'required') })
-  const domain = (await p.ask('Primary email domain, e.g. example.com', { validate: (a) => (DOMAIN.test(a) ? null : 'a domain like example.com') })).toLowerCase()
-  const aliases = (await p.ask('Other domains that deliver to the same mailboxes, comma-separated (blank for none)', { default: '' }))
+  const name = await p.ask("Your organisation's name, as it should read in emails", { validate: (a) => (a ? null : 'required') })
+  const domain = (await p.ask('Your main email domain, e.g. example.com', { validate: (a) => (DOMAIN.test(a) ? null : 'a domain like example.com') })).toLowerCase()
+  say('  Some organisations give the same people a second email domain, such as an old company name. Leave this blank if yours does not.')
+  const aliases = (await p.ask('Other email domains your staff use, comma-separated', { default: '' }))
     .split(',')
     .map((d) => d.trim().toLowerCase())
     .filter(Boolean)
-  const tz = await p.ask('Timezone (IANA name)', { default: Intl.DateTimeFormat().resolvedOptions().timeZone })
-  const signature = await p.ask('Sign-off on messages sent to people', { default: 'IT Team' })
+  const detected = Intl.DateTimeFormat().resolvedOptions().timeZone
+  say(`  Dates are counted in your time zone. This machine says ${detected}: press Enter to keep it, or type a city.`)
+  const tz = await askTimeZone(p, say, detected)
+  say('  Emails the toolkit sends to managers and new starters end with this name.')
+  const signature = await p.ask('Sign emails as', { default: 'IT Team' })
 
   say('\nGoogle Workspace.')
-  const admin = await p.ask('Admin the service account acts as', { validate: (a) => (EMAIL.test(a) ? null : 'an email address') })
-  say('  Messages are sent AS the next mailbox, by impersonation, so it must be a real user rather than an alias or a group.')
-  const sender = await p.ask('Mailbox notifications are sent as', { default: admin, validate: (a) => (EMAIL.test(a) ? null : 'an email address') })
+  say('  The toolkit works in Google as one of your admins. Give a real admin account, not a group.')
+  const admin = await p.ask('Google admin account to act as', { validate: (a) => (EMAIL.test(a) ? null : 'an email address') })
+  say('  Emails from the toolkit come from this address. It must be a real mailbox, not a group or an alias; the admin account is fine.')
+  const sender = await p.ask('Send emails from', { default: admin, validate: (a) => (EMAIL.test(a) ? null : 'an email address') })
 
-  say('\nIs there an identity provider in front of Google?')
-  say('  JumpCloud (setup 1.0a) also manages devices and remote support, and blocks a deletion while a laptop is still bound.')
-  say('  None (setup 1.0b): the Google account is the only account. Your HR system or you create it; the toolkit does the rest. No device inventory is checked.')
-  const identity = await p.choose('Identity provider', [
-    { value: 'jumpcloud', label: 'JumpCloud (1.0a)' },
-    { value: 'none', label: 'none: Google Workspace alone (1.0b)' },
+  say('\nDo people sign in through JumpCloud, or straight into Google?')
+  say('  Through JumpCloud (setup 1.0a): JumpCloud also looks after laptops, and an account is not deleted while a laptop is still linked to it.')
+  say('  Straight into Google (setup 1.0b): the Google account is the only account. Your HR system, or you, create it and the toolkit does the rest. Laptops are not tracked.')
+  const identity = await p.choose('Sign-in', [
+    { value: 'jumpcloud', label: 'through JumpCloud (setup 1.0a)' },
+    { value: 'none', label: 'straight into Google (setup 1.0b)' },
   ], 'jumpcloud')
 
-  say('\nThe HR system is the source of truth.')
-  const hris = await p.choose('HR system', [
+  say('\nWhere the list of your people comes from. It is the source of truth: the toolkit follows it.')
+  const hris = await p.choose('People list', [
     { value: 'hibob', label: 'HiBob' },
     { value: 'sheet', label: 'a Google Sheet of people, kept up to date by a person or an HR report' },
     { value: 'csv', label: 'a CSV file, exported from any HR system' },
@@ -84,7 +134,7 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
     say('  Headings in the first row; defaults match examples/people.csv. A leaver keeps their row with a last working day filled in.')
     if (hris === 'sheet') {
       const id = await p.ask('Sheet id (the long part of its URL between /d/ and /edit)', { validate: (a) => (/^[A-Za-z0-9_-]{20,}$/.test(a) ? null : 'the id from the sheet URL') })
-      const range = await p.ask('Tab holding the people', { default: 'People' })
+      const range = await p.ask('Name of the tab with your people', { default: 'People' })
       say('  Share the sheet with the service account address as a viewer; it is printed with the Google key below.')
       table.push([['hris', 'table', 'spreadsheetId'], id], [['hris', 'table', 'range'], range])
     } else {
@@ -99,11 +149,11 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
     ], 'YYYY-MM-DD')
     table.push([['hris', 'table', 'dateFormat'], format])
   }
-  say('  A read smaller than this floor aborts the run: a truncated read looks exactly like everybody leaving.')
-  const floor = await p.ask('Fewest employed people a real read could ever return', { validate: (a) => (/^\d+$/.test(a) && Number(a) > 0 ? null : 'a whole number above 0') })
+  say('  A safety check. If a read of your people ever lists fewer than this, the run stops, because a broken read looks exactly like everybody leaving. About 80% of your current headcount is sensible.')
+  const floor = await p.ask('Stop if fewer people than this are listed', { validate: (a) => (/^\d+$/.test(a) && Number(a) > 0 ? null : 'a whole number above 0') })
 
-  say('\nWhere the toolkit keeps one row per person.')
-  const store = await p.choose('People store', [
+  say('\nWhere the toolkit keeps its own record of what it has done for each person.')
+  const store = await p.choose('Records', [
     { value: 'sqlite', label: 'a local SQLite file (recommended: nothing to set up)' },
     { value: 'notion', label: 'an existing Notion database' },
   ], 'sqlite')
@@ -129,9 +179,9 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
   }
 
   say('\nNotifications.')
-  const slack = await p.confirm('Post summaries to Slack? (no prints them here only)', false)
+  const slack = await p.confirm('Post summaries to Slack? No shows them on this screen only', false)
   if (slack) {
-    const channel = await p.ask('Slack channel id: C or G followed by letters and digits (channel details, bottom of the About tab)', { validate: (a) => (/^[CG][A-Z0-9]{8,}$/.test(a) ? null : 'a channel id starting with C or G') })
+    const channel = await p.ask('Slack channel ID (in Slack, click the channel name; the ID is at the bottom, starting C or G)', { validate: (a) => (/^[CG][A-Z0-9]{8,}$/.test(a) ? null : 'a channel id starting with C or G') })
     values.push([['notify', 'adapters'], ['slack', 'console']], [['notify', 'slack', 'botToken'], 'env:SLACK_BOT_TOKEN'], [['notify', 'slack', 'itChannelId'], channel])
     await setEnv(envPath, 'SLACK_JML_CHANNEL_ID', channel)
   }
