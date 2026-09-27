@@ -86,7 +86,8 @@ note "build:      $REF of $REPO_URL"
 
 say "1. prerequisites"
 if ! command -v git >/dev/null 2>&1; then
-  note "git is missing. On a Mac: xcode-select --install, then run this again."
+  note "git is missing. On a Mac, run: xcode-select --install"
+  note "It opens Apple's installer for the command line tools, which include git. Then run this again."
   exit 1
 fi
 note "git: $(git --version)"
@@ -105,7 +106,8 @@ else
     note "for new shells, add this to your profile: export PATH=\"$(brew --prefix node@22)/bin:\$PATH\""
   fi
   if [ "$DRY" -eq 0 ] && ! node_ok; then
-    note "Install Node 22 from https://nodejs.org or Homebrew, then run this again."
+    note "Install Node 22 from https://nodejs.org (the LTS installer), or install Homebrew from https://brew.sh and run this again to be offered it."
+    note "Then run this again."
     exit 1
   fi
 fi
@@ -127,7 +129,12 @@ if [ "$NO_DOCKER" -eq 0 ]; then
     elif yes_to "Carry on without Docker (command line only)?"; then
       NO_DOCKER=1
     elif [ "$DRY" -eq 0 ]; then
-      note "Start Docker Desktop and run this again."
+      if command -v docker >/dev/null 2>&1; then
+        note "Start Docker Desktop and run this again."
+      else
+        note "Install Docker Desktop from https://www.docker.com/products/docker-desktop/ (or install Homebrew from https://brew.sh and run this again to be offered it), open it once, then run this again."
+        note "Or run ./install.sh --no-docker to set up the command line tool alone."
+      fi
       exit 1
     fi
   fi
