@@ -4,6 +4,28 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-09-27
+
+Released as `v1.0e`, and what the installer builds by default. The same two
+setups, still experimental. Package 1.2.2.
+
+### Changed
+
+- **The setup wizard reads one way.** Every question says plainly what it
+  asks, with a one-line note where the answer needs context. Each access key
+  says what it is and where it comes from. Yes/no and numbered choices say
+  what Enter does. The time zone is asked as a city, and the machine's own
+  zone is kept on Enter.
+- **The setup is easy to scan at a terminal.** A banner per step, bold
+  questions, dimmed notes, highlighted defaults, and colour for what worked
+  and what needs attention. Plain text for pipes, CI and `NO_COLOR`.
+
+### Fixed
+
+- A mistyped time zone was accepted at setup and failed on the first run. The
+  wizard now checks it, and a configuration naming an unknown zone is refused
+  at load.
+
 ## [1.2.1] - 2026-09-27
 
 Released as `v1.0d`, and what the installer builds by default. The same two
@@ -424,6 +446,7 @@ Read this before arming anything.
 Test coverage is not evidence about your tenant. 1541 tests across 159 files
 pass on this checkout, and every one of them runs against a fake.
 
+[1.2.2]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0e
 [1.2.1]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0d
 [1.2.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0c
 [1.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0b
