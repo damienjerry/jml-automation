@@ -4,8 +4,7 @@
  *
  * A trigger fires on every association a command holds, so a device left
  * attached after a run gets swept up by the next firing of that command,
- * whoever asked for it and whatever it was for. In the estate this was ported
- * from that happened repeatedly: a foreground timeout between the attach and
+ * whoever asked for it and whatever it was for. In an earlier design that happened repeatedly: a foreground timeout between the attach and
  * the detach left machines bound, and a laptop was restarted repeatedly by a
  * scheduled job that had nothing to do with it.
  *

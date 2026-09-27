@@ -13,8 +13,8 @@ the regression test that holds the guard in place is linked.
 
 Two things to be clear about before you trust any of it:
 
-- **No write in this toolkit has ever run against a real tenant.** The reads
-  and the derivations below were checked against one live estate before this release
+- **None of this code's writes has run against a real tenant yet.** The reads
+  and the derivations below were checked against one live tenant before this release
   and agreed with its own records; the effects (suspend, transfer, delete,
   activate) are covered by tests and an offline demo only.
 - The two device uninstall scripts have never run on real hardware. Their
@@ -61,7 +61,7 @@ sync assumed to be patching names also carried account ids and the hold flag,
 is the reason.
 
 "The HR sync must never revive a row the offboarding engine owns" was a comment
-in the automation this was ported from. Comments do not stop a bulk update.
+in an earlier design. Comments do not stop a bulk update.
 
 ## The transition table
 
@@ -234,7 +234,7 @@ stint and is ignored, so a rehire is never offboarded on their first morning.
 The rule lives in one place, `src/hris/leave-date.ts`, and every selection,
 notification and lookback check reads it rather than the raw field.
 
-Why: the automation this was ported from keyed on the employed list alone, and
+Why: an earlier design keyed on the employed list alone, and
 left access open between somebody's last day in and the end of their contract.
 
 ## Activation: the joiner half
@@ -317,7 +317,7 @@ becomes a day-0 candidate, carrying the plan and dates, with a due date of the
 day after leaving. `offboarding.ticketRef` records it, so a ticket is never
 raised twice for one person.
 
-Why: in the estate this came from, the manager's form was the only statement of
+Why: in an earlier design, the manager's form was the only statement of
 what a starter needed, and the bridge that read it once matched a ticket to the
 wrong person by name. The nudge, before it was recorded on the row, fired every
 run until the channel was muted.
@@ -409,7 +409,7 @@ reason reported, and the reported reason is what an operator acts on.
 | Acknowledgement | `awaiting_ack` | `leaver.requireOperatorAck` is on and nobody has run `jml leaver ack` |
 
 **The device gate fails closed, and that is the most important line in the
-file.** The automation this was ported from wrapped its device lookup in a
+file.** An earlier design wrapped its device lookup in a
 catch that logged and carried on. A provider error produced an empty list, an
 empty list read as "nothing to block on", and the account was deleted while the
 machine was still out there with the provider's escrowed disk-encryption key
@@ -448,7 +448,7 @@ provider account" as a proxy and was wrong in both directions:
 ## A response is not an effect
 
 Every leg records `verified: true` only when the effect was confirmed by
-reading the provider back. A 2xx is not an effect, and this toolkit's ancestor
+reading the provider back. A 2xx is not an effect, and an earlier version of this code
 recorded a successful suspension from a 200 that had changed nothing.
 
 The consequences on the state machine:

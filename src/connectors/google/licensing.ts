@@ -1,7 +1,7 @@
 /**
  * Paid seats: find what a person holds, then release it.
  *
- * The order matters. The automation this replaces revoked one hard-coded SKU,
+ * The order matters. An earlier design revoked one hard-coded SKU,
  * so an account holding a second edition kept billing after its owner had
  * left, and nothing reported it. Here the SKUs come from the provider: list
  * what the account actually holds, then revoke each one.

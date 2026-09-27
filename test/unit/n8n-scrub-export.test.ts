@@ -50,7 +50,7 @@ describe('scrubbing a live export', () => {
       expect(clean[key]).toBeUndefined()
     }
     // staticData is the one that matters most: it is a snapshot of whatever the
-    // workflow last handled, and in the automation this was extracted from it
+    // workflow last handled, and in an earlier design it
     // held a list of real employees.
     expect(removed).toContain('top-level staticData')
     expect(JSON.stringify(clean)).not.toContain('lastLeaver')

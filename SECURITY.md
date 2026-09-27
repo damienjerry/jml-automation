@@ -204,13 +204,15 @@ ask.
 
 - **Only reads have run against a real tenant.** One shadow run before this release:
   `jml doctor`, the HR read, the identity directory read, the Google scope
-  probes and the Notion adapter in read-only mode. No write has. Every write
+  probes and the Notion adapter in read-only mode. None of this code's writes
+  has. (It generalises the author's private production automation, which is not
+  part of this repository and is no evidence about this code.) Every write
   path is exercised against a scripted HTTP double
   ([test/fixtures/http/fake-http.ts](test/fixtures/http/fake-http.ts)), written
   by hand from the vendors' documented behaviour, and the shadow run showed what
   that is worth: the first real HR call answered 415 to a header shape every
   fake accepted. The vendor behaviours the code guards against were established
-  in the private automation this was ported from, not by this code.
+  in an earlier design, not by this code.
 - **Neither device uninstall script has ever run on real hardware.**
   [src/engine/device/scripts/manifest.json](src/engine/device/scripts/manifest.json)
   records `provenOnHardware: false` for both. Service names, uninstall

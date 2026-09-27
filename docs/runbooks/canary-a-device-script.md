@@ -1,10 +1,8 @@
 # Runbook: canary a device script before you use it
 
 **The two uninstall scripts in this repository have never been run on a real
-machine.** They were ported from automation where the equivalent scripts were
-written, deployed as device commands, and never executed on anything: the
-service names, uninstall strings, launchd labels and paths in them were
-inferred. `src/engine/device/scripts/manifest.json` records
+machine.** The service names, uninstall strings, launchd labels and paths in
+them are inferred, not observed on a real removal. `src/engine/device/scripts/manifest.json` records
 `provenOnHardware: false`, both scripts carry the same statement in their
 headers, and the toolkit refuses a handover until you have done the work below.
 

@@ -3,8 +3,7 @@
  *
  * Every mutating method returns an `Outcome` carrying `verified`, and
  * `verified` may only be true when the connector has read the provider back and
- * seen the change. This is a contract rather than a convention because the
- * automation this replaces recorded successful suspensions from responses that
+ * seen the change. This is a contract rather than a convention because an earlier design recorded successful suspensions from responses that
  * had changed nothing: the API accepted a request, ignored part of the body,
  * and answered 200.
  */
@@ -36,7 +35,7 @@ export class AmbiguousMatch extends Error {
  * A gate could not be evaluated.
  *
  * Thrown rather than returned, so a destructive step cannot proceed on a failed
- * read. The engine's ancestor treated an error listing a person's devices as
+ * read. An earlier version of this code treated an error listing a person's devices as
  * "no devices", which is the wrong way round: it deleted the account and
  * stranded the machine.
  */

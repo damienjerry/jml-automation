@@ -36,7 +36,7 @@ describe('outcome constructors', () => {
 describe('outcomeFromResponse', () => {
   it('never calls a 2xx verified on its own', () => {
     // A 2xx says the request was accepted. Only a read-back says the state
-    // changed, and the ancestor of this code recorded successful suspensions
+    // changed, and an earlier version of this code recorded successful suspensions
     // from responses that had changed nothing.
     const out = outcomeFromResponse({ ok: true, status: 200, body: '{}', attempts: 1 })
     expect(out.verified).toBe(false)

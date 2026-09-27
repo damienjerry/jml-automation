@@ -2,7 +2,7 @@
  * Email addresses and the domains an organisation owns.
  *
  * This is the only place addresses are normalised. It exists as one module
- * because the automation this replaces had the logic three times, and the
+ * because an earlier design had the logic three times, and the
  * copies disagreed: one lowercased, one did not, and none of them knew about
  * the second domain. A tenant with a primary domain and an alias domain
  * therefore keyed the same person differently in different systems, and every

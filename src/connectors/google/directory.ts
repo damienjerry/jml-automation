@@ -5,12 +5,10 @@
  *
  * A missing account is not an error. `getUser` answers null on a 404, because
  * "does this person have a Google account" is a question the leaver engine
- * asks about everybody, and the answer is often no. The automation this
- * replaces inferred Google presence from the identity provider instead, and
+ * asks about everybody, and the answer is often no. An earlier design inferred Google presence from the identity provider instead, and
  * suspended people who had never had a Google account.
  *
- * Nothing is reported as verified until the account has been read back. The
- * ancestor of this code recorded a successful suspension from a 200 that had
+ * Nothing is reported as verified until the account has been read back. An earlier version of this code recorded a successful suspension from a 200 that had
  * changed nothing, so a write is only ever half of a step here.
  */
 

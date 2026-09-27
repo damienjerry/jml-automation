@@ -2,7 +2,7 @@
  * Failure this prevents: deleting a device record on hope, and stranding the
  * machine.
  *
- * The handover in the automation this was ported from fired the uninstall
+ * The handover in an earlier design fired the uninstall
  * command, slept a blind two minutes, and deleted the device record. Its own
  * docstring promised a last-contact check that was never implemented. When the
  * uninstall had not in fact run, the record went anyway, and with it went the

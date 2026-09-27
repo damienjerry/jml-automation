@@ -2,8 +2,7 @@
  * The default audit sink: one append-only JSONL file per day.
  *
  * Local first, deliberately. An audit log that lives in a network service is
- * unavailable exactly when it is most needed, and the automation this was
- * ported from pushed its only record of what it had done to a log service on a
+ * unavailable exactly when it is most needed, and an earlier design pushed its only record of what it had done to a log service on a
  * best-effort basis, inside a `catch {}`. So the file is opened with O_APPEND,
  * every line is fsynced before the call it describes is allowed to happen, and
  * a write that fails throws rather than degrading.

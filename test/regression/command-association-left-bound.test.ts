@@ -1,7 +1,7 @@
 /**
  * Regression: an uninstall command left attached to somebody's machine.
  *
- * In the automation this was ported from, the detach was the last statement of
+ * In an earlier design, the detach was the last statement of
  * a happy path rather than a `finally`. A read-back that threw, or a foreground
  * timeout, therefore returned with the command still attached to a laptop. That
  * machine then took the command every time anything else fired it: a laptop

@@ -1,7 +1,7 @@
 /**
  * Prevents: a standing problem being re-announced on every scheduled run.
  *
- * The automation this replaces re-evaluated its blocked leavers three times a
+ * An earlier design re-evaluated its blocked leavers three times a
  * day and posted the same list each time, because it had no notion of a
  * change. Two hundred identical posts trained everybody to skip the channel,
  * so the day the list actually changed looked like all the others.

@@ -16,8 +16,7 @@
  *  - The identity gate refuses to act on an account or address that somebody
  *    who still works here claims, and it ignores their hold flag: hold stops
  *    the automation acting on that person, not on their behalf.
- *  - The day-0 marker is written only when the suspension was read back. The
- *    automation this replaces wrote its progress marker even when every leg
+ *  - The day-0 marker is written only when the suspension was read back. An earlier design wrote its progress marker even when every leg
  *    had failed, so a broken run looked finished and was never retried.
  *  - Nothing is marked departed on an unverified delete.
  *
@@ -379,7 +378,7 @@ async function runPerson(
  * Write what the directories actually said.
  *
  * `googleAccountPresent` is read from the Google directory and never inferred
- * from the identity provider. The automation this replaces used "has an
+ * from the identity provider. An earlier design used "has an
  * identity provider account" as a proxy, and it was wrong in both directions.
  */
 async function recordAccountPresence(
@@ -608,8 +607,7 @@ async function runDay0(
   })
 
   if (!doorClosed) {
-    // No marker, so this row is selected again next run. The automation this
-    // replaces wrote the marker regardless and never retried, which is how an
+    // No marker, so this row is selected again next run. An earlier design wrote the marker regardless and never retried, which is how an
     // account stayed usable while the record said it was suspended.
     state.report.ok = false
     outcome.notes?.push('the day-0 marker was NOT written because the suspension was not confirmed; this row is retried next run')

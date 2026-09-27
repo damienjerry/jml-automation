@@ -5,7 +5,7 @@
  * to read it. It cannot be trusted across tenants: the vocabulary is
  * configurable, the same word covers different situations in different
  * accounts, and a person can hold a status of one kind while the employed
- * report already excludes them. The estate this was ported from established by
+ * report already excludes them. An earlier design established by
  * live probing that the reliable signal is absence from a second read of the
  * employed people, and that is what the adapter uses.
  *

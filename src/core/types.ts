@@ -4,7 +4,7 @@
  * One rule shapes everything here: a person is keyed on the identifier the HR
  * system owns (`hrisId`), never on their email address. Email is an attribute
  * that changes — people marry, people are renamed on the way out — and every
- * serious incident on record in the automation this was ported from came from
+ * serious incident on record in an earlier design came from
  * treating the address as the identity.
  */
 
@@ -78,7 +78,7 @@ export interface LegRecord {
   state: LegState
   /**
    * True only when the effect was confirmed by reading the provider back.
-   * A 2xx response is not an effect: this toolkit's ancestor recorded a
+   * A 2xx response is not an effect: an earlier version of this code recorded a
    * successful suspension from a 200 that had changed nothing.
    */
   verified: boolean
@@ -201,7 +201,7 @@ export interface Person {
   externalIds: ExternalIds
   /**
    * Read from the Google Directory, never inferred from the identity provider.
-   * The automation this replaces inferred it and suspended people who had no
+   * An earlier design inferred it and suspended people who had no
    * Google account at all.
    */
   googleAccountPresent?: boolean | null

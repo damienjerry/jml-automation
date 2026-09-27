@@ -8,7 +8,7 @@
  * ids on a bad row drops it here, inert.
  *
  * The dangerous version of the same shape is a failed lookup. "No account" and
- * "could not tell" are opposite facts, and the automation this was ported from
+ * "could not tell" are opposite facts, and an earlier design
  * collapsed them: a paging bug meant its account list stopped at two hundred
  * users, so real leavers past that point looked accountless and were closed as
  * having had nothing to offboard while their accounts stayed live.

@@ -4,7 +4,7 @@
  * SCOPE OF THE CREDENTIAL: read only. Everything this toolkit does with the HR
  * system is `POST /v1/people/search`, including inactive people. It never
  * writes a field, a table or a document back, and no feature is planned that
- * would. The private automation this was extracted from did write custom
+ * would. An earlier design did write custom
  * fields, but that was a separate asset-tracking tool and is not part of this
  * toolkit; do not grant this service user write permission on its behalf.
  *

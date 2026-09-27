@@ -1,11 +1,10 @@
 <#
   UNPROVEN ON HARDWARE.
 
-  This script has NEVER been run on a real machine. It was ported from
-  automation where the equivalent script was written, deployed as a device
-  command, and never executed on anything: the service names, uninstall
-  strings and product codes it relied on were inferred from documentation
-  rather than read off a device. Treat every line below as a draft.
+  This script has NEVER been run on a real machine. The service names,
+  uninstall strings and product codes it relies on are inferred from
+  documentation rather than read off a device. Treat every line below as a
+  draft.
 
   Before you use it on anybody's laptop, follow
   docs/runbooks/canary-a-device-script.md: create the command, attach ONE
@@ -27,7 +26,7 @@
   no      the agent was found and something is still present
   absent  nothing belonging to that agent was installed
 
-  RULES, each of which exists because the ancestor of this script broke it
+  RULES, each of which exists because an earlier version of this script broke it
     - Product names are compared EXACTLY against the names in your config. The
       earlier version matched a bare substring and hit an unrelated product
       whose display name happened to contain the same word.

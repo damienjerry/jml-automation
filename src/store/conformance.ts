@@ -34,7 +34,7 @@ export interface PeopleStoreUnderTest {
   writes?(store: PeopleStore): number
   /**
    * How many rows the pagination case inserts. The default is deliberately
-   * over a thousand: the engine this replaces read a single hundred-row page
+   * over a thousand: an earlier design read a single hundred-row page
    * and silently ignored everybody after it, so anything below a few hundred
    * would pass while reproducing the bug.
    */

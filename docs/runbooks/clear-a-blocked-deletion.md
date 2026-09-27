@@ -178,7 +178,7 @@ account state is unknown.
 
 **This is a refusal, not a failure to check.** The device gate never throws and
 never returns an empty list on error: anything that is not a successful read of
-zero devices blocks. The automation this replaces wrapped its device lookup in a
+zero devices blocks. An earlier design wrapped its device lookup in a
 catch that logged and carried on, so a provider error produced an empty list, an
 empty list read as "nothing to block on", and the account was deleted while the
 machine was still out there.

@@ -2,7 +2,7 @@
  * Prevents: a day-0 marker written from a suspension that never happened.
  *
  * The provider accepted the write, ignored the part that mattered and answered
- * 200. The automation this was ported from wrote its progress marker anyway,
+ * 200. An earlier design wrote its progress marker anyway,
  * so the record said the account was suspended while the account was still
  * usable, and the row was never selected again because the marker was set.
  *

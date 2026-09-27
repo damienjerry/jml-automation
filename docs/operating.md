@@ -41,7 +41,8 @@ its own, and you should know them before you rely on it:
 | setup 1.0b (no identity provider) | fakes only, never a real tenant | 2026-09-26 |
 | the installer and setup preview on Linux | Ubuntu, in CI, on every push | 2026-09-27 |
 | the test suite on native Windows | Windows, in CI, on every push; blocking | 2026-09-27 |
-| **any write to a real provider** | **never**: no suspension, licence change, transfer, deletion, activation or sent message | |
+| **any write by this code to a real provider** | **not yet**: no suspension, licence change, transfer, deletion, activation or sent message | |
+| the author's earlier, private implementation this generalises | runs these steps in production; not part of this repository, so no evidence about this code | |
 | device uninstall scripts | never on real hardware | |
 
 Everything else is covered by the test suite, which runs against recorded

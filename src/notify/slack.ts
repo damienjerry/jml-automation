@@ -2,7 +2,7 @@
  * Posting to a chat channel with a bot token.
  *
  * One rule matters more than the rest of this file: this API answers HTTP 200
- * with the failure in the body. Three workflows in the automation this replaces
+ * with the failure in the body. Three workflows in an earlier design
  * posted nothing for weeks while every run was recorded as a success, because
  * the transport status was checked and `ok` in the body was not. So a post
  * counts as delivered only on a 2xx AND `ok === true`, and anything else is

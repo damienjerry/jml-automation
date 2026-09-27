@@ -1,10 +1,9 @@
 #!/bin/bash
 # UNPROVEN ON HARDWARE.
 #
-# This script has NEVER been run on a real machine. It was ported from
-# automation that had no macOS handover path at all: the launchd labels and
-# paths it works on were read from one device's inventory, not from a removal
-# that anybody watched. Treat every line as a draft.
+# This script has NEVER been run on a real machine. The launchd labels and
+# paths it works on are inferred, not taken from a removal that anybody
+# watched. Treat every line as a draft.
 #
 # Before using it on anybody's laptop, follow
 # docs/runbooks/canary-a-device-script.md: create the command, attach ONE

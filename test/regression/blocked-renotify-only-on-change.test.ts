@@ -1,7 +1,7 @@
 /**
  * Prevents: the same blocked leaver being announced on every scheduled run.
  *
- * The automation this was ported from re-evaluated its blocked deletions three
+ * An earlier design re-evaluated its blocked deletions three
  * times a day and posted the same list each time, because it had no notion of
  * a change. The channel stopped being read, so the day the list actually
  * changed looked exactly like the two hundred days before it. It also never

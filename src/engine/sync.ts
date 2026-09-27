@@ -3,7 +3,7 @@
  *
  * This is the only writer of `hired`, `active` and `terminated`, and every
  * later step acts on what it decided. Almost every rule below is here because
- * the automation this was ported from lost one of them and a real account was
+ * an earlier design lost one of them and a real account was
  * created, revived or suspended as a result.
  *
  * The four that matter most, in the order they fire:

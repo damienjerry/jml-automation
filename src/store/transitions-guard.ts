@@ -13,7 +13,7 @@
  *  - a blank incoming value never erases a populated stored one;
  *  - the Day-0 marker is written once and can never be cleared.
  *
- * Each of those exists because the automation this was ported from lost one of
+ * Each of those exists because an earlier design lost one of
  * them at some point and a real account was suspended, revived or deleted as a
  * result. See docs/incidents.md.
  */

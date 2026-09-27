@@ -6,7 +6,7 @@ on the day their leaving date passes and works through three phases over a week.
 This runbook is here so you can tell what is about to happen, read the
 notifications, and stop it.
 
-**No write in this toolkit has ever run against a real tenant.** Reads have (one
+**None of this code's writes has run against a real tenant yet.** Reads have (one
 shadow run before this release); suspensions, transfers and deletions have not. Every
 output quoted below is real, produced by the offline demo or by the CLI against
 a file-based HR fixture and unreachable providers. Treat the first week on your

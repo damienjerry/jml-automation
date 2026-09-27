@@ -12,8 +12,7 @@
  * Outbound notifications are sent AS the configured sender mailbox, with that
  * mailbox as the delegation subject. This is the least portable part of the
  * whole toolkit and it is worth reading twice: under domain-wide delegation
- * Gmail ignores mailbox delegation for the sending identity. The automation
- * this was ported from minted a token for the administrator and then posted to
+ * Gmail ignores mailbox delegation for the sending identity. An earlier design minted a token for the administrator and then posted to
  * a shared mailbox path, which worked only because that administrator was
  * effectively that mailbox. "Share the mailbox with the admin" does not make
  * it work. If the address in `mail.senderMailbox` is not a mailbox the service

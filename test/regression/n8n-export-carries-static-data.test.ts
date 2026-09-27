@@ -3,7 +3,7 @@
  * people.
  *
  * An automation platform stores a workflow's own scratch state in the file it
- * exports. In the automation this toolkit replaces, that state accumulated the
+ * exports. In an earlier design, that state accumulated the
  * last set of records the workflow had handled, so an export taken to share the
  * design carried a full staff list, several leaver addresses and a list of
  * device names. Nobody put them there on purpose and nothing in the file looked

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provenOnHardware": false,
-  "why": "Neither script has ever been executed on a real machine. In the automation these were ported from, the equivalent scripts were written, deployed as device commands and never run on anything, so the service names, uninstall strings, launchd labels and paths were inferred rather than observed. The toolkit refuses a handover on any platform whose script is marked provenOnHardware: false unless the operator names the machine they canaried it on, and it says so in the refusal.",
+  "why": "Neither script has ever been executed on a real machine. In an earlier design, the equivalent scripts were written, deployed as device commands and never run on anything, so the service names, uninstall strings, launchd labels and paths were inferred rather than observed. The toolkit refuses a handover on any platform whose script is marked provenOnHardware: false unless the operator names the machine they canaried it on, and it says so in the refusal.",
   "receiptProtocol": "AGENTS_REMOVED <name>=<yes|no|absent> ... on the last line, always exit 0",
   "canaryRunbook": "docs/runbooks/canary-a-device-script.md",
   "scripts": [

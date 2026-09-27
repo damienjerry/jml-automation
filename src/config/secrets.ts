@@ -11,8 +11,7 @@
  * Two rules run through the whole module.
  *
  * First, every reference resolves ONCE, at start-up. A secret that cannot be
- * resolved is a start-up failure, never a runtime null. The automation this
- * replaces read credentials lazily inside each step, so a missing one produced
+ * resolved is a start-up failure, never a runtime null. An earlier design read credentials lazily inside each step, so a missing one produced
  * a step that quietly did nothing and a run that reported success.
  *
  * Second, the resolved value is reachable only through `use(fn)`. It is held in

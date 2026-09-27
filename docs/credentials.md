@@ -20,7 +20,7 @@ Read this before you grant anything on the strength of this page.
 
 | Claim | Status |
 | --- | --- |
-| The toolkit has run end to end against a real tenancy | **No.** The read-only half has, once, before this release: doctor, HR read, directory read, scope probes, Notion read. No write has. The connectors' write paths are driven by scripted fakes in 1601 tests, and the demo runs offline with no credentials. |
+| This code has run end to end against a real tenancy | **No.** Its read-only half has, once, before this release: doctor, HR read, directory read, scope probes, Notion read. None of its writes has. The connectors' write paths are driven by scripted fakes in 1601 tests, and the demo runs offline with no credentials. |
 | The two device uninstall scripts have run on real hardware | **No.** `src/engine/device/scripts/manifest.json` records `provenOnHardware: false`, and a handover is refused on any platform whose script carries that flag until you name the machine you canaried it on. See [the canary runbook](runbooks/canary-a-device-script.md). |
 | The n8n bundle has been imported into a running n8n | **Yes, not run.** `jml n8n import` loaded it into the pinned n8n version with every credential bound; no execution has been observed. The import key needs `workflow:list`, `workflow:create` and `credential:create`, nothing more. |
 
@@ -44,8 +44,7 @@ forms are accepted, and anything else fails the grammar at start-up:
 
 Every reference resolves once, at start-up. A credential that cannot be
 resolved stops the process. It never becomes a step that quietly does nothing
-while the run reports success, which is what the automation this was extracted
-from did for months. Resolved values are held in a closure and are only
+while the run reports success, which is what an earlier design did for months. Resolved values are held in a closure and are only
 readable inside `use(fn)`, so a handle cannot be stringified, spread or
 inspected into a log by accident. Full grammar:
 [config reference](config-reference.md#secret-references).
@@ -57,7 +56,7 @@ Name/<field>` does not.
 
 This is not tidiness. A title reference works until somebody renames the item,
 and then it fails at the next unattended scheduled run rather than at the
-moment of the rename. In the estate this was ported from, a credential was
+moment of the rename. In an earlier design, a credential was
 renamed to mark it obsolete and a nightly job that looked its replacement up by
 title died silently that night. Nothing connected the rename to the failure for
 a day.
@@ -109,8 +108,7 @@ several scopes at once fails **as a whole** the moment any single one of them is
 not delegated, and the refusal is a bare `unauthorized_client` that names no
 scope at all.
 
-So a partial grant is indistinguishable from no delegation. That is how, in the
-automation this was ported from, a service account that was authorised for user
+So a partial grant is indistinguishable from no delegation. That is how, in an earlier design, a service account that was authorised for user
 administration and not for group administration read as a broken key, and the
 search went looking for a bad key file, a clock skew and a wrong client id
 before anybody thought to test one scope on its own. A five-minute check became
@@ -300,7 +298,7 @@ and you can still arm nothing:
 
 ### Two calls this toolkit deliberately never makes
 
-Both answered HTTP 200 in the estate this came from, and both were real
+Both answered HTTP 200 in an earlier design, and both were real
 defects. They are recorded in the code so the next person to read the
 capability list is not the person who reintroduces them.
 
@@ -444,7 +442,7 @@ identity. Sharing a mailbox with the administrator, or making the administrator
 a delegate of it, does not let the administrator's delegated token send as that
 mailbox.
 
-The automation this was ported from minted a token for the administrator and
+An earlier design minted a token for the administrator and
 then posted to a shared mailbox's send path. It worked, and it worked only
 because that administrator effectively **was** that mailbox. On any other
 tenancy the same configuration fails.
@@ -630,7 +628,7 @@ A post counts as delivered only on a 2xx **and** `ok === true`. Anything else is
 reported as undelivered, with the body's own error string, and the run is not
 ok.
 
-This is not defensive coding for its own sake. In the estate this came from,
+This is not defensive coding for its own sake. In an earlier design,
 three workflows posted nothing for weeks while every execution was recorded as
 a success, because the transport status was checked and `ok` in the body was
 not. Regression test:

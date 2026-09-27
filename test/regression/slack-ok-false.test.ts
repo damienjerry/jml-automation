@@ -3,7 +3,7 @@
  * a success.
  *
  * The API answers HTTP 200 and puts the failure in the body. Several scheduled
- * workflows in the automation this toolkit replaces posted nothing for weeks
+ * workflows in an earlier design posted nothing for weeks
  * because the transport status was checked and the body was not, so their
  * reports went quietly missing while every execution was green.
  *

@@ -3,11 +3,9 @@
 Every safeguard in this toolkit exists because of a failure. This page is the
 list, one entry per failure, with the test that holds the line.
 
-The incidents happened in private automation that this toolkit was ported
-from. They are described generically: no organisation, person or machine is
-named, and the details that would identify one have been removed rather than
-disguised. What is kept is the mechanism, because the mechanism is what
-recurs.
+This catalogue explains the failure scenarios behind the safeguards and links
+to the regression tests that cover them. Each is described by its mechanism,
+because the mechanism is what recurs, whatever the platform.
 
 The section that repays reading most is not "what went wrong". It is **why it
 was not noticed**. Almost none of these were loud. A gate was present in the
@@ -17,9 +15,7 @@ failure is the normal shape of a defect in lifecycle automation, and it is
 why so much of this code spends its effort on reading back what it did.
 
 Each entry ends with the file that would fail if the safeguard were removed.
-There are 68 such files under [../test/regression/](../test/regression/), out of
-1457 tests in total. One of the entries, the last one on this page, is a defect
-found in this repository rather than in the automation it was ported from.
+There are 91 such files under [../test/regression/](../test/regression/).
 
 ---
 
@@ -1132,7 +1128,7 @@ Held by [demo-only-runs-from-the-repo-root.test.ts](../test/regression/demo-only
 
 ### A stray control character took two files out of the secret scan
 
-Found in this repository, not in the automation this was ported from, by
+Found in this repository, not in an earlier design, by
 somebody reviewing the documentation rather than the code.
 
 Two source files carried a literal NUL where an escape was meant: the cache key
@@ -1176,8 +1172,8 @@ week in which nothing went wrong.
 
 ## The first run against a real tenant
 
-Everything above was ported from a private automation and covered by tests
-against hand-written doubles. Before this release the read-only half was pointed at
+Everything above is covered by tests against hand-written doubles. Before this
+release the read-only half was pointed at
 a real HR system, identity provider, Google Workspace and a Notion database
 for the first time. It found five defects in an afternoon that 1466 passing
 tests had not. Each is now a regression test.

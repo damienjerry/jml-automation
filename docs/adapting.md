@@ -72,11 +72,15 @@ them: suspended on this date, files handed over, deleted. It needs that record
 even for people HR has long since archived. That is the people store. It is
 never deleted from, and it is what stops a leaver being offboarded twice.
 
-**What has actually run.** The read-only half has run against one live tenant
-on exactly this mix: every credential and scope checked, the HR read, the
-history import and the dry-run decisions, which agreed with that estate's own
-records. **No write has run against a real provider yet.** Suspending,
-deleting, activating and sending mail are covered by tests only.
+**What has actually run.** Two separate things, not to be confused. The
+approach generalises automation the author runs in production; that
+implementation is private and not part of this repository, and it is the
+reason for the steps and safeguards below, not evidence about this code. This
+code's own read-only half has run against one live tenant on setup 1.0a: every
+credential and scope checked, the HR read, the history import and the dry-run
+decisions, which agreed with that tenant's own records. **This code's writes
+have not yet run against a real provider.** Suspending, deleting, activating
+and sending mail are covered by tests only.
 [SECURITY.md](../SECURITY.md#what-is-not-proven) keeps the full list.
 
 **If this is your stack:** follow the README's install section, or
@@ -85,6 +89,10 @@ credentials, mapping your HR system's field names, and reading the dry run
 before you arm anything.
 
 ## What it does, step by step
+
+This is the flow in **setup 1.0a** (HiBob, JumpCloud and Google Workspace), as
+an example. The days are defaults, and deletion is optional. Setup 1.0b's
+differences follow the list.
 
 Every morning the scheduler runs one pipeline, in this order:
 
@@ -103,15 +111,26 @@ Every morning the scheduler runs one pipeline, in this order:
    their manager and IT. The welcome to their work mailbox waits until that
    mailbox exists. An account somebody is already using is never touched.
 5. **Leavers**, on a fixed timetable counted from the day after their last day:
-   - **Day 0:** suspend the identity account, so they can no longer sign in
+   - **Day 0:** suspend the JumpCloud account, so they can no longer sign in
      anywhere it controls; set an auto-reply naming their manager; release
-     the paid licence; tell the manager.
+     the paid licence; sign the Google account out of every session, if that
+     step is switched on; tell the manager.
    - **Day 6:** hand their files to their manager, then suspend the mailbox
      account. The handover comes first because it needs the account.
-   - **Day 7:** delete the accounts. Refused while a laptop is still bound to
-     them, or while the file handover is unconfirmed.
+   - **Day 7, only if you choose deletion:** delete the accounts. Refused
+     while a laptop is still bound to them, or while the file handover is
+     unconfirmed. With `leaver.deletion: never` this day does not happen and
+     the accounts are kept; with `leaver.requireOperatorAck: true` each
+     deletion waits for a person. See [policy.md](policy.md).
 6. **Tell the app owners** in the register, the day after somebody leaves, once
    each.
+
+**In setup 1.0b** (Google Workspace, no JumpCloud) the flow is the same, with
+three differences. Day 0 closes password sign-in on the Google account instead
+of suspending a JumpCloud one, and passkey sign-in, recovery and SSO stay open
+until the day-6 suspension ([access-removal.md](access-removal.md)). Starters'
+temporary passwords are set on Google. And there are no laptops to check, so
+day 7 says so rather than blocking.
 
 ### The safety rules, and why each exists
 

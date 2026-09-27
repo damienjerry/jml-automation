@@ -190,7 +190,7 @@ export class SqlitePeopleStore implements PeopleStore {
   /**
    * Every matching row, in id order.
    *
-   * There is no page size and no implicit cap. The engine this replaces read
+   * There is no page size and no implicit cap. An earlier design read
    * one page of a hundred and silently ignored everybody after it, so a fleet
    * that had grown past that number simply stopped being offboarded. A caller
    * that wants a cap must ask for one through `filter.limit`.

@@ -8,7 +8,7 @@
  * anchor for anything that failed. It exists because a partially authorised
  * credential is the worst kind: it works for the read the connector does at
  * start-up and fails on the one write that matters, a week later, at three in
- * the morning. In the automation this was ported from, one service account was
+ * the morning. In an earlier design, one service account was
  * authorised for user administration and not for group administration, and
  * that was discovered by a step silently doing nothing for months.
  *

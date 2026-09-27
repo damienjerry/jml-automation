@@ -1,9 +1,11 @@
 # jml-automation
 
-> **Experimental.** A reference toolkit, not a product. Setup 1.0a's read-only
-> half has run against one real tenant; no write, in either setup, has ever run
-> against a real provider, and setup 1.0b has never run against a real tenant
-> at all. Read what was tested below before you rely on any of it.
+> **Experimental.** A reference toolkit, not a product. It generalises
+> automation the author runs in production, which is private and not part of
+> this repository. This code's own read-only half has run against one real
+> tenant; its writes, in either setup, have not yet run against a real provider,
+> and setup 1.0b has not run against a real tenant at all. Read what was tested
+> below before you rely on any of it.
 
 **Why it exists.** So that one IT person, or a small IT team, can automate
 joiners and leavers themselves, without paying for a lifecycle product or for
@@ -20,9 +22,9 @@ it activates the account your HR system has already created. It is a command
 line tool, an optional HTTP sidecar, and six n8n workflows that hold no logic.
 
 It **does not create accounts** and it **does not change access for movers**.
-The read-only half has run against one real tenant. **No write has ever run
-against a real provider**: suspension, deletion and activation are tested
-against fakes only.
+This code's read-only half has run against one real tenant. **Its writes have
+not yet run against a real provider**: suspension, deletion and activation are
+tested against fakes only.
 
 ## Two setups
 
@@ -70,11 +72,14 @@ What was tested, and how:
 | `install.sh` and `jml setup` | on macOS and on Linux (CI, Ubuntu): clone, install, build and the whole setup preview, end to end. The Docker Compose step has never started the containers end to end |
 | Native Windows | the full test suite runs in CI on every push and must pass; no installer, so still experimental as a way to run it |
 
-The design comes from automation that runs these steps in production at one
-organisation, on setup 1.0a. This code's own write paths have not run against a
-real provider, and setup 1.0b has not run against a real tenant at all. The
-first armed action you take is also a test of the toolkit, so take it on a
-test account.
+**Where it comes from, and what that does and does not prove.** This is a
+generalised rewrite of automation the author runs in production. That earlier
+implementation is private and is not part of this repository: it is why the
+steps and the safeguards look the way they do, and it is not evidence about
+this code. What has been tested of this code is the table above. Its writes
+have not yet run against a real provider, and setup 1.0b has not run against a
+real tenant at all, so the first armed action you take is also a test of the
+toolkit: take it on a test account.
 
 Tested with Node 22.22, n8n 1.123.77, the JumpCloud v1 and v2 APIs, the Google
 Admin SDK Directory, Licensing and Data Transfer v1 APIs, the Gmail v1 API, the
@@ -233,7 +238,7 @@ Nothing left this process: no network call, no credential, no file written.
 
 The gate re-reads the provider on every attempt rather than trusting what it recorded last
 time, and it **fails closed**: anything that is not a successful read of zero bound devices
-blocks the deletion. In the automation this was ported from, the device lookup was wrapped
+blocks the deletion. In an earlier design, the device lookup was wrapped
 in a catch that logged and carried on, so a provider error produced an empty list, an empty
 list read as "nothing to block on", and one failed read deleted the account. That is
 `leaver.deviceGate.failClosed` in [docs/config-reference.md](docs/config-reference.md), and
@@ -303,11 +308,11 @@ disk. `jml.config.yaml` itself never holds a credential in either case.
   does not create accounts, the joiner path has nothing to activate.
 - **Only the read-only half has run against a real tenant.** One shadow run, before
   this release: `jml doctor` passed against a live HR system, identity provider and Google
-  Workspace, the bootstrap and two dry cycles agreed with the estate's own records, and the
+  Workspace, the bootstrap and two dry cycles agreed with that tenant's own records, and the
   Notion adapter read a live people database in read-only mode. It found five defects
-  that 1466 passing tests had not, all fixed and now covered. **No write has ever run
-  against a real provider**: not a suspension, a licence change, a transfer, a deletion,
-  an activation or a sent message.
+  that 1466 passing tests had not, all fixed and now covered. **None of this code's
+  writes has run against a real provider yet**: not a suspension, a licence change, a
+  transfer, a deletion, an activation or a sent message.
 - **The two device uninstall scripts have never run on real hardware.**
   `src/engine/device/scripts/manifest.json` records `provenOnHardware: false` for both, and
   a handover is refused on any platform whose script is unproven unless you name the machine
@@ -384,7 +389,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 90 files each named for one of them, for example
+  and `test/regression/` holds 91 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.

@@ -105,7 +105,7 @@ describe('an audit log with PII minimisation on', () => {
 
   it('refuses to be built with minimisation on and no salt', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'jml-audit-nosalt-'))
-    // Degrading to clear addresses is the failure this replaces. An unsalted
+    // Degrading to clear addresses is the failure this prevents. An unsalted
     // hash is barely better: the address format is short enough to guess.
     expect(() => createJsonlAuditSink({ dir, minimisePii: true, salt: null })).toThrow(/needs a salt/)
   })

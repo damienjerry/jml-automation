@@ -177,7 +177,7 @@ const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
 /**
  * Accept an ISO date, refuse anything else.
  *
- * The automation this was ported from asked HiBob for human-readable output
+ * An earlier design asked HiBob for human-readable output
  * and then split the result on slashes. That works in exactly one locale: in
  * any other tenant the same string means a different day, and a wrong leaving
  * date suspends somebody's account on the wrong morning. So the adapter asks

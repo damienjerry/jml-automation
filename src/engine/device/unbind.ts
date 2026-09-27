@@ -2,7 +2,7 @@
  * Bindings: who holds a machine, who is going to hold it, and the two
  * dispositions that clear the gate without touching the machine.
  *
- * This is the primitive the automation this was ported from never had. Its
+ * This is the primitive an earlier design never had. Its
  * blocked-deletion message told operators to unbind the person in the vendor
  * console, because no code could do it: the only clearing action anybody had
  * implemented was deleting the device record, which is the one action that

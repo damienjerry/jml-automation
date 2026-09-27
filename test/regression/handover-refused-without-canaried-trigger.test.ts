@@ -2,11 +2,9 @@
  * Failure this prevents: running an uninstall script nobody has ever watched
  * work, on somebody's laptop.
  *
- * The scripts this package ships were ported from automation where the
- * equivalent scripts were written, deployed as device commands, and never
- * executed on anything. Their service names, uninstall strings and launchd
- * labels were inferred rather than read off a machine, and two audits recorded
- * that fact without it ever changing.
+ * The scripts this package ships have never been executed on anything. Their
+ * service names, uninstall strings and launchd labels are inferred rather than
+ * read off a machine.
  *
  * Two independent brakes therefore stand in front of a handover, and both are
  * asserted here:

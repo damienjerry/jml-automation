@@ -7,7 +7,7 @@
  * it gets the same intent-then-outcome audit pair as a provider call, and its
  * delivery is checked rather than assumed. A chat API answering 200 with a
  * failure in the body is what silently stopped three workflows posting for
- * weeks in the automation this replaces, so an undelivered notification makes
+ * weeks in an earlier design, so an undelivered notification makes
  * the run not ok.
  *
  * A standing problem is reported when it changes, not while it persists. The

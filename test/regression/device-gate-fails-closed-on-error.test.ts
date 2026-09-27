@@ -1,7 +1,7 @@
 /**
  * Prevents: an account deleted because the device list could not be read.
  *
- * The automation this was ported from wrapped its bound-device lookup in a
+ * An earlier design wrapped its bound-device lookup in a
  * catch that logged and carried on. Any provider error therefore produced an
  * empty list, an empty list means "nothing to block on", and one failed read
  * deleted the account. That destroys the only management channel to the

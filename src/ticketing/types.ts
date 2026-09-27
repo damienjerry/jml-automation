@@ -4,7 +4,7 @@
  * Two directions. Outbound: create a ticket for a leaver so the long tail of
  * platforms IT does not administer has somewhere to be worked through. Inbound:
  * a ticket raised on the new-starter form opens the activation gate, because
- * in the estate this came from the manager's form was the only thing that said
+ * in an earlier design the manager's form was the only thing that said
  * what a starter needed, and nothing else may open that gate.
  *
  * The interface is small on purpose. Every ticketing product has a create call

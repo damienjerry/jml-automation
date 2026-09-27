@@ -1,7 +1,7 @@
 /**
  * Prevents: a hold set during a run being ignored by that run.
  *
- * Hold is the human kill switch. In the automation this was ported from it was
+ * Hold is the human kill switch. In an earlier design it was
  * honoured in the query that selected people and then not looked at again, so
  * a run that had already selected somebody carried on through every step after
  * the flag went on. The person setting it watched the offboarding continue.

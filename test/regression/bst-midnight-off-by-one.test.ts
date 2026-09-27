@@ -1,7 +1,7 @@
 /**
  * Prevents: date arithmetic done by cutting the time off a UTC timestamp.
  *
- * The automation this replaces computed "today" as `toISOString().slice(0, 10)`.
+ * An earlier design computed "today" as `toISOString().slice(0, 10)`.
  * In a zone ahead of UTC, every moment between local midnight and the UTC
  * offset falls on the previous UTC day, so for the first hour of every summer
  * day the pipeline believed it was yesterday. Everything keyed on the day

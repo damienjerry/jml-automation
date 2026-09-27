@@ -4,6 +4,25 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed, after an outside review of v1.0e
+
+- **No claim about where a lesson was learned.** The docs and code comments
+  said the safeguards came from failures in the automation this toolkit was
+  ported from. The lessons stay; where they happened is no longer asserted,
+  and the incident catalogue says what it is: the failure scenarios behind the
+  safeguards, each linked to its test.
+- **What was tested, stated consistently.** The approach generalises
+  automation the author runs in production; that implementation is private,
+  not in this repository, and no evidence about this code. This code's own
+  read-only half has run against one real tenant, and its writes have not yet
+  run against a real provider. Every document now says it that way.
+- **The adapting guide's flow is labelled** as setup 1.0a's example, with
+  deletion shown as optional and setup 1.0b's differences set out.
+- The maintainer page's list of what is not covered was out of date and is
+  corrected.
+
 ## [1.2.2] - 2026-09-27
 
 Released as `v1.0e`, and what the installer builds by default. The same two

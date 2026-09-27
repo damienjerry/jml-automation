@@ -20,7 +20,7 @@
  *
  * Every refusal below aborts before a single write. A refusal that could not be
  * evaluated, because a provider read failed, is also a refusal: an unreadable
- * answer is not an absence of danger, and the ancestor of this code treated a
+ * answer is not an absence of danger, and an earlier version of this code treated a
  * failed device read as "no devices" and deleted the account.
  */
 
@@ -156,8 +156,7 @@ export interface DispositionRequest {
   actor: Actor
   runId: string
   /**
-   * Defaults to TRUE everywhere. Every destructive device path in the estate
-   * this was ported from that shipped dry-run first had no regressions, and
+   * Defaults to TRUE everywhere. Every destructive device path in an earlier design that shipped dry-run first had no regressions, and
    * every one that did not had several on its first live day.
    */
   dryRun?: boolean
@@ -230,7 +229,7 @@ let manifestCache: ScriptManifest | null = null
  * Read the script manifest that ships beside this module.
  *
  * The manifest is the single record of whether a script has ever been run on
- * real hardware. It says no, because in the automation this was ported from
+ * real hardware. It says no, because in an earlier design
  * these scripts were written, deployed as commands, and never executed on a
  * machine: the service names, uninstall strings and launchd labels in them are
  * inferred. Claiming otherwise anywhere would be the one defect this package

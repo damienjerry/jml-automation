@@ -1,8 +1,8 @@
 # Running this alongside your own automation
 
-For the case this toolkit was extracted from: you already have private
-automation doing joiners and leavers, it works, and you want to move onto the
-public code without a fork and without a flag day.
+For a team that already has its own automation doing joiners and leavers,
+which works, and wants to move onto this code without a fork and without a
+flag day.
 
 The shape is: keep every fact about your organisation out of the repository,
 run this in dry run beside what you already have, diff the decisions rather
@@ -211,18 +211,18 @@ Keep the old automation's code and its schedule for a full quarter after
 cutover. The failure this ordering protects against is not a bad deploy, it is
 a disagreement you only notice on the one leaver whose case is unusual.
 
-## What is deliberately not ported
+## What this does not cover yet
 
 If your private automation has these, this toolkit will not replace them yet.
 Do not turn them off.
 
 | Not here | Where it stands |
 | --- | --- |
-| Joiner provisioning and mover attribute changes | Phase 1 is leaver-only. `jml detect` announces joiners; nothing acts on them |
+| Account creation, and access changes for movers | Starters' accounts are activated, not created: something else must create them. A department change updates the person's record and nothing else |
 | A Microsoft Graph leg | Interface only. `legs.azure` is a literal `false`, and start-up refuses if `AZURE_CLIENT_SECRET` is set |
 | Slack SCIM deactivation | Interface only, same treatment with `SLACK_SCIM_TOKEN`. Note that the SCIM token, a bot token and a user token are three different credentials on three different screens |
-| A SaaS-register checklist | Reserved |
-| Notion or Sheets as the people store | Schema describes them; choosing one refuses at start-up. Use SQLite |
+| A full SaaS offboarding checklist | Owner notifications from a register ship; nothing removes access in apps IT does not administer |
+| Google Sheets as the people store | Designed, not implemented; choosing it fails. Use SQLite or Notion (reading people from a sheet is supported: that is the HR source, not the store) |
 | A Linux device script | None ships. A hand-over on a Linux machine is refused rather than being sent the Windows script |
 | Asset registers, monitoring agents, patch compliance, anything device-shaped beyond disposition | Out of scope. The device code here exists to answer one question: may this account be deleted yet |
 

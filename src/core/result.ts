@@ -3,7 +3,7 @@
  *
  * One rule is enforced here rather than trusted to each call site: a leg
  * cannot reach the state `done` unless the outcome was verified by reading the
- * provider back. The automation this replaces recorded successful suspensions
+ * provider back. An earlier design recorded successful suspensions
  * from responses that had changed nothing, because a provider accepted a
  * request, ignored the part of the body that mattered, and answered 200.
  *
@@ -24,7 +24,7 @@ export function verified(detail?: Record<string, unknown>): Outcome {
  * The call succeeded but the effect was not confirmed.
  *
  * Not an error, and not success either. A caller must treat this as a failed
- * leg and try again, which is exactly what the ancestor of this code did not
+ * leg and try again, which is exactly what an earlier version of this code did not
  * do.
  */
 export function unverified(reason: string, detail?: Record<string, unknown>): Outcome {

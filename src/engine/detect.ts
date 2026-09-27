@@ -5,7 +5,7 @@
  * and names what that means: who is joining, who the engine will offboard on
  * this run, and who looks like a departure that nothing automatic will touch.
  *
- * Three rules, each from a way the automation this replaces got it wrong:
+ * Three rules, each from a way an earlier design got it wrong:
  *
  *  - Announce the HR-dated leavers as well as the doubtful ones. The original
  *    detector reported only the cases needing a decision, so the ordinary

@@ -1,7 +1,7 @@
 # Decide your leaver policy before you arm anything
 
-The day-0, day-6 and day-7 sequence is one organisation's process. It is a good
-default, and it is still a default. These are the questions it answers on your
+The day-0, day-6 and day-7 sequence is a sensible default, and it is still only
+a default. These are the questions it answers on your
 behalf unless you answer them first. Each row says what the toolkit does today,
 the setting that changes it where one exists, and where there is no setting.
 

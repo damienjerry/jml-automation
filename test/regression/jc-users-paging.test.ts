@@ -1,7 +1,7 @@
 /**
  * Regression: a directory read that stopped after a fixed number of pages.
  *
- * The automation this was ported from fetched provider accounts as exactly two
+ * An earlier design fetched provider accounts as exactly two
  * hard-coded pages. Every organisation with more accounts than that silently
  * lost the rest: the missing people came back with no provider id, which made
  * them look like leavers with nothing to offboard, and the engine tombstoned

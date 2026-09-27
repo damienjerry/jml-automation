@@ -28,7 +28,7 @@ describe('operating system dispatch', () => {
     expect(triggerOsOf('windows')).toBe('windows')
     expect(triggerOsOf('macos')).toBe('darwin')
     expect(triggerOsOf('linux')).toBe('linux')
-    // The ancestor of this code classified anything that was not a Mac as
+    // An earlier version of this code classified anything that was not a Mac as
     // Windows, and sent a Windows uninstaller to a machine running Linux.
     expect(triggerOsOf('unknown')).toBeNull()
   })

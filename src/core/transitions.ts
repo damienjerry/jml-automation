@@ -6,8 +6,7 @@
  * "the HR sync must never revive a row the offboarding engine owns" is checked
  * on every write rather than being an instruction somebody has to remember.
  *
- * The rules encode failures that really happened in the automation this was
- * ported from. Each one names its incident so a future reader can tell a
+ * The rules encode failures that really happened in an earlier design. Each one names its incident so a future reader can tell a
  * safeguard from an accident. See docs/incidents.md.
  */
 

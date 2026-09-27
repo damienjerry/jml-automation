@@ -4,7 +4,7 @@
  * Every date in this toolkit is a calendar date in the organisation's declared
  * IANA zone, and calendar dates are never derived by taking `toISOString()` and
  * cutting off the time. In a zone ahead of UTC, a moment just after local
- * midnight is still the previous day in UTC, so the ancestor of this code
+ * midnight is still the previous day in UTC, so an earlier version of this code
  * computed "today" as yesterday for the first hour of every summer day. A
  * leaver's day 7 arrived a day early for anybody whose offboarding started in
  * that window.

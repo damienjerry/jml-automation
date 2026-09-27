@@ -2,7 +2,7 @@
  * The change gate: report when something changes, not while a known state
  * persists.
  *
- * A schedule firing is not news. The automation this replaces posted the same
+ * A schedule firing is not news. An earlier design posted the same
  * standing problem three times a day, to a channel that stopped being read
  * because of it, and the one day the set of affected people actually changed
  * looked exactly like the two hundred days before it.

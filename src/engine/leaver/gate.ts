@@ -18,7 +18,7 @@
  *  - The acknowledgement gate, when an adopter wants a person in the loop.
  *
  * The device gate FAILS CLOSED, which is the single most important line in
- * this file. The automation this replaces wrapped its device lookup in a catch
+ * this file. An earlier design wrapped its device lookup in a catch
  * that logged and carried on, so a provider error produced an empty list, and
  * an empty list reads as "nothing to block on". One failed read therefore
  * deleted the account. Here, anything that is not a successful read of zero

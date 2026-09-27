@@ -6,7 +6,7 @@
  * one, but the file that comes back out is not publishable. It carries the ids
  * of credentials and workflows on that one instance, the webhook paths its
  * forms are reachable on, and staticData, which is a snapshot of whatever the
- * workflow last saw. In the automation this toolkit was extracted from, that
+ * workflow last saw. In an earlier design, that
  * snapshot held a full list of employees.
  *
  * This tool removes all of it, rewrites the error-workflow reference back to a

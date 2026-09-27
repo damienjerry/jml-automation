@@ -68,7 +68,7 @@ REFUSED:  provider_unreadable  the device could not be read: reading a device an
 ```
 
 That run is what a broken credential looks like: a refusal, not a guess. An
-unreadable answer is not an absence of danger, and the ancestor of this code
+unreadable answer is not an absence of danger, and an earlier version of this code
 treated a failed device read as "no devices" and deleted the account.
 
 Add `--owner-hris-id p-1004` to assert whose machine this is. The run is then

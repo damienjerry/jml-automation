@@ -4,7 +4,7 @@
  * All three are the same ordered run with a different list of steps, because
  * the ordering is the point: the HR system is read once, the sync writes what
  * it derives, the detector announces what changed, and only then does the
- * leaver engine act. The automation this replaces had those on separate
+ * leaver engine act. An earlier design had those on separate
  * schedules fifteen minutes apart, which is a hope rather than an ordering,
  * and the day the sync ran late the engine acted on yesterday's picture.
  *

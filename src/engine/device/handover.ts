@@ -2,14 +2,14 @@
  * The handover: the leaver keeps the machine and our agents come off it.
  *
  * This is the only disposition that deletes anything, so the order is fixed and
- * it is the reverse of what the automation this was ported from did:
+ * it is the reverse of what an earlier design did:
  *
  *   1. uninstall the agents on the machine,
  *   2. read the receipt back from the result DETAIL endpoint,
  *   3. confirm the machine has actually gone quiet,
  *   4. and only then delete the provider record.
  *
- * The ancestor of this code deleted the record after a blind two-minute sleep,
+ * An earlier version of this code deleted the record after a blind two-minute sleep,
  * with no evidence the uninstall had happened. Twice that left a machine in
  * somebody's hands still shipping telemetry, with no command channel left to
  * stop it, and the only remaining remedy was dropping its data at the
@@ -337,7 +337,7 @@ export interface RenderedScript {
  * The scripts carry no product names of their own. Every service, uninstall
  * display name, launchd label and path comes from config.devices.agents, so an
  * adopter changes what is removed by editing YAML rather than by editing
- * PowerShell. The ancestor of these scripts matched product names with a bare
+ * PowerShell. An earlier version of these scripts matched product names with a bare
  * substring regular expression, which matched an unrelated product, so the
  * rendered names are compared exactly by the scripts themselves.
  */

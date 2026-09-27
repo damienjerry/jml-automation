@@ -3,8 +3,7 @@
  *
  * The rule the whole toolkit is built on: a person is keyed on the identifier
  * the HR system owns, and an email address is an attribute of that person, not
- * their identity. Every serious incident on record in the automation this was
- * ported from came from breaking that rule in one of two ways.
+ * their identity. Every serious incident on record in an earlier design came from breaking that rule in one of two ways.
  *
  * First, an HR system renamed a leaver's address on the way out. The sync saw
  * an unfamiliar address, decided it was a new person, created a row, and that

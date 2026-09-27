@@ -1,7 +1,7 @@
 /**
  * One ordered run, replacing several schedules that used to race.
  *
- * The automation this was ported from had five schedules whose ordering lived
+ * An earlier design had five schedules whose ordering lived
  * in a comment: the HR sync ran fifteen minutes before the offboarding engine,
  * so that a leaver flipped to terminated in the morning was visible to the
  * same day's day-0 run. That is not an ordering, it is a hope, and the day the

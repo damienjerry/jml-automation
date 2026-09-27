@@ -1,7 +1,7 @@
 /**
  * Failure this prevents: the HR read paged only once.
  *
- * The automation this was ported from had a `while (hasMore)` loop that set
+ * An earlier design had a `while (hasMore)` loop that set
  * `hasMore = false` after the first call and never used the offset. It read
  * one page of people and reported success. Everybody past that page was
  * absent from the snapshot, which is the same signal as having left, so the

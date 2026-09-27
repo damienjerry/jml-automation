@@ -4,7 +4,7 @@
  *
  * Two rules here are the reason this file exists.
  *
- * It fails closed. The automation this replaces wrapped the device lookup in a
+ * It fails closed. An earlier design wrapped the device lookup in a
  * catch that only logged, so any provider error produced an empty list, and an
  * empty list means "no devices to block on". A single failed read therefore
  * deleted the account, which destroys the only management channel to the
@@ -65,7 +65,7 @@ export class JumpCloudDevices implements DeviceConnector {
   /**
    * Detach a person from a machine, then prove they are detached.
    *
-   * This is the primitive the source automation never had: its blocked-device
+   * This is the primitive an earlier design never had: its blocked-device
    * message told operators to unbind in the console because no code could do
    * it. Unbinding clears the gate at no risk to the machine, which stays
    * enrolled, managed, and with its recovery key still escrowed.
@@ -254,7 +254,7 @@ export function toBoundDevice(raw: unknown): BoundDevice | null {
  * Which family of operating system this is.
  *
  * Explicit and closed: anything unrecognised is 'unknown' rather than being
- * folded into a default. The automation this replaces classified anything that
+ * folded into a default. An earlier design classified anything that
  * was not a Mac as Windows, which sent a Windows uninstaller to a Linux box.
  */
 export function osFamilyOf(record: Record<string, unknown>): BoundDevice['osFamily'] {

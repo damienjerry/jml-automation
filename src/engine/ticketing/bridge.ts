@@ -1,7 +1,7 @@
 /**
  * Opening the activation gate from a ticket.
  *
- * The rules, each from the estate this came from:
+ * The rules, each from an earlier design:
  *  - Only a ticket raised on the configured starter form counts. The webhook
  *    on the other side should already be scoped to that form; this checks
  *    again, because a trigger scoped wrongly once forwarded every ticket.

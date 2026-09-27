@@ -2,8 +2,7 @@
  * The one HTTP client. Nothing else in the library may reach the network:
  * eslint forbids `fetch` and `node:https` everywhere but this file.
  *
- * That rule exists because of a specific, expensive failure. The automation
- * this replaces used a request helper that threw on any non-2xx and, in
+ * That rule exists because of a specific, expensive failure. An earlier design used a request helper that threw on any non-2xx and, in
  * throwing, lost the response body and the status code. A provider was
  * answering `401 unauthorized_client` with the exact missing authorisation
  * named in the body, and for hours it was diagnosed as a network fault,

@@ -3,7 +3,7 @@
  * the whole fleet.
  *
  * A trigger fires on every association the command holds, and it ignores any
- * list of targets in the request body. In the estate this was ported from an
+ * list of targets in the request body. In an earlier design an
  * installer had been left attached to a whole device group, so a push aimed
  * at a handful of machines produced twice as many results as targets and
  * nobody noticed until the counts were compared. Another command carried

@@ -95,7 +95,7 @@ Two of those are worth arguing about before anybody writes the code.
 **`hrisId` is the title property, and the only key.** A person is keyed on the
 identifier the HR system owns, never on their address. Email is an attribute
 that changes: people marry, and people are renamed on the way out. Every
-serious incident on record in the automation this was ported from came from
+serious incident on record in an earlier design came from
 treating the address as the identity.
 
 **`offboarding` is one JSON blob rather than fifteen properties.** It is
@@ -172,7 +172,7 @@ The cases that will fail first on a page-based API:
 | Case | What it asserts |
 | --- | --- |
 | No delete, and no prune | No method whose name starts with delete, prune, remove, purge, drop, truncate, clear or reset exists. Tombstones are the only thing stopping a historic leaver being offboarded twice |
-| A selection returns every row | The suite inserts 1,200 rows by default. The engine this replaces read a single hundred-row page and silently ignored everybody after it. Notion paginates at 100 |
+| A selection returns every row | The suite inserts 1,200 rows by default. An earlier design read a single hundred-row page and silently ignored everybody after it. Notion paginates at 100 |
 | A second identical sync performs no writes at all | Diff before writing. A store that rewrites every row on every run turns a read-only day into a thousand API calls, and hides the day something did change |
 | A blank incoming value never erases a populated stored one | Empty properties are common in exported data |
 | The day-0 marker can never be cleared | Refuse the write, do not merely avoid making it |

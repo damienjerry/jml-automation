@@ -22,7 +22,7 @@ The consequence for rotation: a long-running `jml serve` holds the old value
 until it is restarted. Changing the environment underneath it changes nothing.
 
 This is worth knowing rather than guessing at, because the opposite arrangement
-caused a real outage in the automation this was ported from. A container
+caused a real outage in an earlier design. A container
 snapshotted its environment once at start and every scheduled job inside it read
 that snapshot, so a rotated key was correct in the file and stale in the process
 for days, and the errors it produced were swallowed as "nothing to
@@ -131,7 +131,7 @@ then looks identical to no delegation at all. Each failing scope names what
 stops working if it stays missing.
 
 A single service account authorised for one directory operation and not another
-is the failure this whole command exists for. In the estate this came from, that
+is the failure this whole command exists for. In an earlier design, that
 was discovered by a step silently doing nothing for months.
 
 Ending state you want:

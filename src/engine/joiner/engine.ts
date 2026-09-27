@@ -8,7 +8,7 @@
  * tell the starter and their manager. Each of those is a leg with its own
  * arming switch and its own read-back, like the leaver legs.
  *
- * Rules, each from a recorded failure in the automation this was ported from:
+ * Rules, each from a recorded failure in an earlier design:
  *
  *  - NEVER reset the password of an account somebody is using. A staged
  *    account has never been activated and has no MFA; anything else is a
@@ -359,8 +359,7 @@ async function runLeg(
  *
  * The personal address must not be a company one and the manager's must be.
  * Both are re-read from the row at send time rather than trusted as written,
- * because four different producers fill those fields in the estate this came
- * from and two of them put a person's name where an address belongs.
+ * because four different producers fill those fields in an earlier design and two of them put a person's name where an address belongs.
  */
 function passwordRecipients(deps: JoinerDeps, person: Person): { to: string[]; personal: string | null; manager: string | null; withheld: string[] } {
   const withheld: string[] = []

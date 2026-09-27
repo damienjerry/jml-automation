@@ -322,7 +322,7 @@ const revokeLicences: Leg = {
           return result('revoke_licence', failedLeg(ctx, 'revoke_licence', at, why), `the licence list could not be read: ${why}`)
         }
         // List then revoke, rather than assuming which product a leaver holds.
-        // The automation this replaces had one product id written into it, so
+        // An earlier design had one product id written into it, so
         // every other seat stayed assigned and paid for.
         const wanted = deps.cfg.leaver.revokeLicences
         targets = wanted === 'all' ? held : held.filter((l) => wanted.includes(l.skuId))
@@ -679,8 +679,7 @@ const deleteGoogle: Leg = {
     }
     const pre = await prepare(deps, ctx, deleteGoogle, ctx.googleAccount, {
       at,
-      // Already absent, not a deletion we performed. The automation this
-      // replaces deleted unconditionally and read the provider's 404 as
+      // Already absent, not a deletion we performed. An earlier design deleted unconditionally and read the provider's 404 as
       // success, so its log could not answer "did this run delete an account".
       absent: 'already_absent',
       absentNote: 'the Google account was already gone',

@@ -181,7 +181,7 @@ describe('getDevice reports what an operator has to decide with', () => {
     expect(osFamilyOf({ os: 'Windows 11 Pro' })).toBe('windows')
     // Anything unrecognised must not fall through to a default: sending a
     // Windows uninstaller to a machine that is not Windows is a real defect
-    // from the automation this replaces.
+    // from an earlier design.
     expect(osFamilyOf({ os: 'Some Appliance OS' })).toBe('unknown')
     expect(osFamilyOf({})).toBe('unknown')
   })

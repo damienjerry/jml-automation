@@ -1,8 +1,7 @@
 /**
  * Regression: a 200 that changed nothing, recorded as a completed suspension.
  *
- * The provider accepts a write, ignores part of it, and answers 200. The
- * automation this was ported from wrote its day-0 marker from that response, so
+ * The provider accepts a write, ignores part of it, and answers 200. An earlier design wrote its day-0 marker from that response, so
  * the record said the account was suspended while the account was still usable,
  * and the row was never retried because the marker was already set.
  *

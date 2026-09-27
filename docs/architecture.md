@@ -27,8 +27,8 @@ but call the sidecar on a schedule and post the result.
                                                                           licensing, transfer)
 ```
 
-Only the read-only half of this toolkit has run against a real tenant (one
-shadow run before this release), no write has, and the n8n bundle has been
+Only the read-only half of this code has run against a real tenant (one
+shadow run before this release), none of its writes has, and the n8n bundle has been
 imported into a real n8n but never executed. The claims below are about the code and
 its tests.
 
@@ -128,7 +128,7 @@ report.
 
 ## Why one process rather than several schedules
 
-The arrangement this was ported from had several schedules whose ordering lived
+An earlier design had several schedules whose ordering lived
 in a comment: the HR sync ran a few minutes before the offboarding engine, so
 that a leaver flipped to terminated in the morning was visible to the same
 day's day-0 run.
@@ -334,8 +334,7 @@ The outcome row carries the intent row's sequence number in `intentSeq`.
 Correlating on run id, action and subject instead almost works, and stops
 working precisely when a step is retried within one run.
 
-**The default sink is a local append-only JSONL file, one per day.** The
-automation this was ported from pushed its only record of what it had done to a
+**The default sink is a local append-only JSONL file, one per day.** An earlier design pushed its only record of what it had done to a
 log service on a best-effort basis, inside an empty catch. An audit log that
 depends on a network service is unavailable exactly when it is most needed. So
 the file is opened with `O_APPEND`, every line is fsynced before the call it

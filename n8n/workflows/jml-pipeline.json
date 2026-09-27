@@ -14,7 +14,7 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [0, 0],
-      "notes": "One schedule for the whole lifecycle. The sidecar runs sync, then detect, then the leaver engine, inside one lease. The arrangement this replaces had several schedules whose ordering existed only in a comment.",
+      "notes": "One schedule for the whole lifecycle. The sidecar runs sync, then detect, then the leaver engine, inside one lease. An earlier design had several schedules whose ordering existed only in a comment.",
       "parameters": {
         "rule": {
           "interval": [
@@ -366,7 +366,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [2200, 0],
-      "notes": "The chat API answers 200 with the failure in the body. Workflows in the arrangement this replaces lost every post they made to a channel their bot had never joined, and each execution stayed green.",
+      "notes": "The chat API answers 200 with the failure in the body. Workflows in an earlier design lost every post they made to a channel their bot had never joined, and each execution stayed green.",
       "parameters": {
         "conditions": {
           "options": {

@@ -4,7 +4,7 @@
  * Preflight is a read. It prints the machine, who is bound to it directly, the
  * command it would fire, the association it would create, and every reason
  * this run could be refused. Running it first is the habit this whole package
- * is built to encourage: in the estate this was ported from, every destructive
+ * is built to encourage: in an earlier design, every destructive
  * device change that shipped as a rehearsal first had no regressions, and
  * every one that went straight to a live fleet had several on its first day.
  *

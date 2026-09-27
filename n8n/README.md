@@ -267,7 +267,7 @@ working schedule from one that has never fired.
    again ten minutes later and confirm nothing new has appeared**, which proves
    the restore took.
 
-Why this is worth the four minutes: a scheduled job in the estate this came from
+Why this is worth the four minutes: a scheduled job in an earlier design
 ran a broken build for months and nobody noticed, because nothing
 distinguished "ran and found nothing to do" from "never ran". Hosted schedulers
 also throttle frequent schedules silently, so a two-minute cron that never fires

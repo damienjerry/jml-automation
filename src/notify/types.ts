@@ -2,7 +2,7 @@
  * Telling people what happened.
  *
  * `delivered` is separate from `ok` for one reason: chat APIs answer 200 with a
- * failure in the body. Three workflows in the automation this replaces posted
+ * failure in the body. Three workflows in an earlier design posted
  * nothing for weeks while every run recorded success, because nobody checked
  * the body. A notifier that cannot prove delivery reports delivered: false, and
  * the run is not ok.

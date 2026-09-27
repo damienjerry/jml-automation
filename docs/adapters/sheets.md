@@ -148,7 +148,7 @@ The cases a range-based API will fail first:
 | Case | What it asserts |
 | --- | --- |
 | No delete, and no prune | The interface cannot remove a row. Tombstones are the only thing stopping a historic leaver being offboarded twice, and a `deleteRows` call is one keystroke away in every sheets client library |
-| A selection returns every row | The suite inserts 1,200 rows by default, deliberately over a thousand: the engine this replaces read one hundred-row page and silently ignored everybody after it |
+| A selection returns every row | The suite inserts 1,200 rows by default, deliberately over a thousand: an earlier design read one hundred-row page and silently ignored everybody after it |
 | A second identical sync performs no writes at all | Diff before writing. A store that rewrites the tab on every run burns quota and hides the day something did change |
 | A blank incoming value never erases a populated stored one | Blank cells are everywhere in a sheet |
 | The day-0 marker can never be cleared | Refuse the write, do not merely avoid making it |

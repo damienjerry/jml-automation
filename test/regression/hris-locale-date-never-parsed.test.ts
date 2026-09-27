@@ -1,7 +1,7 @@
 /**
  * Failure this prevents: a leaving date parsed out of a human-readable string.
  *
- * The automation this was ported from asked the HR system for human-readable
+ * An earlier design asked the HR system for human-readable
  * output and then split the result on slashes, treating the first component as
  * the day. That is correct in one locale and silently wrong in others, and the
  * value decides which morning somebody loses their accounts. Worse, the same

@@ -6,8 +6,7 @@
  * ten. That is longer than any scheduler's HTTP node will wait, and the
  * failure mode is nasty rather than merely annoying: the caller times out, the
  * run is recorded as failed, somebody retries it, and now two runs are
- * attaching and detaching the same command on the same machine. In the estate
- * this was ported from, a device left attached to a command was swept up by
+ * attaching and detaching the same command on the same machine. In an earlier design, a device left attached to a command was swept up by
  * every later run of it, and a laptop was restarted repeatedly by a job that
  * had nothing to do with it.
  *

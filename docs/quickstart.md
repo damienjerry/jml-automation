@@ -246,7 +246,7 @@ one number that tells them apart.
 Run this **before** anything is armed. Every historic leaver in your HR system is somebody
 the toolkit has never seen. Without this step they are all new terminations on the first run.
 
-That is not hypothetical. In the automation this was ported from, a data migration pruned the
+That is not hypothetical. In an earlier design, a data migration pruned the
 tombstone rows, the next sync read hundreds of historic leavers as brand new terminations,
 and the engine began suspending accounts that had been closed for years. The regression test
 is `test/regression/tombstones-pruned-refire.test.ts`.

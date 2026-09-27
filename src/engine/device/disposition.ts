@@ -4,7 +4,7 @@
  * This is the entry point the command line and the HTTP sidecar both call. It
  * plans, refuses, executes the disposition the operator chose, then re-reads
  * the provider and states what the day-7 deletion gate would now say. That last
- * part matters more than it looks: in the automation this was ported from an
+ * part matters more than it looks: in an earlier design an
  * operator cleared a block and then had to wait for the next scheduled run to
  * find out whether it had worked, so the same devices were "fixed" several
  * times over.

@@ -1,7 +1,7 @@
 /**
  * Failure this prevents: a failed scheduled run that nobody heard about.
  *
- * In the estate this toolkit replaces, not one workflow named an error
+ * In an earlier design, not one workflow named an error
  * workflow, so a red execution was visible only to somebody already looking at
  * the executions list, and nobody looks at a job that usually works. A daily
  * job failed on the same step for months and was found by accident.

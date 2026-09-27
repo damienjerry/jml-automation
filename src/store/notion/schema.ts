@@ -10,8 +10,7 @@
  * property, so the toolkit's markers survive without the database growing a
  * column per field.
  *
- * Every property name and every status label is configurable, because the
- * database this was ported from already had its own names.
+ * Every property name and every status label is configurable, because an earlier design already had its own names.
  */
 
 import type { LifecycleStatus, Person } from '../../core/types.ts'

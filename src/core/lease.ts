@@ -1,7 +1,7 @@
 /**
  * Skip if already running.
  *
- * The arrangement this replaces had five schedules that could overlap, and
+ * An earlier design had five schedules that could overlap, and
  * they did: the same restart was queued four times in three minutes because
  * four runs each read the same pending row and each acted on it. Two runs
  * offboarding the same person at once is the same shape with a worse outcome.

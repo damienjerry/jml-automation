@@ -1,7 +1,7 @@
 /**
  * Prevents two opposite mistakes about a step that keeps failing.
  *
- * The automation this was ported from did both. A failed step was terminal: it
+ * An earlier design did both. A failed step was terminal: it
  * was recorded once and never tried again, so a transient provider error meant
  * an account stayed open with the record saying otherwise. And a blocked
  * deletion was re-evaluated every five minutes for ever, with nobody told, so

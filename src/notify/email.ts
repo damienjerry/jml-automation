@@ -53,7 +53,7 @@ export class EmailNotifier implements Notifier {
   async send(n: Notification): Promise<NotificationResult> {
     const to = this.recipients(n)
     if (to.length === 0) {
-      // Reported, never skipped. In the automation this replaces, an
+      // Reported, never skipped. In an earlier design, an
       // unresolvable manager address meant the note was quietly dropped while
       // the offboarding carried on to permanent deletion a week later.
       return {

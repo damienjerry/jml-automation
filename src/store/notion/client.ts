@@ -2,8 +2,7 @@
  * The few Notion calls the people store needs, over the shared HTTP client.
  *
  * Pagination is the whole reason this file exists rather than three inline
- * requests: a database query answers one hundred rows and a cursor, and the
- * automation this replaces read one page and silently dropped everybody past
+ * requests: a database query answers one hundred rows and a cursor, and an earlier design read one page and silently dropped everybody past
  * it. Every read here pages until `has_more` is false.
  *
  * Rate limits come back as 429 with Retry-After, which the HTTP client

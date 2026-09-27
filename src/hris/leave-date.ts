@@ -5,7 +5,7 @@
  * the last day the person is actually in. They differ more often than not,
  * and it is the second one that matters, because a laptop and a mailbox
  * should stop working when the person stops coming in, not when the paperwork
- * says the employment ended. The automation this was ported from originally
+ * says the employment ended. An earlier design originally
  * keyed on the contract date and left access open for the gap.
  *
  * The rule, in order:
