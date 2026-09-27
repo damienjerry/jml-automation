@@ -4,6 +4,34 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-27
+
+Released as `v1.0c`, and what the installer builds by default. The same two
+setups as `v1.0b` (1.0a and 1.0b), still experimental, with the installer
+and the platforms made solid. Package 1.2.0, for npm's semantic versioning.
+
+### Added
+
+- **A preview of the setup** (`./install.sh --preview`, `jml setup --preview`).
+- **The installer on Linux (apt or dnf) and on Windows through WSL2**, with the
+  right advice for each platform.
+- **CI on three platforms**: the full test suite on Ubuntu and on native
+  Windows, both blocking, and the real installer with the whole setup preview
+  run end to end on Ubuntu on every push.
+
+### Fixed
+
+Found by the first native Windows run:
+
+- A key file could not be referenced by a Windows path (`file:C:\...`).
+- A store that refused a newer database left the file open and locked.
+- A Windows checkout's line endings made the generated files read as stale.
+- `.env` cannot be made owner-only by file mode on Windows: documented, with
+  the `icacls` command.
+
+The details of each are in the sections below, which were written as the work
+landed.
+
 ## [1.1.0] - 2026-09-26: setup 1.0b
 
 Experimental, like 1.0.0: shared so a single IT person or a small team can
@@ -369,5 +397,6 @@ Read this before arming anything.
 Test coverage is not evidence about your tenant. 1541 tests across 159 files
 pass on this checkout, and every one of them runs against a fake.
 
+[1.2.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0c
 [1.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0b
 [1.0.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0.0

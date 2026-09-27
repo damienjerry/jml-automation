@@ -102,15 +102,13 @@ jobs:
       - name: Install, build, and walk the setup preview
         run: JML_REPO_URL="file://$GITHUB_WORKSPACE" JML_DIR="$RUNNER_TEMP/jml" JML_REF="$GITHUB_SHA" python3 tools/ci/drive-preview.py -- ./install.sh --yes --preview
 
-  # Native Windows is experimental: there is no Windows installer, and the
-  # supported route is WSL2, which is Linux. This job shows what breaks on
-  # native Windows rather than leaving it to a guess. It reports and does not
-  # block.
+  # There is no Windows installer, and the supported route is WSL2, which is
+  # Linux. This job keeps the code itself working on native Windows: its first
+  # run found four real defects. It blocks, so Windows cannot quietly regress.
   windows:
-    name: Test suite on native Windows (experimental, does not block)
+    name: Test suite on native Windows
     runs-on: windows-latest
     needs: disclosure-gate
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

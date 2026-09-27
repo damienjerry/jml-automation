@@ -68,7 +68,7 @@ What was tested, and how:
 | Ticketing (Suptask), owner notifications, Slack and email notifications | tested against fakes only |
 | Device unbind and handover | never run on real hardware; handover is refused until you canary it |
 | `install.sh` and `jml setup` | on macOS and on Linux (CI, Ubuntu): clone, install, build and the whole setup preview, end to end. The Docker Compose step has never started the containers end to end |
-| Native Windows | the test suite runs in CI and does not block; no installer; experimental |
+| Native Windows | the full test suite runs in CI on every push and must pass; no installer, so still experimental as a way to run it |
 
 The design comes from automation that runs these steps in production at one
 organisation, on setup 1.0a. This code's own write paths have not run against a
@@ -248,7 +248,7 @@ dry run.
 | --- | --- |
 | macOS | the reference. Offers Node and Docker Desktop through Homebrew, with a yes |
 | Linux (apt or dnf) | the installer and the setup preview run end to end in CI on Ubuntu. Offers git through the package manager; points to Node 22 and Docker Engine rather than installing them, because distribution Node packages are often too old and nothing is piped from the internet into a shell. The best place for the scheduled job: a server or VM that is always on |
-| Windows | **through WSL2**, which is Linux: install a distribution such as Ubuntu, then Docker Desktop with WSL integration, and run the installer inside it. **Native Windows has no installer**; the test suite runs on it in CI and is experimental |
+| Windows | **through WSL2**, which is Linux: install a distribution such as Ubuntu, then Docker Desktop with WSL integration, and run the installer inside it. **Native Windows has no installer**; the full test suite runs on it in CI on every push and must pass |
 
 Neither Linux nor Windows has run a real setup end to end on a person's machine.
 
@@ -267,7 +267,7 @@ cd jml-automation
 It checks for Node 22 and Docker (offering Homebrew, and doing nothing without a yes),
 clones, prints the exact commit and **stops until you say yes**, then installs dependencies
 with `--ignore-scripts` so no third-party package runs code on your machine, builds from the
-source you cloned, and hands over to `jml setup`. It builds the `v1.0b` tag by default, which
+source you cloned, and hands over to `jml setup`. It builds the `v1.0c` tag by default, which
 holds both setups; set `JML_REF` to another tag or a commit you have read to build that instead. That asks for your
 organisation, HR system and people store; asks for each credential and prints its minimum
 access; runs `jml doctor` until every check passes; rehearses the tombstone bootstrap before
