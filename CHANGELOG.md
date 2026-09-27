@@ -4,6 +4,30 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed after an outside review of v1.0c
+
+- **Bootstrapping from a CSV or sheet imported no history, and said ok.** A
+  table source lists everybody as employed and lets the dates say who has left;
+  bootstrap skipped the employed list before reading a date. It now decides who
+  has left by the same rule as the sync, and names anybody who left within
+  `leaver.terminationLookbackDays` of the bootstrap, because a tombstone means
+  their accounts are never closed by the toolkit.
+- **An unreadable Google response could read as verified.** An HTTP 200 whose
+  body was not JSON became an empty list, and an empty list of grants read as
+  "none remain". Every Google list read the toolkit concludes from (grants, app
+  passwords, licences, existing transfers, accounts) now refuses a body it
+  cannot read, a list field that is not a list, and an entry with no id.
+- **A CSV given to the wizard could be invisible to the container.** With
+  Docker, the sidecar sees only `data/`; the wizard now offers to copy the file
+  there and points the configuration at `./data/`.
+- **Setup 1.0b claimed more than it closes.** Day 0 closes password sign-in and
+  open sessions. Passkey sign-in, account recovery and SSO stay open until the
+  day-6 suspension; the docs, the run report line and the setup table now say
+  so and name the one-off Admin console check. Not tested against a real
+  tenant.
+
 ## [1.2.0] - 2026-09-27
 
 Released as `v1.0c`, and what the installer builds by default. The same two

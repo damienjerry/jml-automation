@@ -18,6 +18,7 @@
  * substitute for storing it.
  */
 
+import { listField, objectBody } from './body.ts'
 import type { Outcome } from '../../core/types.ts'
 import { authorisedRequest, type GoogleCtx } from './auth.ts'
 import { resolveUserId } from './directory.ts'
@@ -112,7 +113,8 @@ export async function findExistingTransfer(
     // read is how a second transfer starts, so the caller is told to retry.
     throw new Error(`listing existing transfers failed with status ${response.status}`)
   }
-  const transfers = response.json<TransferListBody>()?.dataTransfers ?? []
+  // Unreadable is not "no transfer exists": that would start a second one.
+  const transfers = listField<NonNullable<TransferListBody['dataTransfers']>[number]>(objectBody<TransferListBody>(response, 'listing existing transfers'), 'dataTransfers', 'listing existing transfers')
   const usable = transfers.find((t) => {
     const state = toState(t.overallTransferStatusCode)
     return typeof t.id === 'string' && t.id.length > 0 && state !== 'failed'

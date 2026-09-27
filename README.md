@@ -31,7 +31,7 @@ against fakes only.
 | HR source | HiBob | any: HiBob, a Google Sheet, a CSV export, or one adapter file for another HR API |
 | Accounts | JumpCloud in front of Google Workspace | Google Workspace alone |
 | Who creates the accounts | HiBob's JumpCloud integration, then JumpCloud's Google one | your HR system's Google integration, or you |
-| Day 0 closes sign-in by | suspending the JumpCloud account | replacing the Google password with one nobody holds, requiring a change at next sign-in, and ending every session |
+| Day 0 closes sign-in by | suspending the JumpCloud account | replacing the Google password with one nobody holds, requiring a change at next sign-in, and ending every session. **Passkey sign-in, account recovery and SSO are not closed until day 6**: check them once, see [docs/access-removal.md](docs/access-removal.md) |
 | Laptops | deletion is blocked while a machine is bound in JumpCloud | no device inventory: every deletion says none was checked, and you recover the laptop by hand |
 | Config | `identity.adapter: jumpcloud` | `identity.adapter: none` |
 
@@ -384,7 +384,7 @@ a tool that quietly ignores the difference arms a run somebody thought they were
   default: a log kept for years does not need to be a staff directory.
 - **MIT licensed.** See [LICENSE](LICENSE).
 - **Read the code.** Every safeguard carries a comment saying which failure it exists for,
-  and `test/regression/` holds 89 files each named for one of them, for example
+  and `test/regression/` holds 90 files each named for one of them, for example
   `tombstones-pruned-refire.test.ts`, `exit-rename-inherits-live-ids.test.ts`,
   `device-gate-fails-closed-on-error.test.ts`. That reasoning is the main thing here worth
   having.

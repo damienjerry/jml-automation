@@ -51,6 +51,7 @@ export async function storeCommand(io: CliIo, opts: StoreCommandOptions): Promis
         dryRun: opts.armed !== true,
         today: rt.clock.today(rt.cfg.org.timezone),
         clock: rt.clock,
+        recentLeaverDays: rt.cfg.leaver.terminationLookbackDays,
       })
       io.out(opts.json ? JSON.stringify(report, null, 2) + '\n' : renderBootstrap(report) + '\n')
       return report.ok ? 0 : 1

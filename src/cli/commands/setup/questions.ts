@@ -13,7 +13,9 @@
  * to land in `.env` at all.
  */
 
-import { readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { copyFile, mkdir, readFile } from 'node:fs/promises'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { SCOPE_USES } from '../../../connectors/google/scopes.ts'
 import { setConfig, setEnv, unsetEnv, type SetupState } from './files.ts'
 import type { Prompter } from './prompter.ts'
@@ -46,7 +48,7 @@ export interface CredentialDeps {
   opRead(ref: string): Promise<{ ok: boolean; value: string; error: string }>
 }
 
-export async function askConfiguration(p: Prompter, say: (l: string) => void, configPath: string, envPath: string): Promise<Answers> {
+export async function askConfiguration(p: Prompter, say: (l: string) => void, configPath: string, envPath: string, opts: { docker?: boolean } = {}): Promise<Answers> {
   say('\nYour organisation. None of this is secret; it goes into jml.config.yaml.')
   const name = await p.ask('Organisation name', { validate: (a) => (a ? null : 'required') })
   const domain = (await p.ask('Primary email domain, e.g. example.com', { validate: (a) => (DOMAIN.test(a) ? null : 'a domain like example.com') })).toLowerCase()
@@ -86,7 +88,8 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
       say('  Share the sheet with the service account address as a viewer; it is printed with the Google key below.')
       table.push([['hris', 'table', 'spreadsheetId'], id], [['hris', 'table', 'range'], range])
     } else {
-      const path = await p.ask('Path to the CSV file', { validate: (a) => (a ? null : 'required') })
+      let path = await p.ask('Path to the CSV file', { validate: (a) => (a ? null : 'required') })
+      if (opts.docker !== false) path = await csvIntoData(p, say, path, dirname(configPath))
       table.push([['hris', 'table', 'path'], path])
     }
     const format = await p.choose('Date format used in the table', [
@@ -135,6 +138,29 @@ export async function askConfiguration(p: Prompter, say: (l: string) => void, co
   await setConfig(configPath, values)
   say('\nwrote jml.config.yaml. Mode is dry-run and nothing is armed: every run plans and reports until you arm actions one at a time.')
   return { identity, hris, store, slack }
+}
+
+/**
+ * With Docker, the sidecar sees only this install's data/ folder, mounted at
+ * the same relative path, so a CSV anywhere else would read on this machine
+ * during setup and be missing inside the container on the first scheduled run.
+ * The one path both see the same way is ./data/<file>.
+ */
+async function csvIntoData(p: Prompter, say: (l: string) => void, given: string, installDir: string): Promise<string> {
+  const dataDir = join(installDir, 'data')
+  const absolute = isAbsolute(given) ? given : resolve(given)
+  const rel = relative(dataDir, absolute)
+  if (!rel.startsWith('..') && !isAbsolute(rel)) return './data/' + rel.split(sep).join('/')
+  const target = './data/' + basename(absolute)
+  say(`  With Docker, the scheduled runs happen inside a container that sees only this install's data/ folder, so the CSV has to live there: ${target}.`)
+  if (existsSync(absolute) && (await p.confirm(`Copy ${given} to ${target} now? Point your export at ${target} from now on, or the runs read this copy for ever.`, true))) {
+    await mkdir(dataDir, { recursive: true })
+    await copyFile(absolute, join(dataDir, basename(absolute)))
+    say(`  copied to ${target}`)
+  } else {
+    say(`  Put the file at ${target}, and point your export there.`)
+  }
+  return target
 }
 
 interface Needed {

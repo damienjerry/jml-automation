@@ -226,7 +226,7 @@ async function runStep(step: StepName, c: Ctx): Promise<'done' | 'stop'> {
       } else {
         c.say('jml.config.yaml exists; answering these questions updates it in place and keeps its comments')
       }
-      await askConfiguration(c.d.prompter, c.say, c.configPath, c.envPath)
+      await askConfiguration(c.d.prompter, c.say, c.configPath, c.envPath, { docker: !c.noDocker })
       return 'done'
     }
     case 'credentials': {

@@ -78,7 +78,10 @@ describe('bootstrapping a full HR history', () => {
   it('leaves employed people alone', async () => {
     const people = new MemoryPeopleStore()
     await people.init()
-    const all = [person(1), person(2), person(3)]
+    // Employed people have no leaving date. One on the employed list whose
+    // last day has passed has left, by the rule the sync uses, and is covered
+    // in test/regression/table-bootstrap-imported-no-history.test.ts.
+    const all = [person(1), person(2, { terminationDate: null }), person(3, { terminationDate: null })]
 
     const report = await bootstrapTombstones({
       people,

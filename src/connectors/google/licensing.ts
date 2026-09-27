@@ -11,6 +11,7 @@
  * success and it silently skips the revoke. A failed read throws.
  */
 
+import { listField, objectBody } from './body.ts'
 import type { Outcome } from '../../core/types.ts'
 import { GateError } from '../types.ts'
 import { authorisedRequest, type GoogleCtx } from './auth.ts'
@@ -214,8 +215,17 @@ async function listProductAssignmentsFor(
         `listing licences for ${productId} failed with status ${response.status}, so a held seat cannot be ruled out`,
       )
     }
-    const page = response.json<AssignmentListBody>() ?? {}
-    for (const item of page.items ?? []) {
+    let page: AssignmentListBody
+    let items: NonNullable<AssignmentListBody['items']>
+    try {
+      page = objectBody<AssignmentListBody>(response, `listing licences for ${productId}`)
+      items = listField(page, 'items', `listing licences for ${productId}`)
+    } catch (err) {
+      // Unreadable is not "no seat held": that would record a paid seat as
+      // already released.
+      throw new GateError(`${err instanceof Error ? err.message : String(err)}, so a held seat cannot be ruled out`)
+    }
+    for (const item of items) {
       if ((item.userId ?? '').toLowerCase() !== wanted) continue
       held.push({
         productId: item.productId ?? productId,

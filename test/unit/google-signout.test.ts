@@ -78,6 +78,37 @@ describe('signing a Google account out', () => {
   })
 })
 
+describe('an unreadable answer is never a clean one', () => {
+  // Found by an outside review: an HTTP 200 whose body was not JSON became an
+  // empty list, and an empty list read as "no grants remain", verified.
+  const garbage = { status: 200, body: 'not json at all' }
+
+  it('refuses a grant list that is not JSON, not a list, or has an entry with no id', async () => {
+    for (const bad of [garbage, { status: 200, body: { items: 'nope' } }, { status: 200, body: { items: [{ displayText: 'no id' }] } }]) {
+      const { connector } = connectorWith([signOutOk, revokeOk, noAsps, { method: 'GET', match: /\/tokens$/, respond: bad }])
+      const outcome = await connector.signOutUser(EMAIL)
+      expect(outcome.ok).toBe(false)
+      expect(outcome.verified).toBe(false)
+    }
+  })
+
+  it('refuses an app password list that cannot be read', async () => {
+    const { connector } = connectorWith([signOutOk, revokeOk, tokenLists([], []), { method: 'GET', match: /\/asps$/, respond: garbage }])
+    expect(await connector.signOutUser(EMAIL)).toMatchObject({ ok: false, verified: false })
+  })
+
+  it('refuses a licence list that cannot be read, rather than finding no seat', async () => {
+    const http = fakeHttp([{ method: 'GET', match: /licensing/, respond: garbage }, grantAllTokens()])
+    const connector = createGoogleConnector(testConfig({ licensingCustomerId: 'example.com' }), { http })
+    await expect(connector.listLicences(EMAIL)).rejects.toThrow(/not a JSON object/)
+  })
+
+  it('an empty list Google leaves out entirely is still empty', async () => {
+    const { connector } = connectorWith([signOutOk, revokeOk, aspLists([], []), { method: 'GET', match: /\/tokens$/, respond: { status: 200, body: { kind: 'admin#directory#tokenList' } } }])
+    expect(await connector.signOutUser(EMAIL)).toMatchObject({ ok: true, verified: true })
+  })
+})
+
 describe('closing a Google account on day 0, with no identity provider', () => {
   const userGet = (flag: boolean): Rule => ({ method: 'GET', match: /\/users\/[^/]+$/, respond: { status: 200, body: { primaryEmail: EMAIL, changePasswordAtNextLogin: flag } } })
 

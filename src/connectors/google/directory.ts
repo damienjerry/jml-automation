@@ -19,6 +19,7 @@ import type { MailboxState, ProviderUser } from '../types.ts'
 import { randomBytes } from 'node:crypto'
 import { authorisedRequest, type GoogleCtx } from './auth.ts'
 import { GOOGLE_SCOPES } from './scopes.ts'
+import { listField, objectBody, UnreadableResponse } from './body.ts'
 
 const DIRECTORY_BASE = 'https://admin.googleapis.com/admin/directory/v1'
 
@@ -224,7 +225,7 @@ export async function signOutUser(ctx: GoogleCtx, email: string): Promise<Outcom
   if (!signOut.ok) return failure('signing the Google account out', signOut.status)
 
   const before = await listTokenClients(ctx, email)
-  if (!before.ok) return failure('listing the Google account third-party grants', before.status)
+  if (!before.ok) return { ok: false, verified: false, error: before.error ?? 'the grants could not be listed', retryable: true }
   let failed = 0
   for (const clientId of before.clients) {
     const del = await authorisedRequest(ctx, {
@@ -241,7 +242,7 @@ export async function signOutUser(ctx: GoogleCtx, email: string): Promise<Outcom
   // App passwords sign in to mail and calendar clients without the account
   // password, so they outlive a password change. Revoked with the grants.
   const asps = await listAspIds(ctx, email)
-  if (!asps.ok) return failure('listing the Google account app passwords', asps.status)
+  if (!asps.ok) return { ok: false, verified: false, error: asps.error ?? 'the app passwords could not be listed', retryable: true }
   for (const codeId of asps.ids) {
     const del = await authorisedRequest(ctx, {
       method: 'DELETE',
@@ -259,7 +260,7 @@ export async function signOutUser(ctx: GoogleCtx, email: string): Promise<Outcom
     return {
       ok: false,
       verified: false,
-      error: `the Google account grants could not be read back after revoking them (status ${after.status})`,
+      error: `the Google account grants could not be read back after revoking them: ${after.error ?? aspsAfter.error ?? 'unreadable'}`,
       retryable: true,
     }
   }
@@ -273,7 +274,7 @@ export async function signOutUser(ctx: GoogleCtx, email: string): Promise<Outcom
   }
 }
 
-async function listAspIds(ctx: GoogleCtx, email: string): Promise<{ ok: boolean; status: number; ids: string[] }> {
+async function listAspIds(ctx: GoogleCtx, email: string): Promise<{ ok: boolean; status: number; ids: string[]; error?: string }> {
   const response = await authorisedRequest(ctx, {
     method: 'GET',
     url: `${userUrl(email)}/asps`,
@@ -281,13 +282,18 @@ async function listAspIds(ctx: GoogleCtx, email: string): Promise<{ ok: boolean;
     subject: ctx.cfg.adminEmail,
     label: 'google directory list app passwords',
   })
-  if (!response.ok) return { ok: false, status: response.status, ids: [] }
-  const items = response.json<{ items?: { codeId?: number | string }[] }>()?.items ?? []
-  const ids = items.map((item) => item.codeId).filter((id) => id !== undefined && id !== null).map(String)
-  return { ok: true, status: response.status, ids }
+  if (!response.ok) return { ok: false, status: response.status, ids: [], error: `listing app passwords failed with status ${response.status}` }
+  try {
+    const items = listField<{ codeId?: number | string }>(objectBody(response, 'listing app passwords'), 'items', 'listing app passwords')
+    // An item with no id cannot be revoked or counted, so it is not skipped.
+    if (items.some((item) => item.codeId === undefined || item.codeId === null)) throw new UnreadableResponse('listing app passwords returned an entry with no id')
+    return { ok: true, status: response.status, ids: items.map((item) => String(item.codeId)) }
+  } catch (err) {
+    return { ok: false, status: response.status, ids: [], error: err instanceof Error ? err.message : String(err) }
+  }
 }
 
-async function listTokenClients(ctx: GoogleCtx, email: string): Promise<{ ok: boolean; status: number; clients: string[] }> {
+async function listTokenClients(ctx: GoogleCtx, email: string): Promise<{ ok: boolean; status: number; clients: string[]; error?: string }> {
   const response = await authorisedRequest(ctx, {
     method: 'GET',
     url: `${userUrl(email)}/tokens`,
@@ -295,10 +301,14 @@ async function listTokenClients(ctx: GoogleCtx, email: string): Promise<{ ok: bo
     subject: ctx.cfg.adminEmail,
     label: 'google directory list tokens',
   })
-  if (!response.ok) return { ok: false, status: response.status, clients: [] }
-  const items = response.json<TokenListBody>()?.items ?? []
-  const clients = items.map((item) => item.clientId).filter((id): id is string => typeof id === 'string' && id.length > 0)
-  return { ok: true, status: response.status, clients }
+  if (!response.ok) return { ok: false, status: response.status, clients: [], error: `listing third-party grants failed with status ${response.status}` }
+  try {
+    const items = listField<{ clientId?: string }>(objectBody<TokenListBody>(response, 'listing third-party grants'), 'items', 'listing third-party grants')
+    if (items.some((item) => typeof item.clientId !== 'string' || item.clientId.length === 0)) throw new UnreadableResponse('listing third-party grants returned an entry with no client id')
+    return { ok: true, status: response.status, clients: items.map((item) => item.clientId as string) }
+  } catch (err) {
+    return { ok: false, status: response.status, clients: [], error: err instanceof Error ? err.message : String(err) }
+  }
 }
 
 /**
@@ -382,8 +392,8 @@ export async function listUsers(
     if (!response.ok) {
       throw new Error(`listing Google accounts failed with status ${response.status}`)
     }
-    const page = response.json<DirectoryListBody>() ?? {}
-    for (const body of page.users ?? []) users.push(toProviderUser(body))
+    const page = objectBody<DirectoryListBody>(response, 'listing Google accounts')
+    for (const body of listField<DirectoryUserBody>(page, 'users', 'listing Google accounts')) users.push(toProviderUser(body))
     cursor = page.nextPageToken
     pages += 1
   } while (cursor && pages < maxPages)

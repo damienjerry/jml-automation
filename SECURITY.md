@@ -14,7 +14,7 @@ software can:
 
 | Action | What it does to your estate | Reversible |
 | --- | --- | --- |
-| `suspend` | Setup 1.0a: suspends a JumpCloud account; the person cannot sign in anywhere that account fronts. Setup 1.0b: replaces the Google password with a random one nobody holds, requires a change at next sign-in, and ends every session. | 1.0a: yes, by hand. 1.0b: set a new password by hand |
+| `suspend` | Setup 1.0a: suspends a JumpCloud account; the person cannot sign in anywhere that account fronts. Setup 1.0b: replaces the Google password with a random one nobody holds, requires a change at next sign-in, and ends every session. It does not stop a passkey sign-in, an account recovery or SSO; those stay open until the day-6 suspension. | 1.0a: yes, by hand. 1.0b: set a new password by hand |
 | `autoreply` | Sets a vacation responder on a leaver's mailbox. | Yes |
 | `licence` | Deletes every paid licence assignment the account holds. | Re-assign, if seats remain |
 | `google_signout` | Ends every Google session the leaver has and revokes every grant they gave a third-party app. | Sessions: the person signs in again. Grants: the person re-authorises each app |
@@ -95,13 +95,13 @@ The whole set:
 
 ```
 npm ci
-npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1591 tests
+npm run gate      # identifiers, generated-file check, workflow validation, typecheck, lint, 1601 tests
 node bin/jml.mjs demo
 ```
 
 `npm run gate` on this checkout: 0 identifier errors and 0 warnings, 4
 generated artefacts current, 6 workflow files valid, typecheck and lint clean,
-1591 tests across 166 files passing. `npm run docs:links` separately: 51
+1601 tests across 168 files passing. `npm run docs:links` separately: 51
 Markdown files and 127 source files, 0 broken links.
 
 ## Credentials and blast radius

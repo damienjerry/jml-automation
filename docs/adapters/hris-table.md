@@ -98,7 +98,11 @@ also as the service account itself.
 
 ## A CSV file
 
-Set `hris.adapter: csv` and `hris.table.path`. Standard CSV: quoted fields,
+Set `hris.adapter: csv` and `hris.table.path`. **With Docker**, the scheduled
+runs happen inside a container that sees only the install's `data/` folder, so
+the file has to live there, as `./data/people.csv` or similar; `jml setup`
+offers to copy it there and says to point your export at it. Without Docker any
+path works. Standard CSV: quoted fields,
 commas and line breaks inside quotes, and a leading byte order mark are all
 fine. `hris.table.maxAgeHours` checks the file's modified time, so an export
 that stopped running is refused rather than read as if nothing had changed.

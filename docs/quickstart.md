@@ -13,8 +13,10 @@ does not remove ([access-removal.md](access-removal.md)).
 
 **On setup 1.0b** (Google Workspace, no identity provider) the steps are the
 same, with three differences: step 3 asks for no JumpCloud key; `suspend` in
-step 10 closes the Google account (a password nobody holds, a forced change,
-every session ended) and needs `admin.directory.user.security` delegated; and
+step 10 closes password sign-in on the Google account (a password nobody holds,
+a forced change, every session ended) and needs `admin.directory.user.security`
+delegated. It does not close passkey sign-in, account recovery or SSO: check
+those once, as [access-removal.md](access-removal.md#setup-10b-google-workspace-with-no-identity-provider) says; and
 there is no device inventory, so step 12's device gate is replaced by a line on
 every deletion saying no machine was checked. For a CSV or sheet as the HR
 source, see [adapters/hris-table.md](adapters/hris-table.md).

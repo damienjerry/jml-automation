@@ -401,7 +401,7 @@ const closeGoogle: Leg = {
     return result(
       'close_google',
       record,
-      verdict(record, 'Google account closed: password replaced with one nobody holds, change at next sign-in read back, every session ended', 'closing the Google account failed'),
+      verdict(record, 'Google password sign-in closed: password replaced with one nobody holds, change at next sign-in read back, every session ended (passkey sign-in and recovery are not closed until the account is suspended)', 'closing the Google account failed'),
     )
   },
 }

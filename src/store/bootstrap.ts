@@ -16,7 +16,8 @@
  * compared as numbers rather than as an impression.
  */
 
-import { SystemClock, type Clock } from '../core/clock.ts'
+import { addDays, SystemClock, type Clock } from '../core/clock.ts'
+import { leaveDateOf } from '../hris/leave-date.ts'
 import { deriveHrisStatus } from '../hris/status.ts'
 import { HrisIncomplete, type HrisSnapshot } from '../hris/types.ts'
 import type { Person } from '../core/types.ts'
@@ -55,6 +56,12 @@ export interface BootstrapOptions {
   clock?: Clock
   /** Recorded on each row so a bootstrapped tombstone is distinguishable. */
   source?: string
+  /**
+   * A leaver whose last day falls within this many days before today is named
+   * in a warning. A tombstone means the toolkit never closes their accounts, so
+   * somebody who left last week needs a person to check. Default 30.
+   */
+  recentLeaverDays?: number
 }
 
 export interface BootstrapReport {
@@ -122,18 +129,26 @@ export async function bootstrapTombstones(options: BootstrapOptions): Promise<Bo
   let skippedHired = 0
   let skippedNoEmail = 0
 
+  const recentSince = addDays(today, -(options.recentLeaverDays ?? 30))
+  const recent: string[] = []
+
   for (const record of snapshot.all) {
-    if (snapshot.activeIds.has(record.hrisId)) {
+    // Who has left is decided by the one rule the sync uses, never by the
+    // employed list alone. A table source lists everybody as employed and
+    // lets the dates say who has gone; reading the list alone imported no
+    // history from it at all while reporting success.
+    const status = deriveHrisStatus(record, snapshot.activeIds, today)
+    if (status === 'active') {
       skippedActive += 1
       continue
     }
-    // The same rule the sync applies, so the two cannot disagree about who
-    // has left. A future starter is off the employed list and is not a leaver.
-    if (deriveHrisStatus(record, snapshot.activeIds, today) === 'hired') {
+    if (status === 'hired') {
       skippedHired += 1
       continue
     }
     inactive += 1
+    const left = leaveDateOf(record)
+    if (left !== null && left >= recentSince) recent.push(`${record.displayName} (${record.hrisId}, last day ${left})`)
 
     const existing = await people.get(record.hrisId)
     if (existing) {
@@ -190,6 +205,13 @@ export async function bootstrapTombstones(options: BootstrapOptions): Promise<Bo
       await people.upsert(tombstone)
     }
     tombstoned += 1
+  }
+
+  if (recent.length > 0) {
+    const named = recent.slice(0, 20).join('; ') + (recent.length > 20 ? `; and ${recent.length - 20} more` : '')
+    warnings.push(
+      `${recent.length} leaver(s) left within the last ${options.recentLeaverDays ?? 30} days and are imported as closed: the toolkit will never close their accounts. Check each by hand: ${named}`,
+    )
   }
 
   const day0SelectionAfter = await people.countExact(DAY0_SELECTION)
