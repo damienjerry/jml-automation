@@ -21,6 +21,7 @@ import { leaverCommand, type LeaverCommandOptions } from './leaver.ts'
 import { joinerCommand, type JoinerCommandOptions } from './joiner.ts'
 import { n8nCommand, n8nImportCommand } from './n8n.ts'
 import { setupCommand } from './setup/index.ts'
+import { shouldUseColour } from './setup/ui.ts'
 import { runCommand } from './run.ts'
 import { serveCommand } from './serve.ts'
 import { storeCommand, type StoreCommandOptions } from './store.ts'
@@ -192,6 +193,7 @@ export const COMMANDS: readonly CommandSpec[] = [
         ...(value(args, 'n8n-url') ? { n8nUrl: value(args, 'n8n-url') } : {}),
         dryRun: bool(args, 'dry-run'),
         preview: bool(args, 'preview'),
+        colour: shouldUseColour(),
         noDocker: bool(args, 'no-docker'),
       }),
   },

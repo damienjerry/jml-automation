@@ -8,6 +8,7 @@
  */
 
 import { createInterface } from 'node:readline'
+import { beforeQuestion, bold, cyan, dim, yellow } from './ui.ts'
 import { Writable } from 'node:stream'
 
 export interface Prompter {
@@ -33,16 +34,18 @@ export function terminalPrompter(input: NodeJS.ReadableStream = process.stdin, o
 
   const prompter: Prompter = {
     async ask(question, opts = {}) {
+      output.write(beforeQuestion())
       for (;;) {
-        const suffix = opts.default !== undefined && opts.default !== '' ? ` [${opts.default}]` : ''
-        const answer = (await line(`${question}${suffix}: `)) || opts.default || ''
+        const suffix = opts.default !== undefined && opts.default !== '' ? ' ' + dim('(Enter for ') + cyan(opts.default) + dim(')') : ''
+        const answer = (await line(`${bold(question)}${suffix}: `)) || opts.default || ''
         const problem = opts.validate?.(answer) ?? null
         if (!problem) return answer
-        output.write(`  ${problem}\n`)
+        output.write(yellow(`  That is not right: ${problem}. Try again.`) + '\n')
       }
     },
     async secret(question) {
-      output.write(`${question} (input hidden): `)
+      output.write(beforeQuestion())
+      output.write(`${bold(question)} ${dim('(hidden as you type)')}: `)
       muted = true
       try {
         return await line('')
@@ -52,20 +55,28 @@ export function terminalPrompter(input: NodeJS.ReadableStream = process.stdin, o
       }
     },
     async choose(question, options, defaultValue) {
-      output.write(`${question}\n`)
-      options.forEach((o, i) => output.write(`  ${i + 1}. ${o.label}${o.value === defaultValue ? '  (default)' : ''}\n`))
+      output.write(beforeQuestion())
+      output.write(`${bold(question)}\n`)
+      const defaultIndex = options.findIndex((o) => o.value === defaultValue)
+      options.forEach((o, i) => output.write(`  ${cyan(String(i + 1))}  ${o.label}\n`))
+      const hint = defaultIndex >= 0 ? `Type a number from 1 to ${options.length}, or press Enter for ${defaultIndex + 1}` : `Type a number from 1 to ${options.length}`
       for (;;) {
-        const answer = await line('choose a number: ')
+        const answer = await line(`  ${dim(hint)}: `)
         if (!answer && defaultValue !== undefined) return defaultValue
         const picked = options[Number(answer) - 1]
         if (picked) return picked.value
-        output.write(`  pick 1 to ${options.length}\n`)
+        output.write(yellow(`  Type a number from 1 to ${options.length}.`) + '\n')
       }
     },
     async confirm(question, defaultValue = false) {
-      const answer = (await line(`${question} ${defaultValue ? '[Y/n]' : '[y/N]'}: `)).toLowerCase()
-      if (!answer) return defaultValue
-      return answer === 'y' || answer === 'yes'
+      output.write(beforeQuestion())
+      for (;;) {
+        const answer = (await line(`${bold(question)} ${dim(`(y or n, Enter for ${defaultValue ? 'yes' : 'no'})`)}: `)).toLowerCase()
+        if (!answer) return defaultValue
+        if (answer === 'y' || answer === 'yes') return true
+        if (answer === 'n' || answer === 'no') return false
+        output.write(yellow('  Type y for yes or n for no.') + '\n')
+      }
     },
     close() {
       rl.close()

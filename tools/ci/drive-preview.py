@@ -55,7 +55,7 @@ def main() -> int:
             last = time.time()
             continue
         text = ANSI.sub('', out.decode(errors='replace'))
-        if 'PREVIEW.' in text and answers and time.time() - last > QUIET_S and text.rstrip(' ').endswith(':'):
+        if 'PREVIEW' in text and answers and time.time() - last > QUIET_S and text.rstrip(' ').endswith(':'):
             os.write(fd, (answers.pop(0) + '\r').encode())
             last = time.time()
     else:

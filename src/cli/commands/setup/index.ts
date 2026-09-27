@@ -36,6 +36,7 @@ import { CONFIG_FILE, ENV_FILE, initCommand } from '../init.ts'
 import { getConfig, loadState, parseEnv, saveState, setEnv, STEPS, type SetupState, type StepName } from './files.ts'
 import { terminalPrompter, type Prompter } from './prompter.ts'
 import { askConfiguration, askCredentials, type Answers } from './questions.ts'
+import { format, setColour, stepBanner } from './ui.ts'
 
 export interface ShellResult {
   code: number
@@ -66,6 +67,8 @@ export interface SetupOptions {
   preview?: boolean
   /** Internal: set by the preview wrapper on the inner run. */
   previewing?: boolean
+  /** Colour and layout for a person at a terminal. Off for tests, pipes and CI. */
+  colour?: boolean
   noDocker?: boolean
   n8nUrl?: string
 }
@@ -73,11 +76,11 @@ export interface SetupOptions {
 /** What each acting step would do, said in its place during a preview. */
 const PREVIEW: Partial<Record<StepName, string>> = {
   doctor:
-    'Here it runs jml doctor: one read per credential and one per Google scope, printed as a table. If a row fails you choose: fix it and check again, carry on anyway (setup then finishes INCOMPLETE), or stop.',
+    'Here it runs jml doctor: one read per key and one per Google permission, shown as a pass or FAIL list. If anything fails you choose: fix it and test again, type the keys again, carry on anyway (setup then finishes as incomplete), or stop.',
   bootstrap:
-    'Here it rehearses importing your HR history as closed records and shows the counts, then asks "Write those tombstones?". It then runs jml store verify: the number of people it would offboard today must be 0 before anything can be armed.',
-  compose: 'Here it runs docker compose up -d --build, starting the sidecar and n8n on this machine, and waits until both report healthy.',
-  n8n: 'Here it asks for an n8n API key (Settings, n8n API, with the scopes workflow:list, workflow:create and credential:create), then creates the four n8n credentials and imports the six workflows, all inactive.',
+    'Here it counts everyone in your list who has already left, and shows the numbers. It then asks whether to save them as closed records, and checks that nobody would be offboarded today, which must be 0 before anything is switched on.',
+  compose: 'Here it runs docker compose up, starting the toolkit and the scheduler (n8n) on this computer, and waits until both are ready.',
+  n8n: 'Here it asks for an n8n API key (in n8n: Settings, then n8n API), then adds the six scheduled jobs and the keys they use, all switched off.',
 }
 
 /** A stand-in for a 1Password read during a preview: shaped like a service account key so the key check passes. */
@@ -89,13 +92,24 @@ const PREVIEW_SECRET = JSON.stringify({
 })
 
 const PLAN: Record<StepName, string> = {
-  prerequisites: 'check Node 22.13+, and Docker with Compose unless --no-docker',
-  configuration: 'write jml.config.yaml (jml init) and ask for your organisation, HR system, store and notifications',
-  credentials: 'ask for each credential, show its minimum access, and write the values to .env (mode 600)',
-  doctor: 'run jml doctor until every credential and scope passes',
-  bootstrap: 'rehearse importing your HR history as tombstones, then do it on a yes, then jml store verify',
-  compose: 'docker compose up -d --build, and wait for the sidecar and n8n to report healthy',
-  n8n: 'ask for an n8n API key, create the four n8n credentials and import the six workflows, all inactive',
+  prerequisites: 'Checks for Node.js 22.13 or newer, and for Docker unless you chose --no-docker. Installs nothing.',
+  configuration: 'Asks about your organisation, where your list of people is kept, and where summaries go. Nothing secret.',
+  credentials: 'Asks for each access key the toolkit needs, says exactly what access each one must have, and saves it.',
+  doctor: 'Tests every key and every Google permission with one read each. Changes nothing anywhere.',
+  bootstrap: 'Records everyone who has already left as closed, so the first real run never mistakes them for new leavers. Shows you the numbers before saving. Changes nothing in Google or JumpCloud.',
+  compose: 'Starts the toolkit and the scheduler (n8n) on this computer with Docker.',
+  n8n: 'Adds the six scheduled jobs to n8n, all switched off until you turn them on.',
+}
+
+/** What each step is called on screen. */
+const TITLE: Record<StepName, string> = {
+  prerequisites: 'Check this computer',
+  configuration: 'Your organisation',
+  credentials: 'Access keys',
+  doctor: 'Test the access',
+  bootstrap: 'Record past leavers',
+  compose: 'Start the services',
+  n8n: 'Add the scheduled jobs',
 }
 
 export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial<SetupDeps>): Promise<number> {
@@ -109,13 +123,15 @@ export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial
     }
     process.once('SIGINT', onSignal)
     process.once('SIGTERM', onSignal)
-    io.out('\nPREVIEW. Every question is real; nothing is kept. Answers go into a temporary folder that is deleted at the end,\n')
-    io.out('and the steps that act (doctor, bootstrap, Docker, n8n) say what they would do instead. Nothing is read from 1Password,\n')
-    io.out('and no network call is made. Type anything at a secret prompt: the value never leaves this machine.\n')
+    if (opts.colour !== undefined) setColour(opts.colour)
+    io.out(format('# PREVIEW: nothing you answer is kept') + '\n')
+    io.out(format('~ Every question is the real one. Your answers go into a temporary folder that is deleted at the end.') + '\n')
+    io.out(format('~ The steps that would change something say what they would do instead. Nothing is read from 1Password.') + '\n')
+    io.out(format('~ At a secret question you can type anything: it never leaves this computer.') + '\n')
     try {
       const code = await setupCommand(io, { ...opts, preview: false, previewing: true, dir: scratch }, deps)
-      io.out('\nPreview finished. The temporary folder has been deleted; nothing was written anywhere else.\n')
-      io.out('For a real setup, run jml setup (or ./install.sh) without --preview.\n')
+      io.out(format('+ Preview finished. The temporary folder has been deleted; nothing was written anywhere else.') + '\n')
+      io.out(format('~ For a real setup, run ./install.sh (or jml setup) without --preview.') + '\n')
       return code === 0 ? 0 : code
     } finally {
       process.off('SIGINT', onSignal)
@@ -125,7 +141,8 @@ export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial
   }
   const previewing = Boolean(opts.previewing)
   const dir = opts.dir ?? io.cwd
-  const say = (line: string): void => io.out(line + '\n')
+  if (opts.colour !== undefined) setColour(opts.colour)
+  const say = (line: string): void => io.out(format(line) + '\n')
   const configPath = join(dir, CONFIG_FILE)
   const envPath = join(dir, ENV_FILE)
   const statePath = join(dir, 'data', 'setup-state.json')
@@ -157,10 +174,10 @@ export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial
   try {
     for (const step of steps) {
       if (state.completed.includes(step)) {
-        say(`\n= ${step}: done on an earlier run (--from ${step} to redo it)`)
+        say(stepBanner(steps.indexOf(step) + 1, steps.length, TITLE[step], `done on an earlier run (jml setup --from ${step} redoes it)`))
         continue
       }
-      say(`\n= ${step}: ${PLAN[step]}`)
+      say(stepBanner(steps.indexOf(step) + 1, steps.length, TITLE[step], PLAN[step]))
       const outcome = await runStep(step, { io, d, say, dir, configPath, envPath, state, n8nUrl, noDocker: Boolean(opts.noDocker), previewing })
       if (outcome === 'stop') {
         await saveState(statePath, state)
@@ -175,17 +192,19 @@ export async function setupCommand(io: CliIo, opts: SetupOptions, deps?: Partial
   }
 
   if (previewing) {
-    say('\nThis is where a real setup ends: "Setup is complete, and nothing is armed", followed by how to run the first dry run.')
+    say('# End of the preview')
+    say('~ A real setup ends here with "Setup is complete, and nothing is switched on", and what to do next.')
     return 0
   }
   if (state.overrides.length > 0) {
-    say(`\nSetup finished INCOMPLETE: you carried on past ${state.overrides.join(', ')}. Nothing is armed. Fix it and run jml setup --from ${state.overrides[0]}.`)
+    say(`# Setup finished INCOMPLETE`)
+    say(`! You carried on past a failed step (${state.overrides.join(', ')}). Nothing is switched on. Fix it, then run jml setup --from ${state.overrides[0]}.`)
     return 1
   }
-  say('\nSetup is complete, and nothing is armed.')
-  say('  Next: open n8n, run jml-doctor and jml-pipeline once by hand, read what they would do, then activate them.')
-  say('  Arming happens one action at a time in jml.config.yaml; docs/quickstart.md sections 10 to 12 walk through it.')
-  say('  To run jml yourself on this machine:  set -a; . ./.env; set +a; node bin/jml.mjs doctor')
+  say('# Setup is complete, and nothing is switched on')
+  say('~ Next: open n8n, run the jml-doctor and jml-pipeline jobs once by hand, and read what they would do. Then switch them on.')
+  say('~ Actions are switched on one at a time in jml.config.yaml; docs/quickstart.md, steps 10 to 12, walks through it.')
+  say('~ To run the toolkit yourself on this computer:  set -a; . ./.env; set +a; node bin/jml.mjs doctor')
   return 0
 }
 
@@ -206,14 +225,14 @@ interface Ctx {
 async function runStep(step: StepName, c: Ctx): Promise<'done' | 'stop'> {
   const preview = c.previewing ? PREVIEW[step] : undefined
   if (preview) {
-    c.say('  (preview) ' + preview)
+    c.say('~ (preview) ' + preview)
     return 'done'
   }
   switch (step) {
     case 'prerequisites': {
       const outcome = await prerequisites(c)
       if (outcome === 'stop' && c.previewing) {
-        c.say('  (preview) A real setup stops here until this is fixed. The preview carries on.')
+        c.say('~ (preview) A real setup stops here until this is fixed. The preview carries on.')
         return 'done'
       }
       return outcome
@@ -222,9 +241,9 @@ async function runStep(step: StepName, c: Ctx): Promise<'done' | 'stop'> {
       if (!(await exists(c.configPath))) {
         const code = await initCommand({ ...c.io, out: () => {} }, { dir: c.dir })
         if (code !== 0) throw new CliError('jml init failed', { exitCode: code })
-        c.say('wrote jml.config.yaml and .env with a random sidecar token and audit salt')
+        c.say('+ Created jml.config.yaml and .env in this folder.')
       } else {
-        c.say('jml.config.yaml exists; answering these questions updates it in place and keeps its comments')
+        c.say('~ jml.config.yaml is already here. Your answers update it, and keep everything else in it.')
       }
       await askConfiguration(c.d.prompter, c.say, c.configPath, c.envPath, { docker: !c.noDocker })
       return 'done'
@@ -251,26 +270,26 @@ async function runStep(step: StepName, c: Ctx): Promise<'done' | 'stop'> {
 async function prerequisites(c: Ctx): Promise<'done' | 'stop'> {
   const [major, minor] = process.versions.node.split('.').map(Number) as [number, number]
   if (major < 22 || (major === 22 && minor < 13)) {
-    c.say(`Node ${process.versions.node} is too old; 22.13 or newer is needed. On a Mac: brew install node@22`)
+    c.say(`! Node.js ${process.versions.node} is too old: 22.13 or newer is needed. Install it from https://nodejs.org, then run this again.`)
     return 'stop'
   }
-  c.say(`node ${process.versions.node}: ok`)
+  c.say(`+ Node.js ${process.versions.node}`)
   if (c.noDocker) {
-    c.say('docker: skipped (--no-docker). The compose and n8n steps will not run; the CLI works on its own.')
+    c.say('~ Docker: not used (--no-docker). The last two steps are skipped; the toolkit runs from the command line on its own.')
     return 'done'
   }
   const server = await c.d.shell('docker', ['version', '--format', '{{.Server.Version}}'])
   if (server.code !== 0) {
-    c.say('docker: not running. Install Docker Desktop (https://www.docker.com/products/docker-desktop/), start it, and run jml setup again.')
-    c.say('  Or run jml setup --no-docker to set up the CLI alone.')
+    c.say('! Docker is not running. Install Docker Desktop (https://www.docker.com/products/docker-desktop/), start it, and run this again.')
+    c.say('~ Or run jml setup --no-docker to set up the command line tool on its own.')
     return 'stop'
   }
   const composeV = await c.d.shell('docker', ['compose', 'version', '--short'])
   if (composeV.code !== 0) {
-    c.say('docker compose: not available. Docker Desktop ships it; update Docker and run jml setup again.')
+    c.say('! Docker Compose is missing. It comes with Docker Desktop: update Docker, then run this again.')
     return 'stop'
   }
-  c.say(`docker ${server.stdout.trim()}, compose ${composeV.stdout.trim()}: ok`)
+  c.say(`+ Docker ${server.stdout.trim()}, with Compose ${composeV.stdout.trim()}`)
   return 'done'
 }
 
@@ -288,20 +307,20 @@ async function doctor(c: Ctx): Promise<'done' | 'stop'> {
       c.say('jml doctor did not return a report:\n' + res.out.slice(0, 2000))
     } else {
       for (const row of report.rows) {
-        c.say(`  ${row.skipped ? 'skip' : row.ok ? 'pass' : 'FAIL'}  ${row.name}: ${row.detail}`)
-        if (!row.ok) c.say(`        ${row.remediation ? row.remediation + ' ' : ''}see ${row.docsAnchor}`)
+        c.say(`${row.skipped ? '~ skip' : row.ok ? '+ pass' : '! FAIL'}  ${row.name}: ${row.detail}`)
+        if (!row.ok) c.say(`~       What to do: ${row.remediation ? row.remediation + ' ' : ''}See ${row.docsAnchor}.`)
       }
       if (report.ok && res.code === 0) {
-        c.say('every check passed')
+        c.say('+ Every check passed.')
         c.state.overrides = c.state.overrides.filter((o) => o !== 'doctor')
         return 'done'
       }
     }
-    const next = await c.d.prompter.choose('Not every check passed.', [
-      { value: 'retry', label: 'fix it (for example in the Google Admin console) and check again' },
-      { value: 'credentials', label: 'enter the credentials again' },
-      { value: 'continue', label: 'carry on anyway (recorded: setup will finish as incomplete until doctor passes)' },
-      { value: 'stop', label: 'stop here and come back later' },
+    const next = await c.d.prompter.choose('Some checks failed. What do you want to do?', [
+      { value: 'retry', label: 'I have fixed it: test again' },
+      { value: 'credentials', label: 'Type the keys again' },
+      { value: 'continue', label: 'Carry on anyway (setup will finish as incomplete until every check passes)' },
+      { value: 'stop', label: 'Stop here and come back later' },
     ], 'retry')
     if (next === 'stop') return 'stop'
     if (next === 'continue') {
@@ -320,7 +339,7 @@ async function bootstrap(c: Ctx): Promise<'done' | 'stop'> {
   const where = adapter === 'notion' ? 'your Notion people database' : 'the local SQLite file'
   if (adapter === 'notion') {
     if ((await getConfig(c.configPath, ['store', 'readOnly'])) === true) {
-      c.say('The Notion store is read-only, so there is nothing to bootstrap: the automation that owns the database already holds its leavers. Skipped.')
+      c.say('~ Skipped: the Notion database is read-only here, and the automation that writes to it already holds the past leavers.')
       return 'done'
     }
     // The only schema change this toolkit makes to a Notion database, shown before it happens.
@@ -331,34 +350,35 @@ async function bootstrap(c: Ctx): Promise<'done' | 'stop'> {
     }
     c.say(plan.out.trimEnd())
     if (!/already has every mapped property/.test(plan.out)) {
-      if (!(await c.d.prompter.confirm('Add those properties to the Notion database? Nothing is removed or retyped.', false))) return 'stop'
+      c.say('~ Adding columns removes and changes nothing that is already there.')
+      if (!(await c.d.prompter.confirm('Add the missing columns to the Notion database?', false))) return 'stop'
       const applied = await c.d.jml(['store', 'migrate', '--config', c.configPath, '--armed'], env)
       c.say(applied.out.trimEnd())
       if (applied.code !== 0) return 'stop'
     }
   }
-  c.say('Every person the HR system lists as not employed becomes a tombstone, so the first real run cannot mistake a historic leaver for a new one.')
+  c.say('~ Everyone in your list who has already left is saved as a closed record, so the first real run never treats them as new leavers. Here are the numbers first; nothing is saved yet.')
   const rehearsal = await c.d.jml(['store', 'bootstrap', '--config', c.configPath, '--json'], env)
   const r = parseJson<{ scanned: number; tombstoned: number; skippedActive: number; skippedHired: number; day0SelectionAfter: number; warnings: string[]; ok: boolean }>(rehearsal.out)
   if (!r || rehearsal.code > 1) {
     c.say('the rehearsal did not return a report:\n' + rehearsal.out.slice(0, 2000))
     return 'stop'
   }
-  c.say(`  rehearsal: ${r.scanned} people read, ${r.tombstoned} would become tombstones, ${r.skippedActive} employed and ${r.skippedHired ?? 0} not yet started left alone`)
-  for (const w of r.warnings.slice(0, 10)) c.say(`  warning: ${w}`)
+  c.say(`+ Read ${r.scanned} people: ${r.tombstoned} have already left, ${r.skippedActive} work here now, ${r.skippedHired ?? 0} have not started yet.`)
+  for (const w of r.warnings.slice(0, 10)) c.say(`! ${w}`)
   if (!r.ok) {
     // Somebody would still be selected for offboarding. Not a reason to stop
     // writing tombstones, but the operator must see it and say yes to it.
-    c.say(`  ${r.day0SelectionAfter} person(s) would still be selected for offboarding after the bootstrap. Read them with jml store verify before arming anything.`)
+    c.say(`! ${r.day0SelectionAfter} person(s) would still be offboarded after this. Check them with jml store verify before switching anything on.`)
   }
-  if (!(await c.d.prompter.confirm(`Write those tombstones to ${where}?`, r.ok))) return 'stop'
+  if (!(await c.d.prompter.confirm(`Save the ${r.tombstoned} people who have left as closed records in ${where}? This changes nothing in Google or JumpCloud.`, r.ok))) return 'stop'
   const armed = await c.d.jml(['store', 'bootstrap', '--config', c.configPath, '--armed', '--json'], env)
   const a = parseJson<{ tombstoned: number; day0SelectionAfter: number; ok: boolean }>(armed.out)
   if (!a || armed.code > 1) {
     c.say('the bootstrap did not complete:\n' + armed.out.slice(0, 2000))
     return 'stop'
   }
-  c.say(`  wrote ${a.tombstoned} tombstones; ${a.day0SelectionAfter} people would start offboarding today${a.day0SelectionAfter > 0 ? ' (read them with jml store verify before arming anything)' : ''}`)
+  c.say(`+ Saved ${a.tombstoned} closed records. People who would be offboarded today: ${a.day0SelectionAfter}${a.day0SelectionAfter > 0 ? ' (check them with jml store verify before switching anything on)' : ''}.`)
   // People still selected for offboarding may be genuine leavers or a data
   // fault, and only a person can tell which. Either way setup is not
   // finished: it is recorded like a doctor override, so the run ends as
@@ -368,7 +388,7 @@ async function bootstrap(c: Ctx): Promise<'done' | 'stop'> {
   const verify = await c.d.jml(['store', 'verify', '--config', c.configPath], env)
   c.say(verify.out.trimEnd())
   if (verify.code !== 0) {
-    c.say('jml store verify did not pass, so setup stops here.')
+    c.say('! The check (jml store verify) did not pass, so setup stops here.')
     return 'stop'
   }
   return 'done'
@@ -379,7 +399,7 @@ async function compose(c: Ctx): Promise<'done' | 'stop'> {
   if (!env['JML_DRY_RUN']) await setEnv(c.envPath, 'JML_DRY_RUN', 'true')
   const up = await c.d.shell('docker', ['compose', 'up', '-d', '--build'], { inherit: true })
   if (up.code !== 0) {
-    c.say('docker compose up failed; the output above says why.')
+    c.say('! Docker could not start the services. The lines above say why.')
     return 'stop'
   }
   for (let i = 0; i < 60; i += 1) {
@@ -387,19 +407,19 @@ async function compose(c: Ctx): Promise<'done' | 'stop'> {
     const sidecar = ps.stdout.split('\n').find((l) => l.startsWith('jml '))?.split(' ')[1] ?? ''
     const n8nUp = await n8nHealthy(c.d.http, c.n8nUrl)
     if (sidecar === 'healthy' && n8nUp) {
-      c.say(`sidecar healthy, n8n answering on ${c.n8nUrl}`)
+      c.say(`+ The toolkit is running, and n8n is at ${c.n8nUrl}`)
       return 'done'
     }
     await c.d.sleep(3_000)
   }
-  c.say('the containers did not report healthy within three minutes. docker compose logs jml n8n shows why.')
+  c.say('! The services were not ready after three minutes. Run docker compose logs jml n8n to see why.')
   return 'stop'
 }
 
 async function n8n(c: Ctx): Promise<'done' | 'stop'> {
-  c.say(`Open ${c.n8nUrl} in a browser. Create the owner account if n8n asks, then go to Settings, n8n API, and create an API key.`)
-  c.say('The key is used for this import only and is not saved.')
-  const apiKey = await c.d.prompter.secret('n8n API key')
+  c.say(`~ Open ${c.n8nUrl} in a browser. If n8n asks, create its owner account. Then go to Settings, then n8n API, and create an API key.`)
+  c.say('~ The key is used only now, to add the jobs, and is not saved.')
+  const apiKey = await c.d.prompter.secret('Paste the n8n API key')
   if (!apiKey) return 'stop'
 
   // Generated once and kept, like the sidecar token, so a re-run does not
@@ -429,9 +449,9 @@ async function n8n(c: Ctx): Promise<'done' | 'stop'> {
   })
   for (const [name, cred] of Object.entries(report.credentials)) if (cred) c.state.n8nCredentialIds[name] = cred.id
   for (const wf of report.workflows) c.say(`  ${wf.state.padEnd(15)} ${wf.name}${wf.detail ? '  ' + wf.detail : ''}`)
-  for (const name of report.skippedCredentials) c.say(`  no value for credential "${name}"; the workflows that post to Slack will fail visibly until you add it in n8n`)
-  for (const e of report.errors) c.say(`  error: ${e}`)
-  c.say('The form login is N8N_FORM_USER / N8N_FORM_PASSWORD in .env. The ticketing tool sends JML_INBOUND_WEBHOOK_TOKEN as a bearer token.')
+  for (const name of report.skippedCredentials) c.say(`! No value for the n8n key "${name}": the jobs that post to Slack will fail, visibly, until you add it in n8n.`)
+  for (const e of report.errors) c.say(`! ${e}`)
+  c.say('~ The login for the forms in n8n is N8N_FORM_USER and N8N_FORM_PASSWORD, saved in .env.')
   return report.ok ? 'done' : 'stop'
 }
 

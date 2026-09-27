@@ -231,7 +231,7 @@ describe('jml setup', () => {
     const dir = checkout()
     const h = harness(fullRunAnswers(googleKeyFile(dir)), { verifyCode: 1 })
     expect(await setupCommand(h.io, { dir }, h.deps)).toBe(1)
-    expect(h.output()).toContain('jml store verify did not pass')
+    expect(h.output()).toContain('did not pass, so setup stops here')
     const state = JSON.parse(readFileSync(join(dir, 'data', 'setup-state.json'), 'utf8'))
     expect(state.completed).not.toContain('bootstrap')
     expect(h.n8n.requests).toEqual([])
@@ -252,7 +252,7 @@ describe('jml setup', () => {
     const dir = checkout()
     const h = harness(fullRunAnswers(googleKeyFile(dir)))
     await setupCommand(h.io, { dir }, h.deps)
-    expect(h.output()).toMatch(/plain text, mode 600/)
+    expect(h.output()).toMatch(/saved in plain text in .env/)
     expect(await getConfig(join(dir, 'jml.config.yaml'), ['hris', 'hibob', 'serviceToken'])).toBe('env:HIBOB_SERVICE_TOKEN')
   })
 
@@ -313,8 +313,8 @@ describe('jml setup', () => {
     expect(await getConfig(config, ['hris', 'adapter'])).toBe('sheet')
     expect(await getConfig(config, ['hris', 'table', 'spreadsheetId'])).toBe('sheet-id-for-the-test-0123456789')
     expect(h.output()).not.toContain('JumpCloud API key')
-    expect(h.output()).toContain('share the sheet with the service account')
-    const scopes = h.output().split('and only if you will arm')[0] ?? ''
+    expect(h.output()).toContain('share the sheet, as a viewer')
+    const scopes = h.output().split('Add this one too only if')[0] ?? ''
     expect(scopes).toContain('https://www.googleapis.com/auth/admin.directory.user.security')
   })
 

@@ -33,7 +33,7 @@ describe('a CSV people file with Docker', () => {
     await askConfiguration(scriptedPrompter([...before, outside, 'y', ...after]), (l) => said.push(l), config, env, { docker: true })
     expect(await getConfig(config, ['hris', 'table', 'path'])).toBe('./data/staff.csv')
     expect(readFileSync(join(dir, 'data', 'staff.csv'), 'utf8')).toBe('Employee ID,Work email\n')
-    expect(said.join('\n')).toMatch(/sees only this install's data\/ folder/)
+    expect(said.join('\n')).toMatch(/can only see this install's data folder/)
   })
 
   it('is left where it is, as a relative path, when it is already under data/', async () => {
