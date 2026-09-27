@@ -43,6 +43,13 @@ viewer. See [docs/adapters/hris-table.md](docs/adapters/hris-table.md) and
 built-in template replaces it. Checked at start-up: an unknown file name or a
 placeholder the message does not supply refuses to start.
 
+**The installer on Linux, and on Windows through WSL2.** `install.sh` detects
+macOS, Linux (apt or dnf) and WSL2, and gives each the right advice: git
+through the package manager on Linux, links for Node 22 and Docker Engine, and
+the service and docker-group hints when Docker is installed but unreachable.
+CI now runs the real installer and the whole setup preview on Ubuntu, and the
+test suite on native Windows (experimental, not blocking).
+
 **A preview of the setup** (`./install.sh --preview`, or `jml setup --preview`).
 Every real question, asked in a temporary folder deleted at the end, including
 on Ctrl-C. The steps that act (doctor, bootstrap, Docker, n8n) say what they

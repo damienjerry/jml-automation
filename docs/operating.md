@@ -39,6 +39,8 @@ its own, and you should know them before you rely on it:
 | HR from a CSV file, including the shipped example | offline tests | 2026-09-26 |
 | HR from a Google Sheet | a fake Sheets API only | 2026-09-26 |
 | setup 1.0b (no identity provider) | fakes only, never a real tenant | 2026-09-26 |
+| the installer and setup preview on Linux | Ubuntu, in CI, on every push | 2026-09-27 |
+| the test suite on native Windows | Windows, in CI, on every push; does not block | 2026-09-27 |
 | **any write to a real provider** | **never**: no suspension, licence change, transfer, deletion, activation or sent message | |
 | device uninstall scripts | never on real hardware | |
 

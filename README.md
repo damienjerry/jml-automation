@@ -67,7 +67,8 @@ What was tested, and how:
 | Your own message wording (`notify.templatesDir`) | tested offline |
 | Ticketing (Suptask), owner notifications, Slack and email notifications | tested against fakes only |
 | Device unbind and handover | never run on real hardware; handover is refused until you canary it |
-| `install.sh` and `jml setup` | tested with a scripted wizard and `--dry-run`; the Docker Compose step has never started the containers end to end |
+| `install.sh` and `jml setup` | on macOS and on Linux (CI, Ubuntu): clone, install, build and the whole setup preview, end to end. The Docker Compose step has never started the containers end to end |
+| Native Windows | the test suite runs in CI and does not block; no installer; experimental |
 
 The design comes from automation that runs these steps in production at one
 organisation, on setup 1.0a. This code's own write paths have not run against a
@@ -238,10 +239,20 @@ list read as "nothing to block on", and one failed read deleted the account. Tha
 `leaver.deviceGate.failClosed` in [docs/config-reference.md](docs/config-reference.md), and
 it is not overridable.
 
-## Install on a Mac
+## Install on macOS, Linux, or Windows through WSL2
 
-When the demo makes sense, the installer takes a Mac from nothing to a scheduled first
-dry run. To see the whole setup first, as a new user would, run `./install.sh --preview`:
+When the demo makes sense, the installer takes a machine from nothing to a scheduled first
+dry run.
+
+| Platform | Status |
+| --- | --- |
+| macOS | the reference. Offers Node and Docker Desktop through Homebrew, with a yes |
+| Linux (apt or dnf) | the installer and the setup preview run end to end in CI on Ubuntu. Offers git through the package manager; points to Node 22 and Docker Engine rather than installing them, because distribution Node packages are often too old and nothing is piped from the internet into a shell. The best place for the scheduled job: a server or VM that is always on |
+| Windows | **through WSL2**, which is Linux: install a distribution such as Ubuntu, then Docker Desktop with WSL integration, and run the installer inside it. **Native Windows has no installer**; the test suite runs on it in CI and is experimental |
+
+Neither Linux nor Windows has run a real setup end to end on a person's machine.
+
+ To see the whole setup first, as a new user would, run `./install.sh --preview`:
 it checks and builds as usual, then walks the wizard with every real question in a
 temporary folder that is deleted at the end. Nothing is installed with Homebrew, nothing
 is read from 1Password, and the steps that act say what they would do instead. Read `install.sh` before you run it: it is short, it prints every command before it

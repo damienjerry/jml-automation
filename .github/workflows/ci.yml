@@ -75,3 +75,54 @@ jobs:
 
       - name: Validate exports
         run: npm run validate:workflows
+
+  # The installer, run for real on Linux the way a person would: clone this
+  # commit, install, build, then walk the whole setup preview to its last line
+  # in a pseudo-terminal. The preview acts on nothing and keeps nothing, so
+  # this needs no credential.
+  installer-linux:
+    name: Installer and setup preview on Linux
+    runs-on: ubuntu-latest
+    needs: disclosure-gate
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Shellcheck the installer
+        run: shellcheck install.sh
+
+      - name: Dry run
+        run: JML_REPO_URL="file://$GITHUB_WORKSPACE" JML_DIR="$RUNNER_TEMP/jml-dry" JML_REF="$GITHUB_SHA" ./install.sh --dry-run
+
+      - name: Install, build, and walk the setup preview
+        run: JML_REPO_URL="file://$GITHUB_WORKSPACE" JML_DIR="$RUNNER_TEMP/jml" JML_REF="$GITHUB_SHA" python3 tools/ci/drive-preview.py -- ./install.sh --yes --preview
+
+  # Native Windows is experimental: there is no Windows installer, and the
+  # supported route is WSL2, which is Linux. This job shows what breaks on
+  # native Windows rather than leaving it to a guess. It reports and does not
+  # block.
+  windows:
+    name: Test suite on native Windows (experimental, does not block)
+    runs-on: windows-latest
+    needs: disclosure-gate
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
