@@ -4,7 +4,10 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.1] - 2026-09-27
+
+Released as `v1.0d`, and what the installer builds by default. The same two
+setups, still experimental. Package 1.2.1.
 
 ### Fixed after an outside review of v1.0c
 
@@ -421,6 +424,7 @@ Read this before arming anything.
 Test coverage is not evidence about your tenant. 1541 tests across 159 files
 pass on this checkout, and every one of them runs against a fake.
 
+[1.2.1]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0d
 [1.2.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0c
 [1.1.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0b
 [1.0.0]: https://github.com/damienjerry/jml-automation/releases/tag/v1.0.0

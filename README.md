@@ -267,7 +267,7 @@ cd jml-automation
 It checks for Node 22 and Docker (offering Homebrew, and doing nothing without a yes),
 clones, prints the exact commit and **stops until you say yes**, then installs dependencies
 with `--ignore-scripts` so no third-party package runs code on your machine, builds from the
-source you cloned, and hands over to `jml setup`. It builds the `v1.0c` tag by default, which
+source you cloned, and hands over to `jml setup`. It builds the `v1.0d` tag by default, which
 holds both setups; set `JML_REF` to another tag or a commit you have read to build that instead. That asks for your
 organisation, HR system and people store; asks for each credential and prints its minimum
 access; runs `jml doctor` until every check passes; rehearses the tombstone bootstrap before

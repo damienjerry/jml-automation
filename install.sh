@@ -33,7 +33,7 @@
 #
 # Environment:
 #   JML_DIR       where to clone (default: ~/jml-automation)
-#   JML_REF       branch, tag or full commit to build (default: v1.0c, the
+#   JML_REF       branch, tag or full commit to build (default: v1.0d, the
 #                 fixed release holding setups 1.0a and 1.0b). A branch moves
 #                 after you read it; pin a tag or a commit you reviewed.
 #   JML_REPO_URL  repository to clone
@@ -42,7 +42,7 @@ set -euo pipefail
 
 REPO_URL="${JML_REPO_URL:-https://github.com/damienjerry/jml-automation.git}"
 DIR="${JML_DIR:-$HOME/jml-automation}"
-REF="${JML_REF:-v1.0c}"
+REF="${JML_REF:-v1.0d}"
 DRY=0
 NO_DOCKER=0
 ASSUME_YES=0
