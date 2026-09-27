@@ -143,12 +143,12 @@
             },
             "serviceUserId": {
               "type": "string",
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Service user id, as a secret reference."
             },
             "serviceToken": {
               "type": "string",
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Service user token, as a secret reference."
             },
             "pageSize": {
@@ -384,7 +384,7 @@
             },
             "token": {
               "type": "string",
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Internal integration token, as a secret reference."
             },
             "peopleDatabaseId": {
@@ -482,7 +482,7 @@
             },
             "apiKey": {
               "type": "string",
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Organisation API key, as a secret reference."
             },
             "consoleUrl": {
@@ -516,7 +516,7 @@
       "properties": {
         "serviceAccountJson": {
           "type": "string",
-          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
           "description": "The whole service account key file, as a secret reference. `file:/path/to/key.json` is the usual form."
         },
         "adminEmail": {
@@ -828,7 +828,7 @@
                 "string",
                 "null"
               ],
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Workspace API token, as a secret reference.",
               "default": null
             },
@@ -1153,7 +1153,7 @@
                 "string",
                 "null"
               ],
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Optional host-inventory token.",
               "default": null
             }
@@ -1214,7 +1214,7 @@
                 "string",
                 "null"
               ],
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Bot token, as a secret reference.",
               "default": null
             },
@@ -1266,7 +1266,7 @@
             "string",
             "null"
           ],
-          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
           "description": "Hash salt. Required when minimisePii is true.",
           "default": null
         },
@@ -1305,7 +1305,7 @@
                 "string",
                 "null"
               ],
-              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+              "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
               "description": "Authorization header value, as a secret reference.",
               "default": null
             }
@@ -1327,7 +1327,7 @@
             "string",
             "null"
           ],
-          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
           "description": "Dead-man ping URL. The URL is itself the credential, so it is a secret reference. Pinged only after a notification is proven delivered.",
           "default": null
         }
@@ -1369,7 +1369,7 @@
         },
         "token": {
           "type": "string",
-          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:\\/.+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
+          "pattern": "^(env:[A-Z][A-Z0-9_]*|file:(\\/|[A-Za-z]:[\\\\/]).+|op:\\/\\/[^/\\s]+\\/[^/\\s]+\\/[^/\\s]+)$",
           "description": "Bearer token for the sidecar. At least 32 bytes; compared in constant time."
         }
       },

@@ -30,8 +30,13 @@ export const SECRETS_DOCS_ANCHOR = 'docs/config-reference.md#secret-references'
 /**
  * `keychain:` is reserved for a later phase and deliberately absent here: an
  * unimplemented scheme must fail the grammar rather than resolve to nothing.
+ *
+ * A file reference is an absolute path: `file:/run/secrets/key` on macOS and
+ * Linux, `file:C:\keys\key.json` or `file:C:/keys/key.json` on Windows. A
+ * relative path is refused, because it would resolve against whatever
+ * directory the process happened to start in.
  */
-export const SECRET_REF_PATTERN = /^(env:[A-Z][A-Z0-9_]*|file:\/.+|op:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+)$/
+export const SECRET_REF_PATTERN = /^(env:[A-Z][A-Z0-9_]*|file:(\/|[A-Za-z]:[\\/]).+|op:\/\/[^/\s]+\/[^/\s]+\/[^/\s]+)$/
 
 export function isSecretRef(value: unknown): value is string {
   return typeof value === 'string' && SECRET_REF_PATTERN.test(value)

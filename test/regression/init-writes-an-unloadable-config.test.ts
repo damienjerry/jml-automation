@@ -98,7 +98,9 @@ describe('the configuration jml init writes', () => {
     // The file holds a bearer token for a service that can delete accounts.
     // Group and world readable is how a shared host leaks one.
     const mode = (await stat(join(dir, '.env'))).mode & 0o777
-    expect(mode & 0o077).toBe(0)
+    // Windows has no Unix file mode, so this cannot hold there; see the
+    // native Windows note in docs/operating.md.
+    if (process.platform !== 'win32') expect(mode & 0o077).toBe(0)
   })
 
   it('reports a missing salt as a missing salt, not as a pasted credential', async () => {

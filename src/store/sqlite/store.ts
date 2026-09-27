@@ -140,7 +140,14 @@ export class SqlitePeopleStore implements PeopleStore {
   async init(): Promise<void> {
     if (this.db) return
     const db = openDatabase(this.options.path)
-    applyMigrations(db, 'schema_migrations', MIGRATIONS)
+    // Closed on refusal: an open handle stays locked on Windows, and the
+    // caller that sees this error cannot close a database it never got.
+    try {
+      applyMigrations(db, 'schema_migrations', MIGRATIONS)
+    } catch (err) {
+      db.close()
+      throw err
+    }
     this.db = db
     const columns = COLUMNS.join(', ')
     const placeholders = COLUMNS.map((column) => `:${column}`).join(', ')

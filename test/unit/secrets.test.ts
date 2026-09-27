@@ -19,6 +19,11 @@ describe('secret reference grammar', () => {
   it('accepts the three supported schemes', () => {
     expect(isSecretRef('env:JUMPCLOUD_API_KEY')).toBe(true)
     expect(isSecretRef('file:/run/secrets/jml')).toBe(true)
+    // Windows absolute paths, with either slash. Found by running the suite on
+    // native Windows, where a key file could not be referenced at all.
+    expect(isSecretRef('file:C:\\keys\\google.json')).toBe(true)
+    expect(isSecretRef('file:C:/keys/google.json')).toBe(true)
+    expect(isSecretRef('file:C:google.json')).toBe(false)
     expect(isSecretRef('op://<vault>/<item-uuid>/<field>')).toBe(true)
   })
 

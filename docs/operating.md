@@ -48,6 +48,19 @@ Everything else is covered by the test suite, which runs against recorded
 responses and fakes. Tests passing tells you the code does what the tests say.
 It does not tell you your tenant behaves like the recordings.
 
+## Native Windows
+
+There is no Windows installer; the supported route is WSL2, which is Linux. On
+native Windows the test suite runs in CI, and two things differ from macOS and
+Linux:
+
+- **`.env` is not locked down by its file mode**, because Windows has no Unix
+  modes. Keep the install inside your own user profile, which is private to
+  you by default, and restrict the file to your account:
+  `icacls .env /inheritance:r /grant:r "%USERNAME%:F"` (in Command Prompt).
+- **A key file is referenced with a drive path**: `file:C:\keys\google.json` or
+  `file:C:/keys/google.json`.
+
 ## Every morning
 
 1. Read the run report or the notification channel. A quiet day and a broken

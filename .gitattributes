@@ -1,2 +1,6 @@
+# Every text file is LF in the repository and in every checkout, Windows
+# included. The generated files and the message templates are compared byte
+# for byte, and a CRLF checkout on Windows made the committed copies read as
+# stale.
+* text=auto eol=lf
 *.mjs diff
-*.mjs text

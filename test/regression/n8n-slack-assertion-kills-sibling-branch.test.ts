@@ -14,6 +14,7 @@
  * behind the assertion: after it, only further assertions and terminal nodes.
  */
 
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -81,7 +82,7 @@ const workQueuedAfterTheAssertion = {
 
 describe('branch order around a chat post', () => {
   it('refuses a chat branch that runs before a sibling', () => {
-    const { findings } = validateFiles([fixtureUrl.pathname]) as { findings: Finding[] }
+    const { findings } = validateFiles([fileURLToPath(fixtureUrl)]) as { findings: Finding[] }
     expect(findings.map((f) => f.rule)).toContain('slack-branch-last')
   })
 

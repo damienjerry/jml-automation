@@ -28,7 +28,9 @@ describe('.env', () => {
     expect(parsed['GOOGLE_SERVICE_ACCOUNT_JSON']).toBe(KEY_LIKE)
     const viaShell = execFileSync('bash', ['-c', `set -a; . "${path}"; set +a; printf %s "$GOOGLE_SERVICE_ACCOUNT_JSON"`]).toString()
     expect(viaShell).toBe(KEY_LIKE)
-    expect(statSync(path).mode & 0o777).toBe(0o600)
+    // Windows has no Unix file mode, so this cannot hold there; see the
+    // native Windows note in docs/operating.md.
+    if (process.platform !== 'win32') expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 
   it('refuses a value with a quote or a line break rather than guessing an escape', async () => {
@@ -40,7 +42,9 @@ describe('.env', () => {
   it('creates the file mode 600 when it did not exist', async () => {
     const path = join(temp(), '.env')
     await setEnv(path, 'N8N_FORM_USER', 'jml')
-    expect(statSync(path).mode & 0o777).toBe(0o600)
+    // Windows has no Unix file mode, so this cannot hold there; see the
+    // native Windows note in docs/operating.md.
+    if (process.platform !== 'win32') expect(statSync(path).mode & 0o777).toBe(0o600)
   })
 })
 
