@@ -1,6 +1,6 @@
 {
   "name": "jml-automation",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "HR-driven account lifecycle for Google Workspace, with or without JumpCloud, from HiBob, a CSV file or a Google Sheet: activate on hire; close, hand over and optionally delete on the leaving date. A fixed reference release.",
   "repository": {
     "type": "git",
